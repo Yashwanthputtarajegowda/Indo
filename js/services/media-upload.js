@@ -15,9 +15,10 @@ async function getSignature() {
   return { ...data, token };
 }
 
-export async function uploadVideo(file, { title = "", caption = "" } = {}) {
+export async function uploadVideo(file, { title = "", caption = "", mediaType = "video" } = {}) {
   if (!(file instanceof File)) throw new Error("Choose a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Only video files are supported.");
+  if (!["video", "reel"].includes(mediaType)) throw new Error("Invalid media type.");
 
   const signed = await getSignature();
   const body = new FormData();
@@ -41,6 +42,7 @@ export async function uploadVideo(file, { title = "", caption = "" } = {}) {
       Authorization: `Bearer ${signed.token}`
     },
     body: JSON.stringify({
+      mediaType,
       title: String(title || "").trim().slice(0, 120),
       caption: String(caption || "").trim().slice(0, 500),
       publicId: uploaded.public_id,
@@ -56,8 +58,15 @@ export async function uploadVideo(file, { title = "", caption = "" } = {}) {
 }
 
 export async function getHomeVideos(limit = 20) {
-  const response = await fetch(`${API_BASE_URL}/media/videos?limit=${encodeURIComponent(limit)}`);
+  const response = await fetch(`${API_BASE_URL}/media/videos?type=video&limit=${encodeURIComponent(limit)}`);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Could not load videos.");
+  return data.videos || [];
+}
+
+export async function getReels(limit = 20) {
+  const response = await fetch(`${API_BASE_URL}/media/videos?type=reel&limit=${encodeURIComponent(limit)}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Could not load reels.");
   return data.videos || [];
 }
