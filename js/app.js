@@ -2,8 +2,19 @@ import { auth, db } from './firebase.js';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
 import { ref, get, set, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js';
 
+const API_BASE_URL = 'https://indo-backend-production-41b1.up.railway.app';
 const app = document.querySelector('#app');
 let authMode = 'login';
+let backendOnline = false;
+
+async function checkBackend() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/health`, { method: 'GET', cache: 'no-store' });
+    backendOnline = response.ok;
+  } catch {
+    backendOnline = false;
+  }
+}
 
 const cleanUserId = value => value.trim().toLowerCase().replace(/^@/, '');
 const validUserId = value => /^[a-z0-9._]{3,30}$/.test(value);
@@ -21,6 +32,7 @@ function renderAuth(error = '', success = '') {
     <div class="brand">Indo</div>
     <h1>${signup ? 'Create your account' : 'Welcome back'}</h1>
     <p class="muted">${signup ? 'Create your real Indo account.' : 'Login with your Indo account.'}</p>
+    <div class="muted small">Backend: ${backendOnline ? 'Connected' : 'Unavailable'}</div>
     ${error ? `<div class="error">${error}</div>` : ''}
     ${success ? `<div class="success">${success}</div>` : ''}
     ${signup ? `<div class="field"><label>User name</label><input id="name" maxlength="60" placeholder="Your name" autocomplete="name"></div>
@@ -52,38 +64,22 @@ async function createAccount() {
   const password = document.querySelector('#password').value;
   const confirm = document.querySelector('#confirm').value;
   const privacy = document.querySelector('input[name="privacy"]:checked').value;
-
   if (!name) return renderAuth('Enter your name.');
   if (!validUserId(username)) return renderAuth('User ID must be 3–30 characters: letters, numbers, dot or underscore.');
   if (!email) return renderAuth('Enter your email.');
   if (password.length < 6) return renderAuth('Password must be at least 6 characters.');
   if (password !== confirm) return renderAuth('Passwords do not match.');
-
   button.disabled = true;
   button.textContent = 'Creating...';
-
   try {
     const usernameRef = ref(db, `usernames/${username}`);
     const existing = await get(usernameRef);
     if (existing.exists()) throw new Error('@' + username + ' is already taken. Choose another User ID.');
-
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     const indoId = await reserveIndoId();
     const user = credential.user;
-
     await set(usernameRef, { uid: user.uid, username: `@${username}` });
-    await set(ref(db, `users/${user.uid}`), {
-      uid: user.uid,
-      indoId,
-      name,
-      username: `@${username}`,
-      usernameKey: username,
-      email,
-      accountType: privacy,
-      createdAt: serverTimestamp()
-    });
-
-    // Firebase signs the new user in automatically. Indo requires an explicit login.
+    await set(ref(db, `users/${user.uid}`), { uid: user.uid, indoId, name, username: `@${username}`, usernameKey: username, email, accountType: privacy, createdAt: serverTimestamp() });
     await signOut(auth);
     authMode = 'login';
     renderAuth('', `Account created successfully. Your Indo ID is ${indoId}. Please login.`);
@@ -100,16 +96,16 @@ async function login() {
   if (!email || !password) return renderAuth('Enter your email and password.');
   button.disabled = true;
   button.textContent = 'Logging in...';
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (error) {
-    renderAuth(firebaseMessage(error));
-  }
+  try { await signInWithEmailAndPassword(auth, email, password); }
+  catch (error) { renderAuth(firebaseMessage(error)); }
 }
 
 function showLoggedIn(user) {
-  app.innerHTML = `<main class="auth-page"><section class="auth-card"><div class="brand">Indo</div><h1>Logged in</h1><p class="muted">${user.email}</p><p class="success">Authentication is working. Home will be connected in the next step.</p><button id="logout" class="primary">Logout</button></section></main>`;
+  app.innerHTML = `<main class="auth-page"><section class="auth-card"><div class="brand">Indo</div><h1>Logged in</h1><p class="muted">${user.email}</p><p class="success">Firebase authentication and Railway backend are connected.</p><button id="logout" class="primary">Logout</button></section></main>`;
   document.querySelector('#logout').onclick = async () => { await signOut(auth); authMode = 'login'; renderAuth(); };
 }
 
-onAuthStateChanged(auth, user => user ? showLoggedIn(user) : renderAuth());
+(async () => {
+  await checkBackend();
+  onAuthStateChanged(auth, user => user ? showLoggedIn(user) : renderAuth());
+})();
