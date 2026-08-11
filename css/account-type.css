@@ -1,0 +1,64 @@
+* {
+  box-sizing: border-box;
+}
+
+.account-type-page {
+  min-height: 100dvh;
+  padding: 18px 16px 32px;
+  background: #0d0014;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.account-type-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.account-type-back {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #3a2148;
+  border-radius: 50%;
+  background: #16051f;
+  color: #ffffff;
+  font-size: 20px;
+}
+
+.account-type-title {
+  margin: 0;
+  font-size: 28px;
+}
+
+.account-type-options {
+  display: grid;
+  gap: 12px;
+}
+
+.account-type-option {
+  width: 100%;
+  padding: 18px;
+  border: 1px solid #3a2148;
+  border-radius: 18px;
+  background: #16051f;
+  color: #ffffff;
+  text-align: left;
+}
+
+.account-type-option.is-selected {
+  border-color: #ff2f78;
+  background: linear-gradient(90deg, #2a0b3d, #251031);
+}
+
+.account-type-option h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.account-type-option p {
+  margin: 7px 0 0;
+  color: #a995b2;
+  line-height: 1.45;
+}
