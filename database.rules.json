@@ -7,22 +7,15 @@
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
         "following": {
-          "$targetUid": {
-            ".write": "auth != null && auth.uid === $uid"
-          }
+          "$targetUid": { ".write": "auth != null && auth.uid === $uid" }
         },
         "followers": {
-          "$followerUid": {
-            ".write": false
-          }
+          "$followerUid": { ".write": false }
         }
       }
     },
     "usernames": {
-      "$usernameKey": {
-        ".read": "auth != null",
-        ".write": false
-      }
+      "$usernameKey": { ".read": "auth != null", ".write": false }
     },
     "mediaLikes": {
       "$mediaId": {
@@ -33,10 +26,16 @@
         }
       }
     },
-    "system": {
-      ".read": false,
-      ".write": false
+    "reelComments": {
+      "$reelId": {
+        ".read": "auth != null",
+        "$commentId": {
+          ".write": "auth != null && ((!data.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid))",
+          ".validate": "newData.hasChildren(['uid','text','createdAt']) && newData.child('uid').isString() && newData.child('text').isString() && newData.child('text').val().length <= 500 && newData.child('createdAt').isNumber()"
+        }
+      }
     },
+    "system": { ".read": false, ".write": false },
     "userConversations": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
