@@ -1,4 +1,5 @@
 import { getProfile, updateProfile } from "../services/profile-state.js";
+import { updateMyProfile } from "../services/profile-api.js";
 
 export function renderEditAccountPage(container, profile = getProfile()) {
   const userName = profile.userName || "Indo User";
@@ -23,7 +24,7 @@ export function renderEditAccountPage(container, profile = getProfile()) {
             <label for="edit-user-id">User ID</label>
             <div class="edit-account-user-id">
               <span>@</span>
-              <input id="edit-user-id" name="userId" type="text" value="${userId}" pattern="[A-Za-z0-9._]+" required />
+              <input id="edit-user-id" name="userId" type="text" value="${userId}" readonly />
             </div>
           </div>
 
@@ -44,31 +45,42 @@ export function renderEditAccountPage(container, profile = getProfile()) {
   const form = container.querySelector("[data-edit-account-form]");
   const status = container.querySelector("[data-edit-account-status]");
   const error = container.querySelector("[data-edit-account-error]");
+  const submit = form.querySelector("[type='submit']");
 
   container.querySelector("[data-edit-account-back]").addEventListener("click", () => {
     window.dispatchEvent(new CustomEvent("indo:navigate", { detail: { page: "profile" } }));
   });
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     status.textContent = "";
     error.textContent = "";
+    submit.disabled = true;
 
     const formData = new FormData(form);
-    const nextProfile = {
-      userName: String(formData.get("userName") || "").trim(),
-      userId: `@${String(formData.get("userId") || "").trim().replace(/^@+/, "")}`,
-      bio: String(formData.get("bio") || "").trim()
-    };
+    const name = String(formData.get("userName") || "").trim();
+    const bioValue = String(formData.get("bio") || "").trim();
 
-    if (!nextProfile.userName || nextProfile.userId === "@") {
-      error.textContent = "Enter your User Name and User ID.";
+    if (!name) {
+      error.textContent = "Enter your User Name.";
+      submit.disabled = false;
       return;
     }
 
-    const savedProfile = updateProfile(nextProfile);
+    try {
+      const result = await updateMyProfile({ name, bio: bioValue });
+      const savedProfile = updateProfile({
+        userName: result.name || name,
+        userId: result.username || profile.userId || `@${userId}`,
+        bio: result.bio || ""
+      });
 
-    window.dispatchEvent(new CustomEvent("indo:account-updated", { detail: savedProfile }));
-    status.textContent = "Account updated successfully.";
+      window.dispatchEvent(new CustomEvent("indo:account-updated", { detail: savedProfile }));
+      status.textContent = "Account updated successfully.";
+    } catch (accountError) {
+      error.textContent = accountError.message || "Could not update account.";
+    } finally {
+      submit.disabled = false;
+    }
   });
 }
