@@ -17,3 +17,17 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getDatabase(app);
+
+const videoNavigationStyle = document.createElement('style');
+
+videoNavigationStyle.textContent = `
+    .home-nav .nav-btn:nth-child(4) {
+        display: none !important;
+    }
+
+    .home-nav {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+`;
+
+document.head.appendChild(videoNavigationStyle);
