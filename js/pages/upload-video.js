@@ -15,23 +15,28 @@ export function renderUploadVideoPage(container) {
       </form>
     </main>
   `;
+
   const form = container.querySelector("[data-upload-form]");
   const status = container.querySelector("[data-upload-status]");
   const submit = container.querySelector("[data-upload-submit]");
+
   container.querySelector("[data-upload-back]").addEventListener("click", () => {
     window.dispatchEvent(new CustomEvent("indo:navigate", { detail: { page: "home" } }));
   });
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const file = form.elements.video.files?.[0];
     const title = String(form.elements.title.value || "").trim();
     if (!file || !title) return;
+
     submit.disabled = true;
     status.textContent = "Uploading…";
     try {
-      await uploadVideo(file, title);
+      await uploadVideo(file, { title });
       status.textContent = "Video uploaded successfully.";
       form.reset();
+      setTimeout(() => window.dispatchEvent(new CustomEvent("indo:navigate", { detail: { page: "home" } })), 700);
     } catch (error) {
       status.textContent = error.message || "Upload failed.";
     } finally {
