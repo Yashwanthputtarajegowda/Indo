@@ -5,10 +5,7 @@
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid",
-        "username": {
-          ".validate": "newData.isString() && newData.val().matches(/^@[a-z0-9._-]{1,50}$/)"
-        }
+        ".write": "auth != null && auth.uid === $uid"
       }
     },
     "usernames": {
@@ -20,6 +17,15 @@
     "system": {
       ".read": false,
       ".write": false
+    },
+    "userConversations": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$conversationKey": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['conversationKey','otherUid','updatedAt']) && newData.child('conversationKey').isString() && newData.child('otherUid').isString() && newData.child('updatedAt').isNumber()"
+        }
+      }
     },
     "conversations": {
       "$conversationKey": {
