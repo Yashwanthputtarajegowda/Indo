@@ -1,5 +1,5 @@
 import { setupProfileMenuButton } from "../components/profile-menu-button.js";
-import { getProfile, updateProfile } from "../services/profile-state.js";
+import { getProfile } from "../services/profile-state.js";
 import { fetchMyProfile } from "../services/account-profile.js";
 
 const demoTabs = ["Videos", "Reels", "Posts"];
@@ -19,11 +19,11 @@ export function renderProfilePage(container, profile = getProfile()) {
 
       <section class="profile-summary">
         <div class="profile-avatar" aria-hidden="true">
-          ${resolvedProfile.userName.slice(0, 1).toUpperCase()}
+          ${(resolvedProfile.userName || "Indo User").slice(0, 1).toUpperCase()}
         </div>
         <div>
-          <h2 class="profile-user-name">${resolvedProfile.userName}</h2>
-          <p class="profile-user-id">${resolvedProfile.userId}</p>
+          <h2 class="profile-user-name">${resolvedProfile.userName || "Indo User"}</h2>
+          <p class="profile-user-id">${resolvedProfile.userId || "@indo_user"}</p>
           ${resolvedProfile.bio ? `<p class="profile-bio">${resolvedProfile.bio}</p>` : ""}
         </div>
         <div class="profile-stats">
@@ -80,16 +80,27 @@ export function renderProfilePage(container, profile = getProfile()) {
     .then((remoteProfile) => {
       if (!remoteProfile || !remoteProfile.username) return;
 
-      updateProfile({
+      const currentProfile = getProfile();
+      const nextProfile = {
+        ...currentProfile,
         userName: remoteProfile.name || resolvedProfile.userName,
         userId: remoteProfile.username,
+        bio: remoteProfile.bio || "",
         accountType: remoteProfile.accountType,
         indoId: remoteProfile.indoId,
         email: remoteProfile.email
-      });
+      };
+
+      const changed = ["userName", "userId", "bio", "accountType", "indoId", "email"].some(
+        (key) => currentProfile[key] !== nextProfile[key]
+      );
+
+      if (!changed) return;
+
+      localStorage.setItem("indo-profile-state", JSON.stringify(nextProfile));
 
       if (document.querySelector(".profile-page")) {
-        renderProfilePage(container, getProfile());
+        renderProfilePage(container, nextProfile);
       }
     })
     .catch((error) => {
