@@ -57,6 +57,10 @@ export async function uploadVideo(file, { title = "", caption = "", mediaType = 
   return saved.video;
 }
 
+export async function uploadReel(file, { caption = "" } = {}) {
+  return uploadVideo(file, { caption, mediaType: "reel", title: "" });
+}
+
 export async function getHomeVideos(limit = 20) {
   const response = await fetch(`${API_BASE_URL}/media/videos?type=video&limit=${encodeURIComponent(limit)}`);
   const data = await response.json().catch(() => ({}));
