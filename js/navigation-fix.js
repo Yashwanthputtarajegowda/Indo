@@ -1,107 +1,34 @@
-const APP_SELECTOR = '#app';
-
 const NAV_ITEMS = [
-    {
-        label: 'Home',
-        icon: '⌂',
-        action: () => {
-            window.location.href = './index.html';
-        }
-    },
-    {
-        label: 'Messages',
-        icon: '✉',
-        action: () => {
-            window.location.href = './pages/messages.html';
-        }
-    },
-    {
-        label: 'Reels',
-        icon: '▶',
-        action: () => {
-            window.location.href = './pages/reels.html';
-        }
-    },
-    {
-        label: 'Profile',
-        icon: '◎',
-        action: () => {
-            window.location.href = './pages/profile.html';
-        }
-    }
+    ['Home', '⌂', './index.html'],
+    ['Messages', '✉', './pages/messages.html'],
+    ['Reels', '▶', './pages/reels.html'],
+    ['Profile', '◎', './pages/profile.html']
 ];
-
-function createNavigationButton(item, currentPage) {
-    const button = document.createElement('button');
-
-    button.type = 'button';
-    button.className = 'nav-btn';
-    button.innerHTML = `
-        <span class="nav-icon">${item.icon}</span>
-        <span>${item.label}</span>
-    `;
-
-    if (item.label === currentPage) {
-        button.classList.add('active');
-        button.setAttribute('aria-current', 'page');
-    }
-
-    button.addEventListener('click', item.action);
-    return button;
-}
-
-function getCurrentPage() {
-    const path = window.location.pathname;
-
-    if (path.endsWith('/messages.html')) return 'Messages';
-    if (path.endsWith('/reels.html')) return 'Reels';
-    if (path.endsWith('/profile.html')) return 'Profile';
-    return 'Home';
-}
 
 function normalizeNavigation() {
     const nav = document.querySelector('.home-nav');
+    if (!nav || nav.dataset.fixed === 'true') return;
 
-    if (!nav) return;
-
-    const currentPage = getCurrentPage();
-    const buttons = Array.from(nav.querySelectorAll('.nav-btn'));
-
-    const isCorrect = buttons.length === NAV_ITEMS.length &&
-        buttons.every((button, index) => {
-            return button.textContent.includes(NAV_ITEMS[index].label);
-        });
-
-    if (isCorrect) {
+    const buttons = nav.querySelectorAll('.nav-btn, .nav-button');
+    if (buttons.length === NAV_ITEMS.length &&
+        [...buttons].every((button, i) => button.textContent.includes(NAV_ITEMS[i][0]))) {
+        nav.dataset.fixed = 'true';
         return;
     }
 
-    nav.replaceChildren(
-        ...NAV_ITEMS.map((item) => createNavigationButton(item, currentPage))
-    );
+    nav.dataset.fixed = 'true';
+    nav.replaceChildren(...NAV_ITEMS.map(([label, icon, url]) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'nav-btn';
+        button.innerHTML = `<span class="nav-icon">${icon}</span><span>${label}</span>`;
+        button.onclick = () => { window.location.href = url; };
+        return button;
+    }));
 }
 
-function startNavigationFix() {
-    const app = document.querySelector(APP_SELECTOR);
-
-    if (!app) return;
-
-    let updating = false;
-
-    const observer = new MutationObserver(() => {
-        if (updating) return;
-
-        updating = true;
-        normalizeNavigation();
-        updating = false;
-    });
-
-    observer.observe(app, {
-        childList: true,
-        subtree: true
-    });
-
+const app = document.querySelector('#app');
+if (app) {
+    new MutationObserver(normalizeNavigation).observe(app, { childList: true, subtree: true });
     normalizeNavigation();
 }
-
-startNavigationFix();
