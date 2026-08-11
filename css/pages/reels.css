@@ -44,12 +44,13 @@ button {
 
 .reel-feed {
     min-height: calc(100vh - 60px);
+    padding-bottom: 64px;
     display: flex;
     flex-direction: column;
 }
 
 .reel-empty {
-    min-height: calc(100vh - 60px);
+    min-height: calc(100vh - 124px);
     display: grid;
     place-items: center;
     padding: 24px;
@@ -83,7 +84,7 @@ button {
     position: absolute;
     left: 14px;
     right: 10px;
-    bottom: 18px;
+    bottom: 78px;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -170,6 +171,50 @@ button {
 
 .reel-action.active span {
     font-weight: 800;
+}
+
+.reels-bottom-nav {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    z-index: 100;
+    width: min(430px, 100vw);
+    height: 64px;
+    transform: translateX(-50%);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: #050505;
+    border-top: 1px solid #262626;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.reels-nav-button {
+    min-width: 0;
+    height: 64px;
+    padding: 5px 2px 4px;
+    border: 0;
+    background: transparent;
+    color: #888;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+}
+
+.reels-nav-button span:last-child {
+    font-size: 10px;
+    line-height: 1;
+}
+
+.reels-nav-icon {
+    font-size: 21px;
+    line-height: 1;
+}
+
+.reels-nav-button.active {
+    color: #fff;
 }
 
 @media (min-width: 700px) {
