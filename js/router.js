@@ -5,6 +5,7 @@ import { renderLoginPage } from "./pages/login.js";
 import { renderReelsPage } from "./pages/reels.js";
 import { renderProfilePage } from "./pages/profile.js";
 import { renderPublicProfilePage } from "./pages/public-profile.js";
+import { renderUploadVideoPage } from "./pages/upload-video.js";
 import { renderVideoPlayerPage } from "./pages/video-player.js";
 import { renderMessagesPage } from "./pages/messages.js";
 import { renderChatPage } from "./pages/chat.js";
@@ -30,6 +31,7 @@ export function navigate(container, page, data = {}) {
     case "reels": loadStyle("./css/reels.css"); renderReelsPage(container); return;
     case "profile": loadStyle("./css/profile.css"); renderProfilePage(container, getProfile()); return;
     case "public-profile": loadStyle("./css/public-profile.css"); renderPublicProfilePage(container, data.profile || {}); return;
+    case "upload-video": renderUploadVideoPage(container); return;
     case "messages":
     case "message": loadStyle("./css/messages.css"); renderMessagesPage(container); return;
     case "new-message": loadStyle("./css/new-message.css"); renderNewMessagePage(container); return;
