@@ -46,6 +46,7 @@ button {
 
 .reels-header h1 {
     margin: 0;
+    color: #fff;
     font-size: 18px;
     line-height: 1;
 }
@@ -209,8 +210,8 @@ button {
     height: 64px;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    background: rgba(5, 5, 5, 0.96);
-    border-top: 1px solid #262626;
+    background: #fff;
+    border-top: 1px solid #ddd;
     padding: 0;
 }
 
@@ -218,15 +219,15 @@ button {
     min-width: 0;
     width: 100%;
     height: 64px;
-    padding: 4px 2px;
+    padding: 5px 2px 4px;
     border: 0;
     background: transparent;
-    color: #888;
+    color: #777;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     cursor: pointer;
 }
 
@@ -236,40 +237,17 @@ button {
 }
 
 .reels-nav-icon {
-    font-size: 20px;
+    font-size: 22px;
     line-height: 1;
 }
 
 .reels-nav-button.active {
-    color: #fff;
-    background: #161616;
+    color: #7c3aed;
+    background: transparent;
 }
 
 @media (min-width: 700px) {
     .reels-page {
         width: 430px;
-    }
-}
-
-@media (max-height: 650px) {
-    .reels-header {
-        height: 42px;
-    }
-
-    .reels-bottom-nav,
-    .reels-nav-button {
-        height: 56px;
-    }
-
-    .reel-overlay {
-        bottom: 64px;
-    }
-
-    .reel-actions {
-        gap: 4px;
-    }
-
-    .reel-action {
-        min-height: 40px;
     }
 }
