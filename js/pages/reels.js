@@ -4,6 +4,7 @@ import {
   toggleLike,
   toggleSave
 } from "../services/reel-actions.js";
+import { setupReelMenuButton } from "../components/reel-menu-button.js";
 
 const demoReels = [
   {
@@ -23,7 +24,11 @@ export function renderReelsPage(container) {
     <main class="reels-page">
       <section class="reels-feed" aria-label="Reels feed">
         ${demoReels.map((reel, index) => `
-          <article class="reel-item" data-reel-index="${index}">
+          <article
+            class="reel-item"
+            data-reel-index="${index}"
+            data-reel-user-id="${reel.userId}"
+          >
             <button
               class="reel-center-play"
               type="button"
@@ -39,16 +44,54 @@ export function renderReelsPage(container) {
             </div>
 
             <div class="reel-actions">
-              <button class="reel-action" type="button" data-reel-action="like">♥</button>
-              <button class="reel-action" type="button" data-reel-action="comment">💬</button>
-              <button class="reel-action" type="button" data-reel-action="share">↗</button>
-              <button class="reel-action" type="button" data-reel-action="save">▢</button>
+              <button
+                class="reel-action"
+                type="button"
+                data-reel-action="like"
+              >
+                ♥
+              </button>
+
+              <button
+                class="reel-action"
+                type="button"
+                data-reel-action="comment"
+              >
+                💬
+              </button>
+
+              <button
+                class="reel-action"
+                type="button"
+                data-reel-action="share"
+              >
+                ↗
+              </button>
+
+              <button
+                class="reel-action"
+                type="button"
+                data-reel-action="save"
+              >
+                ▢
+              </button>
+
+              <button
+                class="reel-action"
+                type="button"
+                data-reel-menu-button
+                aria-label="Reel menu"
+              >
+                ⋮
+              </button>
             </div>
           </article>
         `).join("")}
       </section>
     </main>
   `;
+
+  setupReelMenuButton(container);
 
   container.addEventListener("click", async (event) => {
     const actionButton = event.target.closest("[data-reel-action]");
