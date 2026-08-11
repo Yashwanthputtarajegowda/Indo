@@ -7,7 +7,7 @@ export function renderHomePage(container) {
 
       <section class="indo-content">
         <h2>Movies, Videos & Reels</h2>
-        <p>Indo web app foundation is ready.</p>
+        <p>Welcome to Indo.</p>
       </section>
     </main>
   `;
