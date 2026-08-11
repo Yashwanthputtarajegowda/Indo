@@ -42,25 +42,23 @@ window.addEventListener("indo:create-account", () => {
 });
 
 window.addEventListener("indo:video-open", (event) => {
-  navigate(app, "video-player", {
-    video: event.detail || {}
-  });
+  navigate(app, "video-player", { video: event.detail || {} });
 });
 
 window.addEventListener("indo:message-open", (event) => {
-  navigate(app, "chat", {
-    thread: event.detail || {}
-  });
+  navigate(app, "chat", { thread: event.detail || {} });
 });
 
 window.addEventListener("indo:new-message", () => {
   navigate(app, "new-message");
 });
 
+window.addEventListener("indo:profile-open", (event) => {
+  navigate(app, "public-profile", { profile: { userId: event.detail?.userId } });
+});
+
 window.addEventListener("indo:profile-updated", () => {
-  if (document.querySelector(".profile-page")) {
-    navigate(app, "profile");
-  }
+  if (document.querySelector(".profile-page")) navigate(app, "profile");
 });
 
 window.addEventListener("indo:account-deleted", () => {
@@ -79,16 +77,12 @@ watchAuthState(async (user) => {
     await hydrateProfile(user);
   } else {
     activityTracker.stop();
-    if (!authTransition) {
-      navigate(app, "auth");
-    }
+    if (!authTransition) navigate(app, "auth");
   }
 });
 
 renderFlashPage(app);
 
 setTimeout(() => {
-  if (!authTransition) {
-    navigate(app, "auth");
-  }
+  if (!authTransition) navigate(app, "auth");
 }, 1200);
