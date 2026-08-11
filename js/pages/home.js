@@ -28,7 +28,10 @@ export function renderHomePage(container) {
     <main class="home-page">
       <header class="home-header">
         <h1 class="home-brand">Indo</h1>
-        <button class="home-search" type="button" aria-label="Search">🔍</button>
+        <div class="home-header-actions">
+          <button class="home-search" type="button" aria-label="Search">🔍</button>
+          <button class="home-upload" type="button" data-home-upload aria-label="Upload video">＋</button>
+        </div>
       </header>
       <section class="home-feed" data-home-feed aria-label="Home video feed">
         ${demoVideos.map(renderVideoCard).join("")}
@@ -52,6 +55,12 @@ export function renderHomePage(container) {
   }).catch((error) => console.warn("Indo home feed load failed:", error.message));
 
   container.addEventListener("click", (event) => {
+    const uploadButton = event.target.closest("[data-home-upload]");
+    if (uploadButton) {
+      window.dispatchEvent(new CustomEvent("indo:navigate", { detail: { page: "upload-video" } }));
+      return;
+    }
+
     const creatorButton = event.target.closest("[data-home-creator]");
     if (creatorButton) {
       window.dispatchEvent(new CustomEvent("indo:profile-open", { detail: { userId: creatorButton.dataset.homeCreator } }));
