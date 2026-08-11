@@ -2,35 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
     <title>Indo Home</title>
-    <link rel="stylesheet" href="../css/pages/home.css">
+    <link
+        rel="stylesheet"
+        href="../css/pages/home.css"
+    >
 </head>
 <body>
-    <main>
-        <header>
+    <main class="app-page">
+        <header class="page-header">
             <b>Indo</b>
-            <nav>
-                <a href="./search.html">
-                    Search
-                </a>
-                <a href="./notifications.html">
-                    Notifications
-                </a>
-                <a href="./create.html">
-                    Create
-                </a>
-            </nav>
         </header>
 
-        <section>
+        <section class="page-content">
             <h1>Home</h1>
             <p>
                 Your stories and feed will appear here.
             </p>
         </section>
+
+        <nav
+            class="bottom-nav"
+            aria-label="Main navigation"
+        >
+            <button
+                class="nav-button active"
+                data-page="home"
+                type="button"
+                aria-current="page"
+            >
+                <span class="nav-icon">⌂</span>
+                <span>Home</span>
+            </button>
+
+            <button
+                class="nav-button"
+                data-page="messages"
+                type="button"
+            >
+                <span class="nav-icon">✉</span>
+                <span>Messages</span>
+            </button>
+
+            <button
+                class="nav-button"
+                data-page="reels"
+                type="button"
+            >
+                <span class="nav-icon">▶</span>
+                <span>Reels</span>
+            </button>
+
+            <button
+                class="nav-button"
+                data-page="profile"
+                type="button"
+            >
+                <span class="nav-icon">◎</span>
+                <span>Profile</span>
+            </button>
+        </nav>
     </main>
 
-    <script type="module" src="../js/pages/home.js"></script>
+    <script
+        type="module"
+        src="../js/pages/home.js"
+    ></script>
 </body>
 </html>
