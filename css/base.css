@@ -298,6 +298,108 @@ a {
   font-weight: 400;
 }
 
+.reels-feed {
+  height: 100dvh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  background: #000000;
+}
+
+.reels-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 18px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent);
+}
+
+.reels-header h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.reels-header button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+}
+
+.reels-list {
+  width: 100%;
+}
+
+.reel-item {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  scroll-snap-align: start;
+  background: #111111;
+}
+
+.reel-item__media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reel-item__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.78), transparent 45%, rgba(0, 0, 0, 0.18));
+  pointer-events: none;
+}
+
+.reel-item__info {
+  position: absolute;
+  right: 82px;
+  bottom: 42px;
+  left: 18px;
+  z-index: 3;
+}
+
+.reel-item__info strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.reel-item__info p {
+  margin: 0;
+  color: #eeeeee;
+  font-size: 14px;
+}
+
+.reel-item__actions {
+  position: absolute;
+  right: 15px;
+  bottom: 34px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reel-item__actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.38);
+  color: #ffffff;
+  font-size: 23px;
+}
+
 @media (min-width: 700px) {
   .indo-app {
     max-width: 760px;
@@ -311,5 +413,17 @@ a {
     transform: translateX(-50%);
     border-right: 1px solid #292930;
     border-left: 1px solid #292930;
+  }
+
+  .reels-feed {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .reels-header {
+    width: min(500px, 100%);
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
