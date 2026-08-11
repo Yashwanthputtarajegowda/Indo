@@ -1,0 +1,8 @@
+.home-nav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.home-nav .nav-btn {
+    width: 100%;
+    min-width: 0;
+}
