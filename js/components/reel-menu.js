@@ -1,3 +1,5 @@
+import { isFollowing, toggleFollow } from "../services/follow.js";
+
 export function openReelMenu(container, userId) {
   closeReelMenu();
 
@@ -17,14 +19,18 @@ export function openReelMenu(container, userId) {
       Reel settings
     </button>
 
-    <button class="reel-follow-button" type="button" data-reel-follow>
-      Follow ${userId}
+    <button
+      class="reel-follow-button"
+      type="button"
+      data-reel-follow
+    >
+      ${isFollowing(userId) ? "Following" : `Follow ${userId}`}
     </button>
   `;
 
   container.appendChild(panel);
 
-  panel.addEventListener("click", (event) => {
+  panel.addEventListener("click", async (event) => {
     const action = event.target.closest("[data-reel-menu]");
 
     if (action) {
@@ -43,16 +49,11 @@ export function openReelMenu(container, userId) {
     const followButton = event.target.closest("[data-reel-follow]");
 
     if (followButton) {
-      window.dispatchEvent(
-        new CustomEvent("indo:follow", {
-          detail: {
-            userId
-          }
-        })
-      );
+      const following = await toggleFollow(userId);
 
-      followButton.textContent = "Following";
-      followButton.disabled = true;
+      followButton.textContent = following
+        ? "Following"
+        : `Follow ${userId}`;
     }
   });
 }
