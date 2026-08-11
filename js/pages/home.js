@@ -22,10 +22,15 @@ export function renderHomePage(container) {
       </header>
 
       <section class="home-feed" aria-label="Home video feed">
-        ${demoVideos.map((video) => `
-          <article class="home-video-card">
+        ${demoVideos.map((video, index) => `
+          <article class="home-video-card" data-home-video="${index}">
             <div class="home-video-thumb">
-              <button class="home-play" type="button" aria-label="Play video">
+              <button
+                class="home-play"
+                type="button"
+                data-home-play
+                aria-label="Play ${video.title}"
+              >
                 ▶
               </button>
             </div>
@@ -58,16 +63,33 @@ export function renderHomePage(container) {
   `;
 
   container.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-home-nav]");
+    const playButton = event.target.closest("[data-home-play]");
 
-    if (!button) {
+    if (playButton) {
+      const card = playButton.closest("[data-home-video]");
+      const video = demoVideos[Number(card?.dataset.homeVideo)];
+
+      if (video) {
+        window.dispatchEvent(
+          new CustomEvent("indo:video-open", {
+            detail: video
+          })
+        );
+      }
+
+      return;
+    }
+
+    const navButton = event.target.closest("[data-home-nav]");
+
+    if (!navButton) {
       return;
     }
 
     window.dispatchEvent(
       new CustomEvent("indo:navigate", {
         detail: {
-          page: button.dataset.homeNav
+          page: navButton.dataset.homeNav
         }
       })
     );
