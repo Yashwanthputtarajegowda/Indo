@@ -1,9 +1,18 @@
+import {
+  openComments,
+  shareReel,
+  toggleLike,
+  toggleSave
+} from "../services/reel-actions.js";
+
 const demoReels = [
   {
+    id: "demo-reel-1",
     userId: "@indo_creator",
     caption: "Welcome to Indo Reels"
   },
   {
+    id: "demo-reel-2",
     userId: "@indo_creator",
     caption: "Discover something new every day."
   }
@@ -41,19 +50,38 @@ export function renderReelsPage(container) {
     </main>
   `;
 
-  container.addEventListener("click", (event) => {
+  container.addEventListener("click", async (event) => {
     const actionButton = event.target.closest("[data-reel-action]");
 
     if (!actionButton) {
       return;
     }
 
-    window.dispatchEvent(
-      new CustomEvent("indo:reel-action", {
-        detail: {
-          action: actionButton.dataset.reelAction
-        }
-      })
-    );
+    const reel = demoReels[
+      Number(actionButton.closest("[data-reel-index]").dataset.reelIndex)
+    ];
+
+    try {
+      if (actionButton.dataset.reelAction === "like") {
+        const liked = toggleLike(reel.id);
+        actionButton.textContent = liked ? "♥" : "♡";
+      }
+
+      if (actionButton.dataset.reelAction === "comment") {
+        openComments(reel.id);
+      }
+
+      if (actionButton.dataset.reelAction === "share") {
+        await shareReel(reel.id);
+        actionButton.textContent = "✓";
+      }
+
+      if (actionButton.dataset.reelAction === "save") {
+        const saved = toggleSave(reel.id);
+        actionButton.textContent = saved ? "▣" : "▢";
+      }
+    } catch (error) {
+      actionButton.title = error.message || "Action failed.";
+    }
   });
 }
