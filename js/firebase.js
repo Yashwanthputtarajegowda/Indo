@@ -3,7 +3,7 @@ import { getAuth } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth
 import { getDatabase } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDXnkQ3JrGu44HJxs6-Rflhxkqnh0V8Kw',
+  apiKey: 'AIzaSyDXnkQ3JrBGu44HJxs6-Rflhxkqnh0V8Kw',
   authDomain: 'indo-174f0.firebaseapp.com',
   databaseURL: 'https://indo-174f0-default-rtdb.firebaseio.com',
   projectId: 'indo-174f0',
