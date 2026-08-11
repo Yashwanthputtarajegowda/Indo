@@ -1,8 +1,58 @@
 .home-nav {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 0 !important;
+  transform: translateX(-50%) !important;
+  width: min(430px, 100vw) !important;
+  height: 72px !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+  border-top: 1px solid #e9e9e9 !important;
+  z-index: 1000 !important;
 }
 
-.home-nav .nav-btn {
-    width: 100%;
-    min-width: 0;
+.home-nav > .nav-btn,
+.home-nav > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 72px !important;
+  margin: 0 !important;
+  padding: 6px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex: 1 1 0 !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  background: transparent !important;
+  color: #777 !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+.home-nav > .nav-btn .nav-icon {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  text-align: center !important;
+  line-height: 24px !important;
+}
+
+.home-nav > .nav-btn > span:last-child {
+  display: block !important;
+  font-size: 9px !important;
+  line-height: 12px !important;
+  white-space: nowrap !important;
+}
+
+.home-nav > .nav-btn.active {
+  color: #6d28d9 !important;
 }
