@@ -7,6 +7,7 @@ import { renderProfilePage } from "./pages/profile.js";
 import { renderVideoPlayerPage } from "./pages/video-player.js";
 import { renderMessagesPage } from "./pages/messages.js";
 import { renderChatPage } from "./pages/chat.js";
+import { renderNewMessagePage } from "./pages/new-message.js";
 import { getProfile } from "./services/profile-state.js";
 
 const styles = new Set();
@@ -46,8 +47,13 @@ export function navigate(container, page, data = {}) {
       renderProfilePage(container, getProfile());
       return;
     case "messages":
+    case "message":
       loadStyle("./css/messages.css");
       renderMessagesPage(container);
+      return;
+    case "new-message":
+      loadStyle("./css/new-message.css");
+      renderNewMessagePage(container);
       return;
     case "chat":
       loadStyle("./css/chat.css");
