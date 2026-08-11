@@ -1,1 +1,3 @@
-document.querySelector('#notifications').innerHTML='<p>No new notifications.</p>';
+const notifications = document.querySelector('#notifications');
+
+notifications.innerHTML = '<p>No new notifications.</p>';
