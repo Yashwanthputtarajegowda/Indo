@@ -1,7 +1,4 @@
-import {
-  appendConversationMessage,
-  getConversationMessages
-} from "../services/chat-store.js";
+import { watchConversation, sendConversationMessage } from "../services/chat-realtime.js";
 
 const demoMessages = [
   { type: "incoming", text: "Welcome to Indo chat." },
@@ -10,8 +7,6 @@ const demoMessages = [
 
 export function renderChatPage(container, conversation = {}) {
   const userId = conversation.userId || "@indo_creator";
-  const storedMessages = getConversationMessages(userId);
-  const messagesToRender = storedMessages.length ? storedMessages : demoMessages;
 
   container.innerHTML = `
     <main class="chat-page">
@@ -21,21 +16,13 @@ export function renderChatPage(container, conversation = {}) {
       </header>
 
       <section class="chat-messages" data-chat-messages aria-label="Messages">
-        ${messagesToRender.map((message) => `
+        ${demoMessages.map((message) => `
           <div class="chat-bubble ${message.type}">${message.text}</div>
         `).join("")}
       </section>
 
       <form class="chat-compose" data-chat-form>
-        <input
-          class="chat-input"
-          name="message"
-          type="text"
-          maxlength="2000"
-          autocomplete="off"
-          placeholder="Message..."
-          required
-        />
+        <input class="chat-input" name="message" type="text" maxlength="2000" autocomplete="off" placeholder="Message..." required />
         <button class="chat-send" type="submit">Send</button>
       </form>
     </main>
@@ -44,28 +31,44 @@ export function renderChatPage(container, conversation = {}) {
   const messages = container.querySelector("[data-chat-messages]");
   const form = container.querySelector("[data-chat-form]");
   const input = form.querySelector(".chat-input");
+  let unsubscribe = () => {};
+
+  const renderMessages = (items) => {
+    messages.innerHTML = items.map((message) => `
+      <div class="chat-bubble ${message.type === "incoming" ? "incoming" : "outgoing"}">${String(message.text || "")}</div>
+    `).join("");
+    messages.scrollTop = messages.scrollHeight;
+  };
+
+  try {
+    unsubscribe = watchConversation(userId, (items) => {
+      renderMessages(items.length ? items : demoMessages);
+    });
+  } catch (error) {
+    console.warn("Indo realtime chat setup failed:", error.message);
+  }
 
   container.querySelector("[data-chat-back]").addEventListener("click", () => {
+    unsubscribe();
     window.dispatchEvent(new CustomEvent("indo:navigate", { detail: { page: "message" } }));
   });
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const text = input.value.trim();
-
     if (!text) return;
 
-    const message = appendConversationMessage(userId, {
-      type: "outgoing",
-      text
-    });
+    const sendButton = form.querySelector(".chat-send");
+    sendButton.disabled = true;
 
-    const bubble = document.createElement("div");
-    bubble.className = "chat-bubble outgoing";
-    bubble.textContent = message.text;
-    messages.appendChild(bubble);
-    input.value = "";
-    input.focus();
-    messages.scrollTop = messages.scrollHeight;
+    try {
+      await sendConversationMessage(userId, text);
+      input.value = "";
+      input.focus();
+    } catch (error) {
+      form.dataset.error = error.message || "Could not send message.";
+    } finally {
+      sendButton.disabled = false;
+    }
   });
 }
