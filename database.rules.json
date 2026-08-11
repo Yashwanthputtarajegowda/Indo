@@ -5,7 +5,17 @@
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        "following": {
+          "$targetUid": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        },
+        "followers": {
+          "$followerUid": {
+            ".write": false
+          }
+        }
       }
     },
     "usernames": {
