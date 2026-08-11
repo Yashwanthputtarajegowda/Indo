@@ -1,0 +1,1 @@
+const input=document.querySelector('#search');const results=document.querySelector('#results');input.addEventListener('input',()=>{const q=input.value.trim();results.textContent=q?`Searching for ${q}…`:''});
