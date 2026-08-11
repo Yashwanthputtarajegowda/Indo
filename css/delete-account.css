@@ -1,0 +1,65 @@
+* {
+  box-sizing: border-box;
+}
+
+.delete-account-page {
+  min-height: 100dvh;
+  padding: 24px 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0014;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.delete-account-card {
+  width: min(100%, 390px);
+  padding: 26px 22px;
+  border: 1px solid #3a2148;
+  border-radius: 24px;
+  background: #16051f;
+}
+
+.delete-account-title {
+  margin: 0;
+  font-size: 27px;
+}
+
+.delete-account-warning {
+  margin: 10px 0 22px;
+  color: #d7c9dd;
+  line-height: 1.5;
+}
+
+.delete-account-options {
+  display: grid;
+  gap: 10px;
+}
+
+.delete-account-option {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.delete-account-option--cancel {
+  border: 1px solid #3a2148;
+  background: transparent;
+  color: #ffffff;
+}
+
+.delete-account-option--danger {
+  border: 0;
+  background: #a7194d;
+  color: #ffffff;
+}
+
+.delete-account-error {
+  min-height: 18px;
+  margin: 12px 0;
+  color: #ff719e;
+  font-size: 12px;
+}
