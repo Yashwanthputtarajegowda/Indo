@@ -1,1 +1,25 @@
-body{margin:0;background:#000;color:#fff;font-family:system-ui,sans-serif}main{max-width:680px;margin:auto;min-height:100vh}h1{text-align:center;padding:18px;margin:0}#reelFeed{height:80vh;background:#111;display:grid;place-items:center}
+body {
+    margin: 0;
+    background: #000;
+    color: #fff;
+    font-family: system-ui, sans-serif;
+}
+
+main {
+    max-width: 680px;
+    margin: auto;
+    min-height: 100vh;
+}
+
+h1 {
+    text-align: center;
+    padding: 18px;
+    margin: 0;
+}
+
+#reelFeed {
+    height: 80vh;
+    background: #111;
+    display: grid;
+    place-items: center;
+}
