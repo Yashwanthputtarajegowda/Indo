@@ -1,4 +1,6 @@
 import { renderBottomNavigation } from '../components/bottom-navigation.js';
+import { createMediaCard } from '../components/media-card.js';
+import { demoMedia } from '../data/demo-media.js';
 
 export function renderHomePage(container) {
   container.innerHTML = `
@@ -20,9 +22,14 @@ export function renderHomePage(container) {
       </section>
 
       <section class="featured-card">
+        <img
+          class="featured-card__image"
+          src="${demoMedia.videos[0].imageUrl}"
+          alt="${demoMedia.videos[0].title}"
+        />
         <div class="featured-overlay">
           <span class="content-badge">FEATURED</span>
-          <h2>Discover something new</h2>
+          <h2>${demoMedia.videos[0].title}</h2>
           <p>Movies, videos and reels made for Indo.</p>
           <button class="watch-button" type="button">▶ Watch now</button>
         </div>
@@ -34,25 +41,7 @@ export function renderHomePage(container) {
           <button type="button">See all</button>
         </div>
 
-        <div class="video-row">
-          <article class="video-card">
-            <div class="video-thumbnail thumbnail-one"><span>▶</span></div>
-            <h3>Trending video</h3>
-            <p>Indo creator</p>
-          </article>
-
-          <article class="video-card">
-            <div class="video-thumbnail thumbnail-two"><span>▶</span></div>
-            <h3>Popular today</h3>
-            <p>Indo creator</p>
-          </article>
-
-          <article class="video-card">
-            <div class="video-thumbnail thumbnail-three"><span>▶</span></div>
-            <h3>New release</h3>
-            <p>Indo creator</p>
-          </article>
-        </div>
+        <div class="video-row" id="trending-videos"></div>
       </section>
 
       <section class="content-section">
@@ -61,18 +50,35 @@ export function renderHomePage(container) {
           <button type="button">See all</button>
         </div>
 
-        <div class="reel-row">
-          <article class="reel-card reel-one"><span>▶</span></article>
-          <article class="reel-card reel-two"><span>▶</span></article>
-          <article class="reel-card reel-three"><span>▶</span></article>
-        </div>
+        <div class="reel-row" id="home-reels"></div>
       </section>
 
       <div id="bottom-navigation"></div>
     </main>
   `;
 
+  const videoContainer = document.getElementById('trending-videos');
+  const reelContainer = document.getElementById('home-reels');
   const navigation = document.getElementById('bottom-navigation');
+
+  if (videoContainer) {
+    demoMedia.videos.forEach((media) => {
+      videoContainer.appendChild(
+        createMediaCard(media)
+      );
+    });
+  }
+
+  if (reelContainer) {
+    demoMedia.reels.forEach((media) => {
+      reelContainer.appendChild(
+        createMediaCard({
+          ...media,
+          type: 'reel'
+        })
+      );
+    });
+  }
 
   if (navigation) {
     renderBottomNavigation(navigation);
