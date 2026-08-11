@@ -1,3 +1,6 @@
+import { ensureAuthenticated } from "../services/firebase-auth.js";
+import { claimUserId, checkUserId } from "../services/account-api.js";
+
 export function renderCreateAccountPage(container) {
   container.innerHTML = `
     <main class="create-account-page">
@@ -48,8 +51,9 @@ export function renderCreateAccountPage(container) {
   const form = container.querySelector("[data-create-account-form]");
   const error = container.querySelector("[data-create-account-error]");
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    error.textContent = "";
 
     const formData = new FormData(form);
     const userName = String(formData.get("userName") || "").trim();
@@ -60,13 +64,29 @@ export function renderCreateAccountPage(container) {
       return;
     }
 
-    window.dispatchEvent(
-      new CustomEvent("indo:create-account", {
-        detail: {
-          userName,
-          userId: `@${userId}`
-        }
-      })
-    );
+    try {
+      const availability = await checkUserId(userId);
+
+      if (!availability.available) {
+        error.textContent = "That User ID is already taken.";
+        return;
+      }
+
+      const user = await ensureAuthenticated();
+
+      const result = await claimUserId({
+        user,
+        userId,
+        name: userName
+      });
+
+      window.dispatchEvent(
+        new CustomEvent("indo:create-account", {
+          detail: result
+        })
+      );
+    } catch (accountError) {
+      error.textContent = accountError.message || "Could not create account.";
+    }
   });
 }
