@@ -1,6 +1,5 @@
-import { auth, db } from './firebase.js';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
-import { ref, get, set, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js';
+import { auth } from './firebase.js';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, deleteUser, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
 
 const API_BASE_URL = 'https://indo-backend-production-41b1.up.railway.app';
 const app = document.querySelector('#app');
@@ -27,12 +26,13 @@ async function liveUserIdCheck(event){
  if(!validUserId(username)){status.textContent='';return;}
  status.textContent='Checking...';
  userIdCheckTimer=setTimeout(async()=>{
-  try { const existing=await get(ref(db,`usernames/${username}`)); status.textContent=existing.exists()?'Already exists':'Available'; }
-  catch { status.textContent='Could not check'; }
+  try {
+   const response=await fetch(`${API_BASE_URL}/api/account/check-user-id`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:username})});
+   const data=await response.json();
+   status.textContent=data.ok?(data.available?'Available':'Already exists'):(data.error||'Could not check');
+  } catch { status.textContent='Could not check'; }
  },350);
 }
-
-async function reserveIndoId(){const counterRef=ref(db,'system/indoCounter');const result=await runTransaction(counterRef,current=>(Number(current)||1165)+1);if(!result.committed)throw new Error('Could not generate Indo ID. Please try again.');return `INDO-${String(result.snapshot.val()).padStart(6,'0')}`;}
 
 async function createAccount(){
  const button=document.querySelector('#submit'); const name=document.querySelector('#name').value.trim(); const username=cleanUserId(document.querySelector('#username').value); const email=document.querySelector('#email').value.trim(); const password=document.querySelector('#password').value; const confirm=document.querySelector('#confirm').value; const privacy=document.querySelector('input[name="privacy"]:checked').value;
@@ -42,14 +42,28 @@ async function createAccount(){
  if(!email)return renderAuth('Please enter your email.', '', values);
  if(password.length<6)return renderAuth('Password must be at least 6 characters.', '', values);
  if(password!==confirm)return renderAuth('Passwords do not match.', '', values);
- button.disabled=true;button.textContent='Checking User ID...';
+ button.disabled=true;button.textContent='Creating...';
+ let createdUser=null;
  try{
-  const usernameRef=ref(db,`usernames/${username}`); const existing=await get(usernameRef); if(existing.exists()){renderAuth(`@${username} is already taken. Choose another User ID.`, '', values);return;}
-  button.textContent='Creating...'; const credential=await createUserWithEmailAndPassword(auth,email,password); const indoId=await reserveIndoId(); const user=credential.user;
-  await set(usernameRef,{uid:user.uid,username:`@${username}`}); await set(ref(db,`users/${user.uid}`),{uid:user.uid,indoId,name,username:`@${username}`,usernameKey:username,email,accountType:privacy,createdAt:serverTimestamp()});
-  await signOut(auth);authMode='login';renderAuth('',`Account created. Your Indo ID is ${indoId}. Please login.`);
- }catch(error){try{if(auth.currentUser)await signOut(auth);}catch{}renderAuth(firebaseMessage(error), '', values);}
+  const availability=await fetch(`${API_BASE_URL}/api/account/check-user-id`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:username})});
+  const availabilityData=await availability.json();
+  if(!availabilityData.ok) throw new Error(availabilityData.error||'Could not verify User ID.');
+  if(!availabilityData.available){renderAuth(`@${username} is already taken. Choose another User ID.`, '', values);return;}
+
+  const credential=await createUserWithEmailAndPassword(auth,email,password); createdUser=credential.user;
+  const token=await createdUser.getIdToken(true);
+  const response=await fetch(`${API_BASE_URL}/api/account/claim-user-id`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({userId:username,name,accountType:privacy})});
+  const data=await response.json();
+  if(!response.ok||!data.ok) throw new Error(data.error||'Could not finish account creation.');
+
+  await signOut(auth);authMode='login';renderAuth('',`Account created. Your Indo ID is ${data.indoId}. Please login.`);
+ }catch(error){
+  try { if(createdUser && auth.currentUser?.uid===createdUser.uid) await deleteUser(createdUser); } catch {}
+  try { if(auth.currentUser) await signOut(auth); } catch {}
+  renderAuth(error.message || firebaseMessage(error), '', values);
+ }
 }
+
 async function login(){const button=document.querySelector('#submit');const email=document.querySelector('#email').value.trim();const password=document.querySelector('#password').value;if(!email||!password)return renderAuth('Enter your email and password.');button.disabled=true;button.textContent='Logging in...';try{await signInWithEmailAndPassword(auth,email,password);}catch(error){renderAuth(firebaseMessage(error));}}
 function showLoggedIn(user){app.innerHTML=`<main class="auth-page"><section class="auth-card"><div class="brand">Indo</div><h1>Logged in</h1><p class="muted">${user.email}</p><p class="success">Firebase authentication and Railway backend are connected.</p><button id="logout" class="primary">Logout</button></section></main>`;document.querySelector('#logout').onclick=async()=>{await signOut(auth);authMode='login';renderAuth();};}
 (async()=>{await checkBackend();onAuthStateChanged(auth,user=>user?showLoggedIn(user):renderAuth());})();
