@@ -1,4 +1,6 @@
-export function renderEditAccountPage(container, profile = {}) {
+import { getProfile, updateProfile } from "../services/profile-state.js";
+
+export function renderEditAccountPage(container, profile = getProfile()) {
   const userName = profile.userName || "Indo User";
   const userId = String(profile.userId || "@indo_user").replace(/^@+/, "");
   const bio = profile.bio || "";
@@ -7,9 +9,7 @@ export function renderEditAccountPage(container, profile = {}) {
     <main class="edit-account-page">
       <section class="edit-account-card">
         <header class="edit-account-header">
-          <button class="edit-account-back" type="button" data-edit-account-back aria-label="Back">
-            ←
-          </button>
+          <button class="edit-account-back" type="button" data-edit-account-back aria-label="Back">←</button>
           <h1 class="edit-account-title">Edit Account</h1>
         </header>
 
@@ -46,11 +46,7 @@ export function renderEditAccountPage(container, profile = {}) {
   const error = container.querySelector("[data-edit-account-error]");
 
   container.querySelector("[data-edit-account-back]").addEventListener("click", () => {
-    window.dispatchEvent(
-      new CustomEvent("indo:navigate", {
-        detail: { page: "profile" }
-      })
-    );
+    window.dispatchEvent(new CustomEvent("indo:navigate", { detail: { page: "profile" } }));
   });
 
   form.addEventListener("submit", (event) => {
@@ -70,12 +66,9 @@ export function renderEditAccountPage(container, profile = {}) {
       return;
     }
 
-    window.dispatchEvent(
-      new CustomEvent("indo:account-updated", {
-        detail: nextProfile
-      })
-    );
+    const savedProfile = updateProfile(nextProfile);
 
+    window.dispatchEvent(new CustomEvent("indo:account-updated", { detail: savedProfile }));
     status.textContent = "Account updated successfully.";
   });
 }
