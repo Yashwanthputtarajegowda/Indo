@@ -1,45 +1,43 @@
-const BACKEND_URL = "http://localhost:3001";
+const BACKEND_URL = globalThis.INDO_API_BASE_URL || "/api";
 
-export async function checkUserIdAvailability(userId) {
-  const response = await fetch(
-    `${BACKEND_URL}/api/account/check-user-id`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        userId
-      })
-    }
-  );
+export async function checkUserId(userId) {
+  const response = await fetch(`${BACKEND_URL}/account/check-user-id`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ userId })
+  });
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(data.error || "Could not check User ID.");
   }
 
-  return data.available === true;
+  return data;
 }
 
-export async function claimUserId({ idToken, userId, name }) {
-  const response = await fetch(
-    `${BACKEND_URL}/api/account/claim-user-id`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${idToken}`
-      },
-      body: JSON.stringify({
-        userId,
-        name
-      })
-    }
-  );
+export async function claimUserId({ user, userId, name, accountType = "public" }) {
+  if (!user) {
+    throw new Error("Authentication required.");
+  }
 
-  const data = await response.json();
+  const idToken = await user.getIdToken();
+  const response = await fetch(`${BACKEND_URL}/account/claim-user-id`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${idToken}`
+    },
+    body: JSON.stringify({
+      userId,
+      name,
+      accountType
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(data.error || "Could not create account profile.");
