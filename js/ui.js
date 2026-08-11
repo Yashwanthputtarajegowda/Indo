@@ -12,23 +12,38 @@ const users = [
 function nav() {
     return `
         <nav class="bottom-nav home-nav">
-            <button class="nav-btn" data-go="home">
+            <button
+                class="nav-btn"
+                data-go="home"
+                type="button"
+            >
                 ⌂
                 <span>Home</span>
             </button>
-            <button class="nav-btn" data-go="messages">
+
+            <button
+                class="nav-btn"
+                data-go="messages"
+                type="button"
+            >
                 ✉
                 <span>Messages</span>
             </button>
-            <button class="nav-btn" data-go="reels">
+
+            <button
+                class="nav-btn"
+                data-go="reels"
+                type="button"
+            >
                 ▶
                 <span>Reels</span>
             </button>
-            <button class="nav-btn" data-go="videos">
-                ▣
-                <span>Videos</span>
-            </button>
-            <button class="nav-btn" data-go="profile">
+
+            <button
+                class="nav-btn"
+                data-go="profile"
+                type="button"
+            >
                 ◎
                 <span>Profile</span>
             </button>
@@ -40,8 +55,17 @@ function search() {
     app.innerHTML = `
         <main class="search-page">
             <header class="topbar home-topbar">
-                <div class="indo-logo">Indo</div>
-                <button class="icon-btn" data-go="home">×</button>
+                <div class="indo-logo">
+                    Indo
+                </div>
+
+                <button
+                    class="icon-btn"
+                    data-go="home"
+                    type="button"
+                >
+                    ×
+                </button>
             </header>
 
             <div class="search-box">
@@ -84,12 +108,21 @@ function search() {
 function userTemplate(user) {
     return `
         <div class="search-user">
-            <span class="mini-avatar">${user[0]}</span>
+            <span class="mini-avatar">
+                ${user[0]}
+            </span>
+
             <div>
                 <strong>${user[1]}</strong>
                 <small>${user[2]}</small>
             </div>
-            <button class="follow">Follow</button>
+
+            <button
+                class="follow"
+                type="button"
+            >
+                Follow
+            </button>
         </div>
     `;
 }
@@ -98,12 +131,24 @@ function profile() {
     app.innerHTML = `
         <main class="profile-page">
             <header class="topbar home-topbar">
-                <div class="indo-logo">Indo</div>
-                <button class="icon-btn" data-go="home">←</button>
+                <div class="indo-logo">
+                    Indo
+                </div>
+
+                <button
+                    class="icon-btn"
+                    data-go="home"
+                    type="button"
+                >
+                    ←
+                </button>
             </header>
 
             <section class="profile-view">
-                <div class="profile-avatar">U</div>
+                <div class="profile-avatar">
+                    U
+                </div>
+
                 <h2>Your Indo Profile</h2>
                 <p class="muted">@your_id</p>
 
@@ -112,17 +157,24 @@ function profile() {
                         <strong>12</strong>
                         <span>Posts</span>
                     </div>
+
                     <div>
                         <strong>248</strong>
                         <span>Followers</span>
                     </div>
+
                     <div>
                         <strong>180</strong>
                         <span>Following</span>
                     </div>
                 </div>
 
-                <button class="primary">Edit Profile</button>
+                <button
+                    class="primary"
+                    type="button"
+                >
+                    Edit Profile
+                </button>
             </section>
 
             ${nav()}
@@ -130,71 +182,61 @@ function profile() {
     `;
 }
 
-function videos() {
-    app.innerHTML = `
-        <main class="home-page">
-            <header class="home-topbar">
-                <div class="indo-logo">Indo</div>
-                <h3>Videos</h3>
-                <button class="icon-btn" data-go="search">⌕</button>
-            </header>
+function openMessages() {
+    location.href = './pages/messages.html';
+}
 
-            <section class="home-content">
-                <div class="feed-list">
-                    <article class="social-card">
-                        <div
-                            class="media-placeholder"
-                            style="aspect-ratio: 16 / 9"
-                        >
-                            VIDEO
-                        </div>
-                        <div style="padding: 12px; font-weight: 700">
-                            Your video feed
-                        </div>
-                    </article>
-                </div>
-            </section>
+function openReels() {
+    location.href = './reels.html';
+}
 
-            ${nav()}
-        </main>
-    `;
+function openProfile() {
+    location.href = './pages/profile.html';
+}
+
+function openHome() {
+    location.href = './';
 }
 
 document.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-go]');
+    const button = event.target.closest('.nav-btn, .nav-button');
 
     if (!button) {
         return;
     }
 
-    const destination = button.dataset.go;
+    const destination = button.dataset.go ||
+        button.dataset.page;
 
     if (destination === 'home') {
-        location.href = './';
+        openHome();
+        return;
+    }
+
+    if (destination === 'messages') {
+        openMessages();
+        return;
     }
 
     if (destination === 'reels') {
-        location.href = './reels.html';
-    }
-
-    if (destination === 'search') {
-        search();
+        openReels();
+        return;
     }
 
     if (destination === 'profile') {
-        profile();
-    }
-
-    if (destination === 'videos') {
-        videos();
+        openProfile();
     }
 });
 
 document.addEventListener('click', (event) => {
-    const button = event.target.closest('[aria-label="Search"]');
+    const searchButton = event.target.closest(
+        '[aria-label="Search"]'
+    );
 
-    if (button) {
-        event.preventDefault();
-        search();
+    if (!searchButton) {
+        return;
     }
+
+    event.preventDefault();
+    search();
 });
