@@ -36,3 +36,42 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+.indo-app {
+  min-height: 100vh;
+  padding-bottom: 76px;
+}
+
+.bottom-navigation {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  min-height: 64px;
+  padding: 8px 10px;
+  background: #111116;
+  border-top: 1px solid #292930;
+}
+
+.bottom-navigation button {
+  flex: 1;
+  min-height: 48px;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+}
+
+.bottom-navigation button[data-route="create"] {
+  flex: 0 0 56px;
+  width: 56px;
+  min-height: 56px;
+  margin: 0 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #0b0b0d;
+  font-size: 22px;
+}
