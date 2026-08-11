@@ -1,1 +1,22 @@
-body{margin:0;background:#fff;color:#111;font-family:system-ui,sans-serif}main{max-width:680px;margin:auto;padding:20px}h1{text-align:center;color:#7c3aed}#profile{padding:30px;text-align:center}
+body {
+    margin: 0;
+    background: #fff;
+    color: #111;
+    font-family: system-ui, sans-serif;
+}
+
+main {
+    max-width: 680px;
+    margin: auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #7c3aed;
+}
+
+#profile {
+    padding: 30px;
+    text-align: center;
+}
