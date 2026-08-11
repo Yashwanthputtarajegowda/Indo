@@ -1,5 +1,6 @@
 import { ensureAuthenticated } from "../services/firebase-auth.js";
 import { claimUserId, checkUserId } from "../services/account-api.js";
+import { updateProfile } from "../services/profile-state.js";
 
 export function renderCreateAccountPage(container) {
   container.innerHTML = `
@@ -29,7 +30,7 @@ export function renderCreateAccountPage(container) {
                 name="userId"
                 type="text"
                 autocomplete="username"
-                pattern="[A-Za-z0-9._]+"
+                pattern="[A-Za-z0-9._-]+"
                 required
               />
             </div>
@@ -37,10 +38,7 @@ export function renderCreateAccountPage(container) {
 
           <div class="create-account-error" data-create-account-error></div>
 
-          <button
-            class="create-account-submit"
-            type="submit"
-          >
+          <button class="create-account-submit" type="submit">
             Continue
           </button>
         </form>
@@ -57,7 +55,7 @@ export function renderCreateAccountPage(container) {
 
     const formData = new FormData(form);
     const userName = String(formData.get("userName") || "").trim();
-    const userId = String(formData.get("userId") || "").trim();
+    const userId = String(formData.get("userId") || "").trim().replace(/^@+/, "");
 
     if (!userName || !userId) {
       error.textContent = "Enter your User Name and User ID.";
@@ -73,11 +71,15 @@ export function renderCreateAccountPage(container) {
       }
 
       const user = await ensureAuthenticated();
-
       const result = await claimUserId({
         user,
         userId,
         name: userName
+      });
+
+      updateProfile({
+        userName,
+        userId: result.username || `@${userId}`
       });
 
       window.dispatchEvent(
