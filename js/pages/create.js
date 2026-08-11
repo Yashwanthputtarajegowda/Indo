@@ -1,0 +1,1 @@
+document.querySelector('#postButton').onclick=()=>alert('Create Post');document.querySelector('#storyButton').onclick=()=>alert('Create Story');document.querySelector('#reelButton').onclick=()=>alert('Create Reel');
