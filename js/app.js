@@ -14,14 +14,47 @@ function showMessage(message, isError = false) {
     authMessage.classList.toggle('error', isError);
 }
 
+function getCredentials() {
+    return {
+        email: document.querySelector('#email')?.value.trim() || '',
+        password: document.querySelector('#password')?.value || ''
+    };
+}
+
+function validateCredentials(email, password) {
+    if (!email) return 'Enter your email address.';
+    if (!password) return 'Enter your password.';
+    if (password.length < 6) return 'Password must be at least 6 characters.';
+    return '';
+}
+
+function firebaseError(error, action) {
+    switch (error?.code) {
+        case 'auth/email-already-in-use':
+            return 'This email already has an Indo account. Please sign in.';
+        case 'auth/invalid-email':
+            return 'Please enter a valid email address.';
+        case 'auth/weak-password':
+            return 'Password must be at least 6 characters.';
+        case 'auth/operation-not-allowed':
+            return 'Email sign-up is disabled in Firebase. Enable Email/Password in Firebase Authentication.';
+        case 'auth/network-request-failed':
+            return 'Network error. Check your internet connection and try again.';
+        case 'auth/invalid-credential':
+            return 'Email or password is incorrect.';
+        default:
+            console.error(`Indo ${action} error:`, error);
+            return `Unable to ${action}. Please try again.`;
+    }
+}
+
 loginForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const email = document.querySelector('#email')?.value.trim();
-    const password = document.querySelector('#password')?.value;
-
-    if (!email || !password) {
-        showMessage('Enter your email and password.', true);
+    const { email, password } = getCredentials();
+    const validationError = validateCredentials(email, password);
+    if (validationError) {
+        showMessage(validationError, true);
         return;
     }
 
@@ -31,23 +64,19 @@ loginForm?.addEventListener('submit', async (event) => {
 
     try {
         await signInWithEmailAndPassword(auth, email, password);
-        showMessage('Login successful. Indo is ready.');
+        showMessage('Login successful. Welcome to Indo.');
     } catch (error) {
-        const message = error?.code === 'auth/invalid-credential'
-            ? 'Email or password is incorrect.'
-            : error?.message || 'Unable to sign in.';
-        showMessage(message, true);
+        showMessage(firebaseError(error, 'sign in'), true);
     } finally {
         if (button) button.disabled = false;
     }
 });
 
 createAccount?.addEventListener('click', async () => {
-    const email = document.querySelector('#email')?.value.trim();
-    const password = document.querySelector('#password')?.value;
-
-    if (!email || !password) {
-        showMessage('Enter email and password first.', true);
+    const { email, password } = getCredentials();
+    const validationError = validateCredentials(email, password);
+    if (validationError) {
+        showMessage(validationError, true);
         return;
     }
 
@@ -58,10 +87,7 @@ createAccount?.addEventListener('click', async () => {
         await createUserWithEmailAndPassword(auth, email, password);
         showMessage('Account created successfully. Welcome to Indo.');
     } catch (error) {
-        const message = error?.code === 'auth/email-already-in-use'
-            ? 'This email already has an Indo account. Sign in instead.'
-            : error?.message || 'Unable to create the account.';
-        showMessage(message, true);
+        showMessage(firebaseError(error, 'create account'), true);
     } finally {
         createAccount.disabled = false;
     }
