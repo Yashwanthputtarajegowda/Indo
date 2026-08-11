@@ -17,7 +17,7 @@ window.addEventListener("indo:auth-action", (event) => {
 });
 
 window.addEventListener("indo:navigate", (event) => {
-  navigate(app, event.detail.page);
+  navigate(app, event.detail.page, event.detail.data || {});
 });
 
 window.addEventListener("indo:login", () => {
@@ -41,12 +41,7 @@ window.addEventListener("indo:message-open", (event) => {
 });
 
 window.addEventListener("indo:new-message", () => {
-  navigate(app, "chat", {
-    thread: {
-      userId: "@new_user",
-      preview: "Start a new conversation"
-    }
-  });
+  navigate(app, "new-message");
 });
 
 window.addEventListener("indo:profile-updated", () => {
