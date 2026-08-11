@@ -1,3 +1,8 @@
+import {
+  appendConversationMessage,
+  getConversationMessages
+} from "../services/chat-store.js";
+
 const demoMessages = [
   { type: "incoming", text: "Welcome to Indo chat." },
   { type: "outgoing", text: "Hi 👋" }
@@ -5,6 +10,8 @@ const demoMessages = [
 
 export function renderChatPage(container, conversation = {}) {
   const userId = conversation.userId || "@indo_creator";
+  const storedMessages = getConversationMessages(userId);
+  const messagesToRender = storedMessages.length ? storedMessages : demoMessages;
 
   container.innerHTML = `
     <main class="chat-page">
@@ -14,7 +21,7 @@ export function renderChatPage(container, conversation = {}) {
       </header>
 
       <section class="chat-messages" data-chat-messages aria-label="Messages">
-        ${demoMessages.map((message) => `
+        ${messagesToRender.map((message) => `
           <div class="chat-bubble ${message.type}">${message.text}</div>
         `).join("")}
       </section>
@@ -48,9 +55,14 @@ export function renderChatPage(container, conversation = {}) {
 
     if (!text) return;
 
+    const message = appendConversationMessage(userId, {
+      type: "outgoing",
+      text
+    });
+
     const bubble = document.createElement("div");
     bubble.className = "chat-bubble outgoing";
-    bubble.textContent = text;
+    bubble.textContent = message.text;
     messages.appendChild(bubble);
     input.value = "";
     input.focus();
