@@ -32,13 +32,11 @@ window.addEventListener("indo:navigate", (event) => {
   navigate(app, event.detail.page, event.detail.data || {});
 });
 
-window.addEventListener("indo:login", async () => {
-  await hydrateProfile(event?.detail?.user || null);
+window.addEventListener("indo:login", () => {
   navigate(app, "home");
 });
 
-window.addEventListener("indo:create-account", async () => {
-  await hydrateProfile(event?.detail?.user || null);
+window.addEventListener("indo:create-account", () => {
   navigate(app, "home");
 });
 
