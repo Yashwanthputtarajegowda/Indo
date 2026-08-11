@@ -1,0 +1,1 @@
+console.log('Indo Home page loaded');
