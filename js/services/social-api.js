@@ -35,3 +35,18 @@ export function unfollowUser(targetUid) {
 export function getFollowStatus(targetUid) {
   return authRequest(`/social/follow-status/${encodeURIComponent(targetUid)}`);
 }
+
+export async function getPublicProfile(userId) {
+  const normalized = String(userId || "").trim().replace(/^@+/, "").toLowerCase();
+  if (!normalized) throw new Error("User ID is required.");
+  const response = await fetch(`${API_BASE_URL}/account/check-user-id`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: normalized })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.exists || !data.user) {
+    throw new Error(data.error || `@${normalized} was not found.`);
+  }
+  return data.user;
+}
