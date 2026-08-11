@@ -18,7 +18,7 @@ body {
     width: min(430px, 100vw);
     min-height: 100vh;
     margin: 0 auto;
-    padding-bottom: 68px;
+    padding-bottom: 64px;
     background: #fff;
 }
 
@@ -32,7 +32,7 @@ body {
 
 .page-header h1 {
     margin: 0;
-    color: #111;
+    color: #7c3aed;
     font-size: 22px;
 }
 
@@ -68,6 +68,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 3px;
+    font: inherit;
     cursor: pointer;
 }
 
@@ -76,18 +77,11 @@ body {
 }
 
 .nav-icon {
-    font-size: 21px;
+    font-size: 22px;
     line-height: 1;
 }
 
 .nav-button span:last-child {
     font-size: 10px;
     line-height: 1;
-}
-
-@media (min-width: 700px) {
-    .profile-page,
-    .bottom-nav {
-        width: 430px;
-    }
 }
