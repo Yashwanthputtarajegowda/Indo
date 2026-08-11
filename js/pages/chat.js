@@ -7,20 +7,16 @@ const demoMessages = [
 
 export function renderChatPage(container, conversation = {}) {
   const userId = conversation.userId || "@indo_creator";
+  const recipientUid = conversation.uid || "";
+  const recipientName = conversation.name || userId;
 
   container.innerHTML = `
     <main class="chat-page">
       <header class="chat-header">
         <button class="chat-back" type="button" data-chat-back aria-label="Back">←</button>
-        <h1 class="chat-user">${userId}</h1>
+        <div class="chat-user-heading"><h1 class="chat-user">${userId}</h1><small>${recipientName}</small></div>
       </header>
-
-      <section class="chat-messages" data-chat-messages aria-label="Messages">
-        ${demoMessages.map((message) => `
-          <div class="chat-bubble ${message.type}">${message.text}</div>
-        `).join("")}
-      </section>
-
+      <section class="chat-messages" data-chat-messages aria-label="Messages"></section>
       <form class="chat-compose" data-chat-form>
         <input class="chat-input" name="message" type="text" maxlength="2000" autocomplete="off" placeholder="Message..." required />
         <button class="chat-send" type="submit">Send</button>
@@ -40,12 +36,14 @@ export function renderChatPage(container, conversation = {}) {
     messages.scrollTop = messages.scrollHeight;
   };
 
-  try {
-    unsubscribe = watchConversation(userId, (items) => {
-      renderMessages(items.length ? items : demoMessages);
-    });
-  } catch (error) {
-    console.warn("Indo realtime chat setup failed:", error.message);
+  if (recipientUid) {
+    try {
+      unsubscribe = watchConversation(recipientUid, (items) => renderMessages(items.length ? items : []));
+    } catch (error) {
+      console.warn("Indo realtime chat setup failed:", error.message);
+    }
+  } else {
+    renderMessages(demoMessages);
   }
 
   container.querySelector("[data-chat-back]").addEventListener("click", () => {
@@ -56,13 +54,12 @@ export function renderChatPage(container, conversation = {}) {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const text = input.value.trim();
-    if (!text) return;
+    if (!text || !recipientUid) return;
 
     const sendButton = form.querySelector(".chat-send");
     sendButton.disabled = true;
-
     try {
-      await sendConversationMessage(userId, text);
+      await sendConversationMessage({ otherUid: recipientUid, otherUserId: userId, otherName: recipientName, text });
       input.value = "";
       input.focus();
     } catch (error) {
