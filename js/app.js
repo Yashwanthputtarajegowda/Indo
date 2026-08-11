@@ -6,6 +6,7 @@ const API_BASE_URL = 'https://indo-backend-production-41b1.up.railway.app';
 const app = document.querySelector('#app');
 let authMode = 'login';
 let backendOnline = false;
+let userIdCheckTimer;
 
 async function checkBackend() { try { const response = await fetch(`${API_BASE_URL}/api/health`, { cache:'no-store' }); backendOnline = response.ok; } catch { backendOnline = false; } }
 const cleanUserId = value => value.trim().toLowerCase().replace(/^@/, '');
@@ -14,9 +15,21 @@ const firebaseMessage = error => ({'auth/email-already-in-use':'This email is al
 
 function renderAuth(error='', success='', values={}) {
   const signup=authMode==='signup';
-  app.innerHTML=`<main class="auth-page"><section class="auth-card"><div class="brand">Indo</div><h1>${signup?'Create your account':'Welcome back'}</h1><p class="muted">${signup?'Create your real Indo account.':'Login with your Indo account.'}</p><div class="muted small">Backend: ${backendOnline?'Connected':'Unavailable'}</div>${error?`<div class="error">${error}</div>`:''}${success?`<div class="success">${success}</div>`:''}${signup?`<div class="field"><label>User name</label><input id="name" maxlength="60" value="${values.name||''}" placeholder="Your name" autocomplete="name"></div><div class="field"><label>User ID</label><div class="prefix-wrap"><span>@</span><input id="username" maxlength="50" value="${values.username||''}" placeholder="Choose any User ID" autocomplete="username"></div><div class="muted small">Your User ID is unique. If it already exists, you must choose another.</div></div>`:''}<div class="field"><label>Email</label><input id="email" type="email" value="${values.email||''}" placeholder="you@example.com" autocomplete="email"></div><div class="field"><label>Password</label><input id="password" type="password" placeholder="Minimum 6 characters" autocomplete="current-password"></div>${signup?`<div class="field"><label>Confirm password</label><input id="confirm" type="password" placeholder="Repeat password" autocomplete="new-password"></div><div class="field"><label>Account type</label><div class="choice-row"><label class="choice"><input type="radio" name="privacy" value="public" checked> Public</label><label class="choice"><input type="radio" name="privacy" value="private"> Private</label></div></div>`:''}<button id="submit" class="primary">${signup?'Create Account':'Login'}</button><button id="switch" class="link">${signup?'Already have an account? Login':'New to Indo? Create Account'}</button></section></main>`;
+  app.innerHTML=`<main class="auth-page"><section class="auth-card"><div class="brand">Indo</div><h1>${signup?'Create your account':'Welcome back'}</h1><p class="muted">${signup?'Create your real Indo account.':'Login with your Indo account.'}</p><div class="muted small">Backend: ${backendOnline?'Connected':'Unavailable'}</div>${error?`<div class="error">${error}</div>`:''}${success?`<div class="success">${success}</div>`:''}${signup?`<div class="field"><label>User name</label><input id="name" maxlength="60" value="${values.name||''}" placeholder="Your name" autocomplete="name"></div><div class="field"><label>User ID</label><div class="prefix-wrap"><span>@</span><input id="username" maxlength="50" value="${values.username||''}" placeholder="Choose any User ID" autocomplete="username"><span id="userIdStatus" class="muted small"></span></div><div class="muted small">Type any User ID. We'll check availability as you type.</div></div>`:''}<div class="field"><label>Email</label><input id="email" type="email" value="${values.email||''}" placeholder="you@example.com" autocomplete="email"></div><div class="field"><label>Password</label><input id="password" type="password" placeholder="Minimum 6 characters" autocomplete="current-password"></div>${signup?`<div class="field"><label>Confirm password</label><input id="confirm" type="password" placeholder="Repeat password" autocomplete="new-password"></div><div class="field"><label>Account type</label><div class="choice-row"><label class="choice"><input type="radio" name="privacy" value="public" checked> Public</label><label class="choice"><input type="radio" name="privacy" value="private"> Private</label></div></div>`:''}<button id="submit" class="primary">${signup?'Create Account':'Login'}</button><button id="switch" class="link">${signup?'Already have an account? Login':'New to Indo? Create Account'}</button></section></main>`;
   document.querySelector('#switch').onclick=()=>{authMode=signup?'login':'signup';renderAuth();};
   document.querySelector('#submit').onclick=signup?createAccount:login;
+  if(signup) document.querySelector('#username').addEventListener('input', liveUserIdCheck);
+}
+
+async function liveUserIdCheck(event){
+ const input=event.target; const status=document.querySelector('#userIdStatus'); const username=cleanUserId(input.value); clearTimeout(userIdCheckTimer);
+ if(!username){status.textContent='';return;}
+ if(!validUserId(username)){status.textContent='';return;}
+ status.textContent='Checking...';
+ userIdCheckTimer=setTimeout(async()=>{
+  try { const existing=await get(ref(db,`usernames/${username}`)); status.textContent=existing.exists()?'Already exists':'Available'; }
+  catch { status.textContent='Could not check'; }
+ },350);
 }
 
 async function reserveIndoId(){const counterRef=ref(db,'system/indoCounter');const result=await runTransaction(counterRef,current=>(Number(current)||1165)+1);if(!result.committed)throw new Error('Could not generate Indo ID. Please try again.');return `INDO-${String(result.snapshot.val()).padStart(6,'0')}`;}
