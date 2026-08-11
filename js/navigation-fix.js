@@ -1,34 +1,40 @@
 const NAV_ITEMS = [
     ['Home', '⌂', './index.html'],
     ['Messages', '✉', './pages/messages.html'],
-    ['Reels', '▶', './pages/reels.html'],
+    ['Reels', '▶', './reels.html'],
     ['Profile', '◎', './pages/profile.html']
 ];
 
-function normalizeNavigation() {
+function buildNavigation() {
     const nav = document.querySelector('.home-nav');
-    if (!nav || nav.dataset.fixed === 'true') return;
+    if (!nav) return;
 
-    const buttons = nav.querySelectorAll('.nav-btn, .nav-button');
-    if (buttons.length === NAV_ITEMS.length &&
-        [...buttons].every((button, i) => button.textContent.includes(NAV_ITEMS[i][0]))) {
-        nav.dataset.fixed = 'true';
-        return;
-    }
+    nav.className = 'bottom-nav home-nav';
+    nav.innerHTML = '';
 
-    nav.dataset.fixed = 'true';
-    nav.replaceChildren(...NAV_ITEMS.map(([label, icon, url]) => {
+    NAV_ITEMS.forEach(([label, icon, url]) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'nav-btn';
+        button.dataset.go = label.toLowerCase();
         button.innerHTML = `<span class="nav-icon">${icon}</span><span>${label}</span>`;
-        button.onclick = () => { window.location.href = url; };
-        return button;
-    }));
+        button.addEventListener('click', () => {
+            window.location.href = url;
+        });
+        nav.appendChild(button);
+    });
 }
 
 const app = document.querySelector('#app');
 if (app) {
-    new MutationObserver(normalizeNavigation).observe(app, { childList: true, subtree: true });
-    normalizeNavigation();
+    const observer = new MutationObserver(() => {
+        const nav = document.querySelector('.home-nav');
+        if (nav && nav.dataset.navigationReady !== 'true') {
+            nav.dataset.navigationReady = 'true';
+            buildNavigation();
+        }
+    });
+
+    observer.observe(app, { childList: true, subtree: true });
+    buildNavigation();
 }
