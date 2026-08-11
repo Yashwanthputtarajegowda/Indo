@@ -1,0 +1,1 @@
+document.querySelector('#notifications').innerHTML='<p>No new notifications.</p>';
