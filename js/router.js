@@ -27,32 +27,26 @@ export function navigate(container, page, data = {}) {
       loadStyle("./css/auth-choice.css");
       renderAuthChoicePage(container);
       return;
-
     case "login":
       loadStyle("./css/login.css");
       renderLoginPage(container);
       return;
-
     case "create":
       loadStyle("./css/create-account.css");
       renderCreateAccountPage(container);
       return;
-
     case "reels":
       loadStyle("./css/reels.css");
       renderReelsPage(container);
       return;
-
     case "profile":
       loadStyle("./css/profile.css");
       renderProfilePage(container, getProfile());
       return;
-
     case "video-player":
       loadStyle("./css/video-player.css");
       renderVideoPlayerPage(container, data.video || {});
       return;
-
     case "home":
     default:
       loadStyle("./css/home.css");
