@@ -2,6 +2,17 @@ import { ensureAuthenticated } from "../services/firebase-auth.js";
 import { claimUserId, checkUserId } from "../services/account-api.js";
 import { updateProfile } from "../services/profile-state.js";
 
+function showCreateAccountError(element, message) {
+  const text = String(message || "Could not create account.");
+  element.textContent = text;
+  element.dataset.errorType =
+    text.includes("already has a User ID")
+      ? "existing-user-id"
+      : text.includes("already taken")
+        ? "user-id-taken"
+        : "general";
+}
+
 export function renderCreateAccountPage(container) {
   container.innerHTML = `
     <main class="create-account-page">
@@ -9,7 +20,7 @@ export function renderCreateAccountPage(container) {
         <h1>Create Account</h1>
         <p>Choose your name and your unique Indo ID.</p>
 
-        <form class="create-account-form" data-create-account-form>
+        <form class="create-account-form" data-create-account-form novalidate>
           <div class="create-account-field">
             <label for="create-user-name">User Name</label>
             <input
@@ -34,9 +45,12 @@ export function renderCreateAccountPage(container) {
                 required
               />
             </div>
+            <small class="create-account-hint" data-create-account-hint>
+              Your User ID starts with @ and is unique to this account.
+            </small>
           </div>
 
-          <div class="create-account-error" data-create-account-error></div>
+          <div class="create-account-error" data-create-account-error role="alert"></div>
 
           <button class="create-account-submit" type="submit">
             Continue
@@ -47,26 +61,43 @@ export function renderCreateAccountPage(container) {
   `;
 
   const form = container.querySelector("[data-create-account-form]");
+  const userNameInput = form.querySelector("[name='userName']");
+  const userIdInput = form.querySelector("[name='userId']");
   const error = container.querySelector("[data-create-account-error]");
+  const submit = form.querySelector(".create-account-submit");
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     error.textContent = "";
+    delete error.dataset.errorType;
 
-    const formData = new FormData(form);
-    const userName = String(formData.get("userName") || "").trim();
-    const userId = String(formData.get("userId") || "").trim().replace(/^@+/, "");
+    const userName = String(userNameInput.value || "").trim();
+    const userId = String(userIdInput.value || "").trim().replace(/^@+/, "");
 
     if (!userName || !userId) {
-      error.textContent = "Enter your User Name and User ID.";
+      showCreateAccountError(error, "Enter your User Name and User ID.");
       return;
     }
+
+    if (!/^[A-Za-z0-9._-]{1,50}$/.test(userId)) {
+      showCreateAccountError(
+        error,
+        "User ID can contain only letters, numbers, dots, underscores, and hyphens."
+      );
+      return;
+    }
+
+    submit.disabled = true;
 
     try {
       const availability = await checkUserId(userId);
 
       if (!availability.available) {
-        error.textContent = "That User ID is already taken.";
+        showCreateAccountError(
+          error,
+          "That User ID is already taken. Choose another @UserID."
+        );
+        userIdInput.focus();
         return;
       }
 
@@ -88,7 +119,12 @@ export function renderCreateAccountPage(container) {
         })
       );
     } catch (accountError) {
-      error.textContent = accountError.message || "Could not create account.";
+      showCreateAccountError(
+        error,
+        accountError.message || "Could not create account."
+      );
+    } finally {
+      submit.disabled = false;
     }
   });
 }
