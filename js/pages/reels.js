@@ -34,6 +34,10 @@ export function renderReelsPage(container) {
 
   container.innerHTML = `
     <main class="reels-page">
+      <header class="reels-header">
+        <h1>Reels</h1>
+        <button class="reels-upload-button" type="button" data-reels-upload aria-label="Upload reel">＋</button>
+      </header>
       <section class="reels-feed" data-reels-feed aria-label="Reels feed">
         ${reels.map(renderReel).join("")}
       </section>
@@ -58,6 +62,12 @@ export function renderReelsPage(container) {
   setupReelMenuButton(container);
 
   container.addEventListener("click", async (event) => {
+    const uploadButton = event.target.closest("[data-reels-upload]");
+    if (uploadButton) {
+      window.dispatchEvent(new CustomEvent("indo:navigate", { detail: { page: "upload-reel" } }));
+      return;
+    }
+
     const profileButton = event.target.closest("[data-reel-profile]");
     if (profileButton) {
       window.dispatchEvent(new CustomEvent("indo:profile-open", { detail: { userId: profileButton.dataset.reelProfile } }));
