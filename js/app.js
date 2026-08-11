@@ -3,7 +3,7 @@ import { navigate } from "./router.js";
 import { watchAuthState } from "./services/firebase-auth.js";
 import { startActivityTracking } from "./services/activity.js";
 import { getMyProfile } from "./services/profile-api.js";
-import { profileFromBackend } from "./services/profile-state.js";
+import { profileFromBackend, clearProfile } from "./services/profile-state.js";
 
 const app = document.querySelector("#app");
 
@@ -13,6 +13,7 @@ flashStyles.href = "./css/flash.css";
 document.head.appendChild(flashStyles);
 
 const activityTracker = startActivityTracking();
+let authTransition = false;
 
 async function hydrateProfile(user) {
   if (!user) return;
@@ -62,17 +63,32 @@ window.addEventListener("indo:profile-updated", () => {
   }
 });
 
+window.addEventListener("indo:account-deleted", () => {
+  authTransition = true;
+  clearProfile();
+  renderFlashPage(app);
+  setTimeout(() => {
+    authTransition = false;
+    navigate(app, "auth");
+  }, 900);
+});
+
 watchAuthState(async (user) => {
   if (user) {
     activityTracker.start();
     await hydrateProfile(user);
   } else {
     activityTracker.stop();
+    if (!authTransition) {
+      navigate(app, "auth");
+    }
   }
 });
 
 renderFlashPage(app);
 
 setTimeout(() => {
-  navigate(app, "auth");
+  if (!authTransition) {
+    navigate(app, "auth");
+  }
 }, 1200);
