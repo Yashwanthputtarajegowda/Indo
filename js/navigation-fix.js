@@ -31,80 +31,68 @@ const NAV_ITEMS = [
     }
 ];
 
-function createNavigationButton(item) {
+function createNavigationButton(item, currentPage) {
     const button = document.createElement('button');
 
     button.type = 'button';
     button.className = 'nav-btn';
     button.innerHTML = `
-        <span class="nav-icon">
-            ${item.icon}
-        </span>
-        <span>
-            ${item.label}
-        </span>
+        <span class="nav-icon">${item.icon}</span>
+        <span>${item.label}</span>
     `;
 
-    button.addEventListener('click', item.action);
+    if (item.label === currentPage) {
+        button.classList.add('active');
+        button.setAttribute('aria-current', 'page');
+    }
 
+    button.addEventListener('click', item.action);
     return button;
 }
 
 function getCurrentPage() {
     const path = window.location.pathname;
 
-    if (path.endsWith('/messages.html')) {
-        return 'Messages';
-    }
-
-    if (path.endsWith('/reels.html')) {
-        return 'Reels';
-    }
-
-    if (path.endsWith('/profile.html')) {
-        return 'Profile';
-    }
-
+    if (path.endsWith('/messages.html')) return 'Messages';
+    if (path.endsWith('/reels.html')) return 'Reels';
+    if (path.endsWith('/profile.html')) return 'Profile';
     return 'Home';
 }
 
 function normalizeNavigation() {
     const nav = document.querySelector('.home-nav');
 
-    if (!nav) {
+    if (!nav || nav.dataset.navigationReady === 'true') {
         return;
     }
 
     const currentPage = getCurrentPage();
-
-    nav.innerHTML = '';
-
-    NAV_ITEMS.forEach((item) => {
-        const button = createNavigationButton(item);
-
-        if (item.label === currentPage) {
-            button.classList.add('active');
-            button.setAttribute('aria-current', 'page');
-        }
-
-        nav.appendChild(button);
+    const buttons = Array.from(nav.querySelectorAll('.nav-btn'));
+    const hasEmptyButton = buttons.some((button) => {
+        return !button.textContent.trim();
     });
+
+    const hasCorrectButtonCount = buttons.length === NAV_ITEMS.length;
+
+    if (!hasEmptyButton && hasCorrectButtonCount) {
+        nav.dataset.navigationReady = 'true';
+        return;
+    }
+
+    nav.replaceChildren(
+        ...NAV_ITEMS.map((item) => createNavigationButton(item, currentPage))
+    );
+
+    nav.dataset.navigationReady = 'true';
 }
 
 function startNavigationFix() {
     const app = document.querySelector(APP_SELECTOR);
 
-    if (!app) {
-        return;
-    }
+    if (!app) return;
 
     const observer = new MutationObserver(() => {
-        observer.disconnect();
         normalizeNavigation();
-        observer.observe(app, {
-            childList: true,
-            subtree: true
-        });
     });
 
     observer.observe(app, {
