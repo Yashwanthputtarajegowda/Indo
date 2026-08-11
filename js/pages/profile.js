@@ -1,20 +1,14 @@
 import { setupProfileMenuButton } from "../components/profile-menu-button.js";
+import { getProfile } from "../services/profile-state.js";
 
-const demoProfile = {
-  userName: "Indo User",
-  userId: "@indo_user",
-  following: 12,
-  followers: 48,
-  posts: 6
-};
+const demoTabs = ["Videos", "Reels", "Posts"];
 
-const demoTabs = [
-  "Videos",
-  "Reels",
-  "Posts"
-];
+export function renderProfilePage(container, profile = getProfile()) {
+  const resolvedProfile = {
+    ...getProfile(),
+    ...profile
+  };
 
-export function renderProfilePage(container, profile = demoProfile) {
   container.innerHTML = `
     <main class="profile-page">
       <header class="profile-header">
@@ -32,27 +26,28 @@ export function renderProfilePage(container, profile = demoProfile) {
 
       <section class="profile-summary">
         <div class="profile-avatar" aria-hidden="true">
-          ${profile.userName.slice(0, 1).toUpperCase()}
+          ${resolvedProfile.userName.slice(0, 1).toUpperCase()}
         </div>
 
         <div>
-          <h2 class="profile-user-name">${profile.userName}</h2>
-          <p class="profile-user-id">${profile.userId}</p>
+          <h2 class="profile-user-name">${resolvedProfile.userName}</h2>
+          <p class="profile-user-id">${resolvedProfile.userId}</p>
+          ${resolvedProfile.bio ? `<p class="profile-bio">${resolvedProfile.bio}</p>` : ""}
         </div>
 
         <div class="profile-stats">
           <button class="profile-stat" type="button" data-profile-stat="following">
-            <strong>${profile.following}</strong>
+            <strong>${resolvedProfile.following ?? 0}</strong>
             <span>Following</span>
           </button>
 
           <button class="profile-stat" type="button" data-profile-stat="followers">
-            <strong>${profile.followers}</strong>
+            <strong>${resolvedProfile.followers ?? 0}</strong>
             <span>Followers</span>
           </button>
 
           <button class="profile-stat" type="button" data-profile-stat="posts">
-            <strong>${profile.posts}</strong>
+            <strong>${resolvedProfile.posts ?? 0}</strong>
             <span>Posts</span>
           </button>
         </div>
@@ -71,30 +66,18 @@ export function renderProfilePage(container, profile = demoProfile) {
       </section>
 
       <section class="profile-content-grid" aria-label="Profile content">
-        ${Array.from({ length: profile.posts }).map((_, index) => `
-          <button
-            class="profile-post-card"
-            type="button"
-            data-profile-post="${index + 1}"
-          >
+        ${Array.from({ length: resolvedProfile.posts ?? 0 }).map((_, index) => `
+          <button class="profile-post-card" type="button" data-profile-post="${index + 1}">
             ${index + 1}
           </button>
         `).join("")}
       </section>
 
       <nav class="profile-bottom-nav" aria-label="Main navigation">
-        <button class="profile-nav-button" type="button" data-profile-nav="home">
-          Home
-        </button>
-        <button class="profile-nav-button" type="button" data-profile-nav="reels">
-          Reels
-        </button>
-        <button class="profile-nav-button" type="button" data-profile-nav="message">
-          Message
-        </button>
-        <button class="profile-nav-button is-active" type="button" data-profile-nav="profile">
-          Profile
-        </button>
+        <button class="profile-nav-button" type="button" data-profile-nav="home">Home</button>
+        <button class="profile-nav-button" type="button" data-profile-nav="reels">Reels</button>
+        <button class="profile-nav-button" type="button" data-profile-nav="message">Message</button>
+        <button class="profile-nav-button is-active" type="button" data-profile-nav="profile">Profile</button>
       </nav>
     </main>
   `;
@@ -105,41 +88,22 @@ export function renderProfilePage(container, profile = demoProfile) {
     const statButton = event.target.closest("[data-profile-stat]");
 
     if (statButton) {
-      window.dispatchEvent(
-        new CustomEvent("indo:profile-stat", {
-          detail: {
-            stat: statButton.dataset.profileStat
-          }
-        })
-      );
-
+      window.dispatchEvent(new CustomEvent("indo:profile-stat", { detail: { stat: statButton.dataset.profileStat } }));
       return;
     }
 
     const tabButton = event.target.closest("[data-profile-tab]");
 
     if (tabButton) {
-      container
-        .querySelectorAll("[data-profile-tab]")
-        .forEach((button) => {
-          button.classList.remove("is-active");
-        });
-
+      container.querySelectorAll("[data-profile-tab]").forEach((button) => button.classList.remove("is-active"));
       tabButton.classList.add("is-active");
-
       return;
     }
 
     const navButton = event.target.closest("[data-profile-nav]");
 
     if (navButton) {
-      window.dispatchEvent(
-        new CustomEvent("indo:navigate", {
-          detail: {
-            page: navButton.dataset.profileNav
-          }
-        })
-      );
+      window.dispatchEvent(new CustomEvent("indo:navigate", { detail: { page: navButton.dataset.profileNav } }));
     }
   });
 }
