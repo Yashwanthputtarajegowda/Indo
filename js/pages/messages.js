@@ -1,8 +1,8 @@
-import { watchConversation } from "../services/chat-realtime.js";
+import { watchUserConversations } from "../services/chat-realtime.js";
 
 const demoThreads = [
-  { userId: "@indo_creator", preview: "Welcome to Indo!", time: "Now" },
-  { userId: "@demo_user", preview: "Let's connect.", time: "5m" }
+  { uid: "demo-indo-creator", userId: "@indo_creator", name: "Indo Creator", preview: "Welcome to Indo!", time: "Now" },
+  { uid: "demo-user", userId: "@demo_user", name: "Demo User", preview: "Let's connect.", time: "5m" }
 ];
 
 function formatTime(timestamp) {
@@ -18,26 +18,13 @@ function formatTime(timestamp) {
 }
 
 export function renderMessagesPage(container) {
-  const threads = demoThreads.map((thread) => ({ ...thread }));
-
   container.innerHTML = `
     <main class="messages-page">
       <header class="messages-header">
         <h1 class="messages-title">Messages</h1>
         <button class="messages-new" type="button" data-message-new aria-label="New message">＋</button>
       </header>
-      <section class="messages-list" data-messages-list aria-label="Message conversations">
-        ${threads.map((thread, index) => `
-          <button class="message-thread" type="button" data-message-index="${index}">
-            <div class="message-avatar" aria-hidden="true">${thread.userId.replace('@','').slice(0,1).toUpperCase()}</div>
-            <div class="message-thread-info">
-              <p class="message-user">${thread.userId}</p>
-              <p class="message-preview">${thread.preview}</p>
-            </div>
-            <span class="message-time">${thread.time}</span>
-          </button>
-        `).join("")}
-      </section>
+      <section class="messages-list" data-messages-list aria-label="Message conversations"></section>
       <nav class="messages-bottom-nav" aria-label="Main navigation">
         <button class="messages-nav-button" type="button" data-message-nav="home">Home</button>
         <button class="messages-nav-button" type="button" data-message-nav="reels">Reels</button>
@@ -48,27 +35,24 @@ export function renderMessagesPage(container) {
   `;
 
   const list = container.querySelector("[data-messages-list]");
-  const unsubscribers = [];
+  let threads = [];
 
-  function refreshThread(index, items) {
-    const latest = items.at(-1);
-    const button = list.querySelector(`[data-message-index="${index}"]`);
-    if (!button || !latest) return;
-    const preview = button.querySelector(".message-preview");
-    const time = button.querySelector(".message-time");
-    if (preview) preview.textContent = String(latest.text || "");
-    if (time) time.textContent = formatTime(latest.createdAt);
-  }
+  const renderThreads = (items) => {
+    threads = items.length ? items : [];
+    list.innerHTML = threads.length ? threads.map((thread, index) => `
+      <button class="message-thread" type="button" data-message-index="${index}">
+        <div class="message-avatar" aria-hidden="true">${String(thread.otherUserId || "@?").replace('@','').slice(0,1).toUpperCase()}</div>
+        <div class="message-thread-info">
+          <p class="message-user">${thread.otherUserId || "@user"}</p>
+          <p class="message-preview">${thread.preview || ""}</p>
+        </div>
+        <span class="message-time">${formatTime(thread.updatedAt)}</span>
+      </button>
+    `).join("") : `<p class="messages-empty">No conversations yet.</p>`;
+  };
 
-  threads.forEach((thread, index) => {
-    try {
-      unsubscribers.push(
-        watchConversation(thread.userId, (items) => refreshThread(index, items))
-      );
-    } catch (error) {
-      console.warn("Indo message thread sync failed:", error.message);
-    }
-  });
+  const unsubscribe = watchUserConversations((items) => renderThreads(items));
+  renderThreads([]);
 
   container.addEventListener("click", (event) => {
     const thread = event.target.closest("[data-message-index]");
@@ -77,7 +61,9 @@ export function renderMessagesPage(container) {
 
     if (thread) {
       const selected = threads[Number(thread.dataset.messageIndex)];
-      window.dispatchEvent(new CustomEvent("indo:message-open", { detail: selected }));
+      window.dispatchEvent(new CustomEvent("indo:message-open", {
+        detail: { uid: selected.otherUid, userId: selected.otherUserId, name: selected.otherName }
+      }));
       return;
     }
     if (newMessage) {
@@ -89,5 +75,5 @@ export function renderMessagesPage(container) {
     }
   });
 
-  return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+  return () => unsubscribe?.();
 }
