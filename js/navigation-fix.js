@@ -99,7 +99,12 @@ function startNavigationFix() {
     }
 
     const observer = new MutationObserver(() => {
+        observer.disconnect();
         normalizeNavigation();
+        observer.observe(app, {
+            childList: true,
+            subtree: true
+        });
     });
 
     observer.observe(app, {
