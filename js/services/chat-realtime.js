@@ -1,12 +1,5 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  push,
-  onValue,
-  query,
-  limitToLast
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, query, limitToLast, set } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { auth } from "./firebase-auth.js";
 
 const firebaseConfig = {
@@ -22,55 +15,78 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-function conversationKey(userId) {
-  return String(userId || "").replace(/^@/, "").replace(/[^A-Za-z0-9._-]/g, "_");
+function safePart(value) {
+  return String(value || "").replace(/[^A-Za-z0-9_-]/g, "_");
 }
 
-export function watchConversation(userId, onMessages) {
+function conversationKey(otherUid) {
+  const currentUid = auth.currentUser?.uid;
+  if (!currentUid || !otherUid) return "";
+  return [currentUid, otherUid].map(safePart).sort().join("__");
+}
+
+async function writeConversationIndex(otherUid, otherUserId, otherName, preview) {
+  const currentUid = auth.currentUser?.uid;
+  if (!currentUid || !otherUid) return;
+
+  const key = conversationKey(otherUid);
+  await set(ref(database, `userConversations/${currentUid}/${key}`), {
+    conversationKey: key,
+    otherUid,
+    otherUserId,
+    otherName: otherName || otherUserId,
+    preview: preview || "",
+    updatedAt: Date.now()
+  });
+
+  await set(ref(database, `userConversations/${otherUid}/${key}`), {
+    conversationKey: key,
+    otherUid: currentUid,
+    otherUserId: "",
+    otherName: "",
+    preview: preview || "",
+    updatedAt: Date.now()
+  });
+}
+
+export function watchConversation(otherUid, onMessages) {
   const currentUser = auth.currentUser;
+  const key = conversationKey(otherUid);
+  if (!currentUser || !key) return () => {};
 
-  if (!currentUser) {
-    return () => {};
-  }
-
-  const messagesRef = query(
-    ref(database, `conversations/${conversationKey(userId)}/messages`),
-    limitToLast(100)
-  );
-
+  const messagesRef = query(ref(database, `conversations/${key}/messages`), limitToLast(100));
   return onValue(messagesRef, (snapshot) => {
     const raw = snapshot.val() || {};
-    const messages = Object.entries(raw).map(([id, message]) => ({
-      id,
-      ...message
-    }));
-
+    const messages = Object.entries(raw).map(([id, message]) => ({ id, ...message }));
     onMessages(messages);
   });
 }
 
-export async function sendConversationMessage(userId, text) {
+export function watchUserConversations(onConversations) {
   const currentUser = auth.currentUser;
+  if (!currentUser) return () => {};
 
-  if (!currentUser) {
-    throw new Error("Authentication required.");
-  }
+  return onValue(ref(database, `userConversations/${currentUser.uid}`), (snapshot) => {
+    const raw = snapshot.val() || {};
+    const items = Object.values(raw).sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
+    onConversations(items);
+  });
+}
+
+export async function sendConversationMessage({ otherUid, otherUserId, otherName, text }) {
+  const currentUser = auth.currentUser;
+  const key = conversationKey(otherUid);
+  if (!currentUser || !key) throw new Error("Authentication or recipient information is missing.");
 
   const cleanText = String(text || "").trim();
+  if (!cleanText) throw new Error("Message cannot be empty.");
 
-  if (!cleanText) {
-    throw new Error("Message cannot be empty.");
-  }
-
-  const messagesRef = ref(
-    database,
-    `conversations/${conversationKey(userId)}/messages`
-  );
-
-  await push(messagesRef, {
+  await push(ref(database, `conversations/${key}/messages`), {
     senderUid: currentUser.uid,
     type: "outgoing",
     text: cleanText,
     createdAt: Date.now()
   });
+
+  await writeConversationIndex(otherUid, otherUserId, otherName, cleanText);
 }
