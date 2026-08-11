@@ -66,7 +66,6 @@ button {
 
 .reel-media {
     width: 100%;
-    height: 100%;
     min-height: calc(100vh - 60px);
     display: grid;
     place-items: center;
@@ -83,12 +82,19 @@ button {
 .reel-overlay {
     position: absolute;
     left: 14px;
-    right: 14px;
+    right: 10px;
     bottom: 18px;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
+}
+
+.reel-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 2px;
 }
 
 .reel-user {
@@ -112,27 +118,62 @@ button {
     font-size: 14px;
 }
 
+.reel-song {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.song-disc {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    font-size: 13px;
+}
+
 .reel-actions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    align-items: center;
+    gap: 13px;
 }
 
 .reel-action {
-    min-width: 48px;
+    width: 52px;
+    min-height: 52px;
+    padding: 0;
     border: 0;
     background: transparent;
     color: #fff;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
 }
 
 .reel-action span {
-    font-size: 24px;
+    font-size: 27px;
+    line-height: 1;
+    font-weight: 400;
 }
 
 .reel-action small {
-    font-size: 9px;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.reel-action.active span {
+    font-weight: 800;
+}
+
+@media (min-width: 700px) {
+    .reels-page {
+        width: 430px;
+    }
 }
