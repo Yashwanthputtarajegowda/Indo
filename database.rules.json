@@ -1,0 +1,37 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "username": {
+          ".validate": "newData.isString() && newData.val().matches(/^@[a-z0-9._-]{1,50}$/)"
+        }
+      }
+    },
+    "usernames": {
+      "$usernameKey": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+    "system": {
+      ".read": false,
+      ".write": false
+    },
+    "conversations": {
+      "$conversationKey": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "messages": {
+          "$messageId": {
+            ".write": "auth != null && (!data.exists() || data.child('senderUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['senderUid','text','createdAt']) && newData.child('senderUid').isString() && newData.child('text').isString() && newData.child('createdAt').isNumber()"
+          }
+        }
+      }
+    }
+  }
+}
