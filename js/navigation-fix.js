@@ -62,28 +62,23 @@ function getCurrentPage() {
 function normalizeNavigation() {
     const nav = document.querySelector('.home-nav');
 
-    if (!nav || nav.dataset.navigationReady === 'true') {
-        return;
-    }
+    if (!nav) return;
 
     const currentPage = getCurrentPage();
     const buttons = Array.from(nav.querySelectorAll('.nav-btn'));
-    const hasEmptyButton = buttons.some((button) => {
-        return !button.textContent.trim();
-    });
 
-    const hasCorrectButtonCount = buttons.length === NAV_ITEMS.length;
+    const isCorrect = buttons.length === NAV_ITEMS.length &&
+        buttons.every((button, index) => {
+            return button.textContent.includes(NAV_ITEMS[index].label);
+        });
 
-    if (!hasEmptyButton && hasCorrectButtonCount) {
-        nav.dataset.navigationReady = 'true';
+    if (isCorrect) {
         return;
     }
 
     nav.replaceChildren(
         ...NAV_ITEMS.map((item) => createNavigationButton(item, currentPage))
     );
-
-    nav.dataset.navigationReady = 'true';
 }
 
 function startNavigationFix() {
@@ -91,8 +86,14 @@ function startNavigationFix() {
 
     if (!app) return;
 
+    let updating = false;
+
     const observer = new MutationObserver(() => {
+        if (updating) return;
+
+        updating = true;
         normalizeNavigation();
+        updating = false;
     });
 
     observer.observe(app, {
