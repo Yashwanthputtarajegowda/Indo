@@ -1,3 +1,5 @@
+import { setupProfileMenuButton } from "../components/profile-menu-button.js";
+
 const demoProfile = {
   userName: "Indo User",
   userId: "@indo_user",
@@ -96,6 +98,8 @@ export function renderProfilePage(container, profile = demoProfile) {
       </nav>
     </main>
   `;
+
+  setupProfileMenuButton(container);
 
   container.addEventListener("click", (event) => {
     const statButton = event.target.closest("[data-profile-stat]");
