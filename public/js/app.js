@@ -1,41 +1,19 @@
-import { auth } from './firebase.js';
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
+import { auth, db } from './firebase.js';
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
+import { ref, set } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js';
 
 const app = document.querySelector('#app');
 
 const style = document.createElement('style');
-style.textContent = `
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#080812;color:#f7f4ff;font-family:Inter,system-ui,sans-serif}button{font:inherit;color:inherit;border:0;cursor:pointer}.shell{min-height:100vh;padding-bottom:92px}.top{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #28263b;background:#0a0915}.logo{font-size:30px;font-weight:900;background:linear-gradient(90deg,#a879ff,#ff4fc4,#ff9250);-webkit-background-clip:text;color:transparent}.actions{display:flex;gap:9px}.icon{width:42px;height:42px;border-radius:14px;background:#151326;border:1px solid #29263f}.main{max-width:900px;margin:auto;padding:22px 16px}.card{border:1px solid #29263e;background:#111020;border-radius:24px;padding:22px}.hero h1{font-size:clamp(38px,8vw,68px);line-height:.94;margin:12px 0}.muted{color:#aaa6bd}.gradient{background:linear-gradient(90deg,#a879ff,#ff4fc4,#ff9250);-webkit-background-clip:text;color:transparent}.primary{padding:13px 18px;border-radius:14px;background:linear-gradient(90deg,#805bff,#ff4fc4);font-weight:800;margin-top:12px}.nav{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(700px,calc(100% - 20px));height:68px;border:1px solid #302d48;border-radius:22px;background:#0e0d19f2;display:flex;justify-content:space-around;align-items:center;z-index:20}.nav button{background:transparent;color:#89859e;min-width:60px}.nav button.active{color:#fff}.nav span{display:block;font-size:10px;margin-top:4px}
-`;
+style.textContent = `*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#080812;color:#f7f4ff;font-family:Inter,system-ui,sans-serif}button,input{font:inherit}button{color:inherit;border:0;cursor:pointer}.shell{min-height:100vh;padding-bottom:92px}.top{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #28263b;background:#0a0915}.logo{font-size:30px;font-weight:900;background:linear-gradient(90deg,#a879ff,#ff4fc4,#ff9250);-webkit-background-clip:text;color:transparent}.actions{display:flex;gap:9px}.icon{width:42px;height:42px;border-radius:14px;background:#151326;border:1px solid #29263f}.main{max-width:900px;margin:auto;padding:22px 16px}.card{border:1px solid #29263e;background:#111020;border-radius:24px;padding:22px}.hero h1{font-size:clamp(38px,8vw,68px);line-height:.94;margin:12px 0}.muted{color:#aaa6bd}.gradient{background:linear-gradient(90deg,#a879ff,#ff4fc4,#ff9250);-webkit-background-clip:text;color:transparent}.primary{width:100%;padding:13px 18px;border-radius:14px;background:linear-gradient(90deg,#805bff,#ff4fc4);font-weight:800;margin-top:12px}.auth{max-width:440px;margin:7vh auto}.auth h1{margin-top:0}.field{width:100%;padding:14px 15px;margin:7px 0;border-radius:14px;border:1px solid #302d48;background:#0b0a15;color:#fff;outline:none}.field:focus{border-color:#a879ff}.switch{display:block;width:100%;background:transparent;color:#bba8ff;margin-top:15px}..error{min-height:20px;color:#ff7b9c;font-size:13px;margin-top:8px}.nav{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(700px,calc(100% - 20px));height:68px;border:1px solid #302d48;border-radius:22px;background:#0e0d19f2;display:flex;justify-content:space-around;align-items:center;z-index:20}.nav button{background:transparent;color:#89859e;min-width:60px}.nav button.active{color:#fff}.nav span{display:block;font-size:10px;margin-top:4px}.user{display:flex;align-items:center;justify-content:space-between;gap:12px}.logout{padding:10px 14px;border-radius:12px;background:#211e31}`;
 document.head.appendChild(style);
 
-function render(user) {
-  app.innerHTML = `
-    <div class="shell">
-      <header class="top"><div class="logo">Indo</div><div class="actions"><button class="icon" aria-label="Search">⌕</button><button class="icon" aria-label="Notifications">♡</button><button class="icon" aria-label="Create">＋</button></div></header>
-      <main class="main">
-        <section class="card hero">
-          <div class="muted">${user ? 'WELCOME BACK' : 'WELCOME TO'}</div>
-          <h1>Share your<br><span class="gradient">world.</span></h1>
-          <p class="muted">Indo is your social space for posts, stories, reels, videos and real conversations.</p>
-          <button class="primary">Create your first post</button>
-        </section>
-      </main>
-      <nav class="nav" aria-label="Main navigation">
-        <button class="active" data-page="home">⌂<span>Home</span></button>
-        <button data-page="videos">▶<span>Videos</span></button>
-        <button data-page="reels">◉<span>Reels</span></button>
-        <button data-page="messages">✉<span>Messages</span></button>
-        <button data-page="profile">●<span>Profile</span></button>
-      </nav>
-    </div>`;
-
-  document.querySelectorAll('[data-page]').forEach(button => {
-    button.addEventListener('click', () => {
-      document.querySelectorAll('[data-page]').forEach(item => item.classList.remove('active'));
-      button.classList.add('active');
-    });
-  });
+function authScreen(mode='login') {
+  app.innerHTML=`<main class="main"><section class="card auth"><div class="logo">Indo</div><h1>${mode==='login'?'Welcome back':'Create your account'}</h1><p class="muted">${mode==='login'?'Login to continue to Indo.':'Join Indo and connect with people.'}</p><form id="authForm"><input id="name" class="field" placeholder="Name" autocomplete="name" ${mode==='login'?'style="display:none"':''}><input id="email" class="field" type="email" placeholder="Email" autocomplete="email" required><input id="password" class="field" type="password" placeholder="Password" autocomplete="current-password" minlength="6" required><div id="error" class="error"></div><button class="primary" type="submit">${mode==='login'?'Login':'Create account'}</button></form><button class="switch" id="switch">${mode==='login'?'New to Indo? Create an account':'Already have an account? Login'}</button></section></main>`;
+  document.querySelector('#switch').onclick=()=>authScreen(mode==='login'?'signup':'login');
+  document.querySelector('#authForm').onsubmit=async e=>{e.preventDefault();const error=document.querySelector('#error');error.textContent='';try{const email=document.querySelector('#email').value.trim();const password=document.querySelector('#password').value;if(mode==='login'){await signInWithEmailAndPassword(auth,email,password)}else{const name=document.querySelector('#name').value.trim();if(!name)throw new Error('Please enter your name.');const result=await createUserWithEmailAndPassword(auth,email,password);await updateProfile(result.user,{displayName:name});await set(ref(db,`users/${result.user.uid}`),{uid:result.user.uid,name,email,createdAt:Date.now()});}}catch(err){error.textContent=authError(err.code)||err.message}};
 }
-
-onAuthStateChanged(auth, user => render(user));
+function authError(code){const map={'auth/invalid-credential':'Email or password is incorrect.','auth/email-already-in-use':'This email is already registered.','auth/weak-password':'Password must be at least 6 characters.','auth/invalid-email':'Enter a valid email address.','auth/operation-not-allowed':'Email/Password sign-in is not enabled in Firebase.'};return map[code]}
+function renderHome(user){app.innerHTML=`<div class="shell"><header class="top"><div class="logo">Indo</div><div class="actions"><button class="icon">⌕</button><button class="icon">♡</button><button class="icon">＋</button></div></header><main class="main"><section class="card hero"><div class="user"><div><div class="muted">WELCOME BACK</div><h1>${escapeHtml(user.displayName||user.email?.split('@')[0]||'User')}</h1></div><button class="logout" id="logout">Logout</button></div><p class="muted">Your Indo account is connected to Firebase. Your login session is real and persists across refreshes.</p><button class="primary" id="create">Create your first post</button></section></main><nav class="nav"><button class="active">⌂<span>Home</span></button><button>▶<span>Videos</span></button><button>◉<span>Reels</span></button><button>✉<span>Messages</span></button><button>●<span>Profile</span></button></nav></div>`;document.querySelector('#logout').onclick=()=>signOut(auth)}
+function escapeHtml(value){return String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+onAuthStateChanged(auth,user=>user?renderHome(user):authScreen('login'));
