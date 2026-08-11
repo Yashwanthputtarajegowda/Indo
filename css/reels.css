@@ -1,0 +1,74 @@
+* {
+  box-sizing: border-box;
+}
+
+.reels-page {
+  min-height: 100dvh;
+  background: #000000;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.reels-feed {
+  height: 100dvh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+}
+
+.reel-item {
+  position: relative;
+  height: 100dvh;
+  display: flex;
+  align-items: flex-end;
+  padding: 24px 16px 92px;
+  scroll-snap-align: start;
+  background: linear-gradient(180deg, #1b0528, #050008);
+}
+
+.reel-center-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  border: 0;
+  border-radius: 50%;
+  background: rgba(143, 37, 255, 0.82);
+  color: #ffffff;
+  font-size: 24px;
+}
+
+.reel-info {
+  max-width: calc(100% - 78px);
+}
+
+.reel-user-id {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.reel-caption {
+  margin: 0;
+  color: #e1d5e6;
+  line-height: 1.45;
+}
+
+.reel-actions {
+  position: absolute;
+  right: 16px;
+  bottom: 92px;
+  display: grid;
+  gap: 14px;
+}
+
+.reel-action {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(18, 5, 27, 0.78);
+  color: #ffffff;
+  font-size: 18px;
+}
