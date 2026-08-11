@@ -1,0 +1,59 @@
+* {
+  box-sizing: border-box;
+}
+
+.about-page {
+  min-height: 100dvh;
+  padding: 24px 16px 32px;
+  background: #0d0014;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.about-card {
+  width: min(100%, 390px);
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid #3a2148;
+  border-radius: 24px;
+  background: #16051f;
+}
+
+.about-title {
+  margin: 0;
+  font-size: 28px;
+}
+
+.about-version {
+  margin: 8px 0 24px;
+  color: #a995b2;
+}
+
+.about-section {
+  margin-top: 20px;
+}
+
+.about-section h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #8f7c98;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.about-section p {
+  margin: 0;
+  color: #d7c9dd;
+  line-height: 1.5;
+}
+
+.about-back {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 18px;
+  border: 1px solid #3a2148;
+  border-radius: 50%;
+  background: #16051f;
+  color: #ffffff;
+  font-size: 20px;
+}
