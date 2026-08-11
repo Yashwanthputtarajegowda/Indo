@@ -1,0 +1,52 @@
+* {
+  box-sizing: border-box;
+}
+
+.theme-page {
+  min-height: 100dvh;
+  padding: 24px 16px;
+  background: #0d0014;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.theme-card {
+  width: min(100%, 390px);
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid #3a2148;
+  border-radius: 24px;
+  background: #16051f;
+}
+
+.theme-title {
+  margin: 0;
+  font-size: 26px;
+}
+
+.theme-description {
+  margin: 8px 0 20px;
+  color: #a995b2;
+}
+
+.theme-options {
+  display: grid;
+  gap: 12px;
+}
+
+.theme-option {
+  width: 100%;
+  min-height: 54px;
+  border: 1px solid #3a2148;
+  border-radius: 14px;
+  background: #0d0014;
+  color: #ffffff;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.theme-option.is-selected {
+  border-color: #ff2f78;
+  background: linear-gradient(90deg, #2a0b3d, #251031);
+}
