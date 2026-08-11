@@ -1,1 +1,6 @@
-const el=document.querySelector('#profile');el.innerHTML='<h2>Your Indo Profile</h2><p>Profile data will load from Firebase.</p>';
+const profile = document.querySelector('#profile');
+
+profile.innerHTML = `
+    <h2>Your Indo Profile</h2>
+    <p>Profile data will load from Firebase.</p>
+`;
