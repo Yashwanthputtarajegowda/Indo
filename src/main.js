@@ -14,7 +14,7 @@ import { loadCurrentProfile } from './features/profile/current-profile.js';
 import { updateCurrentProfile } from './features/profile/update-profile.js';
 import { renderEditProfile } from './screens/edit-profile.js';
 import { loadFollowStatus, toggleFollow } from './features/social/follow.js';
-import { searchUserId } from './features/search/user-search.js';
+import { searchUserId, loadPublicProfile } from './features/search/user-search.js';
 import { loadEarningStatus, loadEarningSummary, toggleEarning } from './features/earning/earning.js';
 import { requestPayout } from './features/earning/wallet.js';
 
@@ -261,8 +261,10 @@ document.addEventListener('submit', async (event) => {
     try {
       const user = await searchUserId(query);
       if (!user) { resultBox.innerHTML = '<div class="search-empty">No Indo user found for that User ID.</div>'; return; }
-      const initial = String(user.name || user.userId || 'I').replace(/^@/, '').charAt(0).toUpperCase() || 'I';
-      resultBox.innerHTML = `<div class="search-user-result"><div class="avatar small">${initial}</div><div><b>${user.userId}</b><small>${user.name || 'Indo User'}</small></div></div>`;
+      const profile = await loadPublicProfile(user.uid);
+      const initial = String(profile?.name || user.name || user.userId || 'I').replace(/^@/, '').charAt(0).toUpperCase() || 'I';
+      const accountType = profile?.accountType === 'private' ? 'Private account' : 'Public account';
+      resultBox.innerHTML = `<div class="search-user-result"><div class="avatar small">${initial}</div><div><b>${profile?.userId || user.userId}</b><small>${profile?.name || user.name || 'Indo User'}</small><small>${accountType}</small><small>${Number(profile?.followersCount || 0).toLocaleString()} followers · ${Number(profile?.followingCount || 0).toLocaleString()} following · ${Number(profile?.postsCount || 0).toLocaleString()} posts</small>${profile?.bio ? `<small>${String(profile.bio).replace(/[&<>\"']/g, '')}</small>` : ''}</div></div>`;
     } catch (error) { resultBox.textContent = error.message || 'Could not search User ID.'; }
     return;
   }
