@@ -9,6 +9,7 @@ import { setSettingsVisibility } from './features/account/settings-visibility.js
 import { watchAuthSession } from './features/auth/auth-session.js';
 import { handleLogout } from './features/auth/logout-button.js';
 import { loadEngagement, toggleLike, toggleSave, addComment, loadComments, shareMedia } from './features/feed/media-engagement.js';
+import { loadCurrentProfile } from './features/profile/current-profile.js';
 
 const app = document.getElementById('root');
 let splashFinished = false;
@@ -18,6 +19,11 @@ function goTo(screen) {
   state.screen = screen;
   render(app);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function refreshProfile() {
+  state.profile = await loadCurrentProfile();
+  if (state.profile?.accountType) state.accountType = state.profile.accountType;
 }
 
 async function handleEngagement(event) {
@@ -56,13 +62,16 @@ async function handleEngagement(event) {
   return true;
 }
 
-watchAuthSession((user) => {
+watchAuthSession(async (user) => {
   sessionUser = user;
   state.authenticated = true;
+  await refreshProfile().catch(() => {});
   if (splashFinished && (state.screen === 'auth-login' || state.screen === 'auth-signup')) goTo('home');
 }, () => {
   sessionUser = null;
   state.authenticated = false;
+  state.profile = null;
+  state.accountType = 'public';
   if (splashFinished && !String(state.screen).startsWith('auth-')) goTo('auth-login');
 });
 
@@ -74,11 +83,15 @@ document.addEventListener('click', async (event) => {
     await handleLogout(document.querySelector('.settings-message'));
     return;
   }
+
   const screenTarget = event.target.closest('[data-screen]');
   if (screenTarget) {
-    goTo(screenTarget.dataset.screen);
+    const nextScreen = screenTarget.dataset.screen;
+    if (nextScreen === 'profile' && state.authenticated) await refreshProfile().catch(() => {});
+    goTo(nextScreen);
     return;
   }
+
   const authTarget = event.target.closest('[data-auth]');
   if (authTarget) goTo(`auth-${authTarget.dataset.auth}`);
 });
@@ -93,6 +106,7 @@ document.addEventListener('change', async (event) => {
   try {
     const result = await setSettingsVisibility(nextType);
     state.accountType = result.accountType;
+    if (state.profile) state.profile.accountType = result.accountType;
     if (message) message.textContent = `Account is now ${result.accountType}.`;
   } catch (error) {
     visibility.value = state.accountType;
@@ -114,10 +128,12 @@ document.addEventListener('submit', async (event) => {
     if (form.id === 'signup-form') {
       const result = await submitSignup(form);
       state.accountType = result.accountType || 'public';
+      await refreshProfile().catch(() => {});
       if (message) message.textContent = `Account created. Your User ID is ${result.username}.`;
     } else {
       const result = await submitLogin(form);
       state.accountType = result?.accountType || state.accountType;
+      await refreshProfile().catch(() => {});
       if (message) message.textContent = 'Login successful.';
     }
     setTimeout(() => goTo('home'), 500);
