@@ -14,7 +14,7 @@ import { updateCurrentProfile } from './features/profile/update-profile.js';
 import { renderEditProfile } from './screens/edit-profile.js';
 import { loadFollowStatus, toggleFollow } from './features/social/follow.js';
 import { searchUserId } from './features/search/user-search.js';
-import { loadEarningStatus, toggleEarning } from './features/earning/earning.js';
+import { loadEarningStatus, loadEarningSummary, toggleEarning } from './features/earning/earning.js';
 
 const app = document.getElementById('root');
 let splashFinished = false;
@@ -40,17 +40,18 @@ async function refreshProfile() {
 async function refreshEarning() {
   if (!state.authenticated) {
     state.earning = null;
+    state.earningSummary = null;
     return;
   }
-  state.earning = await loadEarningStatus();
+  const [status, summary] = await Promise.all([loadEarningStatus(), loadEarningSummary()]);
+  state.earning = status;
+  state.earningSummary = summary;
 }
 
 async function handleEarning(event) {
   const toggleTarget = event.target.closest('[data-earning-action]');
   const rowTarget = event.target.closest('[data-earning-toggle]');
   if (!toggleTarget && !rowTarget) return false;
-
-  const target = toggleTarget || rowTarget;
   if (rowTarget && !toggleTarget) {
     const panel = document.querySelector('[data-earning-panel]');
     if (panel) panel.classList.toggle('open');
@@ -84,7 +85,6 @@ async function handleEngagement(event) {
   if (!card) return false;
   const mediaId = card.dataset.videoId;
   const action = target.dataset.engagement;
-
   try {
     if (action === 'like') {
       const current = await loadEngagement(mediaId);
@@ -117,9 +117,7 @@ async function handleFollow(event) {
   const target = event.target.closest('[data-follow-uid]');
   if (!target) return false;
   const targetUid = target.dataset.followUid;
-  if (!targetUid) return false;
-  if (sessionUser?.uid === targetUid) return true;
-
+  if (!targetUid || sessionUser?.uid === targetUid) return true;
   target.disabled = true;
   try {
     const current = await loadFollowStatus(targetUid);
@@ -159,6 +157,7 @@ watchAuthSession(async (user) => {
   state.profile = null;
   state.accountType = 'public';
   state.earning = null;
+  state.earningSummary = null;
   if (splashFinished && !String(state.screen).startsWith('auth-')) goTo('auth-login');
 });
 
@@ -216,7 +215,6 @@ document.addEventListener('change', async (event) => {
 
 document.addEventListener('submit', async (event) => {
   const form = event.target;
-
   if (form.id === 'user-search-form') {
     event.preventDefault();
     const input = form.querySelector('[name="query"]');
@@ -226,15 +224,10 @@ document.addEventListener('submit', async (event) => {
     resultBox.textContent = 'Searching...';
     try {
       const user = await searchUserId(query);
-      if (!user) {
-        resultBox.innerHTML = '<div class="search-empty">No Indo user found for that User ID.</div>';
-        return;
-      }
+      if (!user) { resultBox.innerHTML = '<div class="search-empty">No Indo user found for that User ID.</div>'; return; }
       const initial = String(user.name || user.userId || 'I').replace(/^@/, '').charAt(0).toUpperCase() || 'I';
       resultBox.innerHTML = `<div class="search-user-result"><div class="avatar small">${initial}</div><div><b>${user.userId}</b><small>${user.name || 'Indo User'}</small></div></div>`;
-    } catch (error) {
-      resultBox.textContent = error.message || 'Could not search User ID.';
-    }
+    } catch (error) { resultBox.textContent = error.message || 'Could not search User ID.'; }
     return;
   }
 
