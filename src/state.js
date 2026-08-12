@@ -1,5 +1,6 @@
 export const state = {
   screen: 'home',
   authScreen: 'login',
-  profile: null
+  profile: null,
+  accountType: 'public'
 };
