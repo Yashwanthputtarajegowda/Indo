@@ -54,7 +54,6 @@ async function saveVideo(uploaded, formValues, token) {
 export async function uploadVideo(file, { title = '', caption = '', onProgress = () => {} } = {}) {
   if (!(file instanceof File)) throw new Error('Select a video file.');
   if (!file.type.startsWith('video/')) throw new Error('Please select a valid video file.');
-  if (file.size > 200 * 1024 * 1024) throw new Error('Video must be 200 MB or smaller.');
 
   onProgress(5, 'Preparing upload...');
   const config = await getUploadSignature();
