@@ -1,52 +1,22 @@
-* {
-  box-sizing: border-box;
+/* Indo app-wide visual system */
+:root {
+  --indo-bg:#07070a; --indo-surface:#101116; --indo-surface-2:#171820; --indo-border:rgba(255,255,255,.09);
+  --indo-text:#f7f7fb; --indo-muted:#9b9eaa; --indo-accent:#ff3d7f; --indo-accent-2:#9b5cff;
+  --indo-gradient:linear-gradient(135deg,#ff3d7f 0%,#ff5c9a 38%,#9b5cff 100%);
+  --indo-shadow:0 20px 70px rgba(0,0,0,.38);
 }
-
-.theme-page {
-  min-height: 100dvh;
-  padding: 24px 16px;
-  background: #0d0014;
-  color: #ffffff;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-.theme-card {
-  width: min(100%, 390px);
-  margin: 0 auto;
-  padding: 24px;
-  border: 1px solid #3a2148;
-  border-radius: 24px;
-  background: #16051f;
-}
-
-.theme-title {
-  margin: 0;
-  font-size: 26px;
-}
-
-.theme-description {
-  margin: 8px 0 20px;
-  color: #a995b2;
-}
-
-.theme-options {
-  display: grid;
-  gap: 12px;
-}
-
-.theme-option {
-  width: 100%;
-  min-height: 54px;
-  border: 1px solid #3a2148;
-  border-radius: 14px;
-  background: #0d0014;
-  color: #ffffff;
-  text-align: left;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.theme-option.is-selected {
-  border-color: #ff2f78;
-  background: linear-gradient(90deg, #2a0b3d, #251031);
-}
+html{background:var(--indo-bg)} body{margin:0;min-width:320px;background:var(--indo-bg);color:var(--indo-text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}button,input,textarea,select{font:inherit}button{cursor:pointer}
+main[class$="-page"]{color:var(--indo-text)!important}
+.login-page,.create-account-page,.auth-choice-page,.onboarding-page,.account-center-page,.account-settings-page,.account-type-page,.edit-account-page,.delete-account-page,.privacy-security-page,.settings-page,.language-page,.help-page,.about-page{min-height:100dvh!important;padding:32px 20px 48px!important;background:radial-gradient(900px 500px at 10% -10%,rgba(255,61,127,.14),transparent 60%),radial-gradient(800px 500px at 100% 0%,rgba(155,92,255,.16),transparent 60%),var(--indo-bg)!important}
+.login-card,.create-account-card,.auth-choice-card,.onboarding-card,.account-card,.settings-card,.edit-account-card,.delete-account-card,.privacy-security-card,.help-card,.about-card,.language-card{width:min(100%,520px)!important;margin:7vh auto 0!important;padding:32px!important;border:1px solid var(--indo-border)!important;border-radius:28px!important;background:rgba(16,17,22,.86)!important;box-shadow:var(--indo-shadow)!important;backdrop-filter:blur(22px)!important}
+.login-card h1,.create-account-card h1,.auth-choice-card h1{margin:0 0 10px!important;font-size:clamp(30px,5vw,42px)!important;letter-spacing:-.04em}.login-card p,.create-account-card p,.auth-choice-card p{color:var(--indo-muted)!important}
+input,textarea,select{width:100%;min-height:50px;padding:13px 15px;border:1px solid var(--indo-border)!important;border-radius:14px!important;outline:none;color:var(--indo-text)!important;background:#0d0e13!important;transition:.2s ease}input:focus,textarea:focus,select:focus{border-color:rgba(255,61,127,.65)!important;box-shadow:0 0 0 4px rgba(255,61,127,.1)}label{color:#d9dae1}
+.login-submit,.create-account-submit,.auth-choice-button,button[type="submit"],.primary-button{min-height:50px;border:0!important;border-radius:14px!important;color:#fff!important;background:var(--indo-gradient)!important;box-shadow:0 12px 28px rgba(255,61,127,.18)!important;font-weight:800;transition:transform .18s ease,filter .18s ease}.login-submit:hover,.create-account-submit:hover,.auth-choice-button:hover,button[type="submit"]:hover,.primary-button:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.home-page,.profile-page,.messages-page,.notifications-page,.saved-page,.following-page,.creator-dashboard-page,.video-player-page{min-height:100dvh!important;padding:28px max(20px,calc((100vw - 1120px)/2)) 108px!important;background:radial-gradient(1000px 550px at 15% -15%,rgba(255,61,127,.10),transparent 62%),radial-gradient(900px 550px at 95% 5%,rgba(155,92,255,.10),transparent 62%),var(--indo-bg)!important}
+.home-header,.profile-header{max-width:1120px;margin:0 auto 28px!important;padding:8px 2px!important}.home-brand{font-size:34px!important;font-weight:900;letter-spacing:-.06em}.home-brand::after{content:".";color:var(--indo-accent)}.home-header-actions{display:flex;gap:10px}.home-search,.home-upload,.profile-menu-button{width:46px!important;height:46px!important;border:1px solid var(--indo-border)!important;border-radius:14px!important;background:var(--indo-surface)!important;color:#fff!important}.home-upload{background:var(--indo-gradient)!important;border:0!important;font-size:24px!important}
+.home-feed{width:min(100%,780px);margin:0 auto!important;gap:22px!important}.home-video-card{border:1px solid var(--indo-border)!important;border-radius:24px!important;background:rgba(16,17,22,.9)!important;box-shadow:0 14px 45px rgba(0,0,0,.25)!important}.home-video-thumb{position:relative;min-height:300px;background:linear-gradient(135deg,#181a24,#2a1839)!important}.home-video-preview{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}.home-video-thumb::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.38));pointer-events:none}.home-play{position:relative;z-index:2;width:68px!important;height:68px!important;background:rgba(0,0,0,.58)!important;border:1px solid rgba(255,255,255,.2)!important;backdrop-filter:blur(10px)}.home-video-info{padding:18px 20px!important}.home-video-title{font-size:19px!important;font-weight:800}.home-video-meta{color:var(--indo-muted)!important}.home-creator-link{border:0;padding:0;color:#e6c9ff;background:transparent;font-weight:700}
+.home-bottom-nav,.profile-bottom-nav,.reels-bottom-nav{position:fixed!important;left:50%!important;right:auto!important;bottom:18px!important;transform:translateX(-50%);width:min(620px,calc(100% - 24px));display:grid!important;grid-template-columns:repeat(4,1fr)!important;padding:7px!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:20px!important;background:rgba(16,17,22,.88)!important;box-shadow:0 18px 50px rgba(0,0,0,.45)!important;backdrop-filter:blur(20px)!important;z-index:50}.home-nav-button,.profile-nav-button,.reels-nav-button{min-height:48px!important;border:0!important;border-radius:14px!important;background:transparent!important;color:#8f929e!important;font-size:12px!important;font-weight:700}.home-nav-button.is-active,.profile-nav-button.is-active,.reels-nav-button.is-active{color:#fff!important;background:rgba(255,255,255,.08)!important}
+.profile-summary{width:min(100%,780px);margin:0 auto!important;padding:26px!important;border:1px solid var(--indo-border)!important;border-radius:24px!important;background:rgba(16,17,22,.86)!important}.profile-avatar{width:96px!important;height:96px!important;background:var(--indo-gradient)!important;box-shadow:0 12px 35px rgba(255,61,127,.2)}.profile-user-name{font-size:28px!important;letter-spacing:-.03em}.profile-stats{gap:10px!important}.profile-stat{border:1px solid var(--indo-border)!important;border-radius:16px!important;background:#0e0f14!important;color:#fff!important}.profile-tabs{width:min(100%,780px);margin:20px auto!important;border-bottom:1px solid var(--indo-border)!important}.profile-tab{color:#777b87!important;font-weight:800}.profile-tab.is-active{color:#fff!important;border-bottom-color:var(--indo-accent)!important}.profile-content-grid{width:min(100%,780px);margin:0 auto!important;gap:12px!important}.profile-post-card{min-height:220px!important;border:1px solid var(--indo-border)!important;border-radius:18px!important;background:linear-gradient(145deg,#151721,#282033)!important;overflow:hidden}.profile-media-preview{width:100%;height:100%;object-fit:cover}
+.reels-page{background:#050507!important}.reel-item{background:linear-gradient(145deg,#15121b,#09090c)!important}.reel-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.reel-item::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 20%,rgba(155,92,255,.15),transparent 40%);z-index:1;pointer-events:none}.reel-center-play{width:76px!important;height:76px!important;background:rgba(12,12,16,.62)!important;border:1px solid rgba(255,255,255,.18)!important;backdrop-filter:blur(12px)}.reel-info{max-width:min(640px,calc(100% - 110px))!important}.reel-user-id{background:rgba(12,12,16,.65)!important;border-color:rgba(255,255,255,.12)!important}.reel-caption{font-size:18px!important;font-weight:600}.reel-action{width:58px!important;height:58px!important;border:1px solid rgba(255,255,255,.12)!important;background:rgba(12,12,16,.72)!important;backdrop-filter:blur(14px)}.reel-action:hover{background:rgba(255,61,127,.72)!important}
+.messages-list,.notifications-list,.following-list,.settings-list{width:min(100%,780px);margin:0 auto}.message-item,.notification-item,.following-item,.settings-row,.setting-item{border:1px solid var(--indo-border)!important;border-radius:18px!important;background:rgba(16,17,22,.86)!important;margin-bottom:10px;padding:16px!important}.chat-page{min-height:100dvh!important;background:var(--indo-bg)!important}.chat-header,.messages-header{background:rgba(16,17,22,.9)!important;border-color:var(--indo-border)!important;backdrop-filter:blur(18px)}.chat-input,.message-input{border-radius:16px!important;background:#101116!important;border:1px solid var(--indo-border)!important}
+@media(max-width:640px){.home-page,.profile-page,.messages-page,.notifications-page,.saved-page,.following-page,.creator-dashboard-page,.video-player-page{padding:18px 14px 100px!important}.login-card,.create-account-card,.auth-choice-card,.onboarding-card,.account-card,.settings-card,.edit-account-card,.delete-account-card,.privacy-security-card,.help-card,.about-card,.language-card{margin-top:3vh!important;padding:24px!important;border-radius:22px!important}.home-video-thumb{min-height:230px}.profile-summary{padding:20px!important}.profile-content-grid{grid-template-columns:repeat(2,1fr)!important}.profile-post-card{min-height:170px!important}.home-bottom-nav,.profile-bottom-nav,.reels-bottom-nav{bottom:10px!important}}
