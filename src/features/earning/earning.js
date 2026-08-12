@@ -18,6 +18,10 @@ export function loadEarningStatus() {
   return request('/api/earnings/status');
 }
 
+export function loadEarningSummary() {
+  return request('/api/earnings/summary');
+}
+
 export function toggleEarning(enabled) {
   return request('/api/earnings/toggle', {
     method: 'POST',
