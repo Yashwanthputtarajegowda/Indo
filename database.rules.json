@@ -67,12 +67,12 @@
     },
     "conversations": {
       "$conversationKey": {
-        ".read": "auth != null",
-        ".write": "auth != null",
+        ".read": "auth != null && (data.child('memberUids').child(auth.uid).exists() || data.child('member1').val() === auth.uid || data.child('member2').val() === auth.uid)",
+        ".write": "auth != null && (data.child('memberUids').child(auth.uid).exists() || data.child('member1').val() === auth.uid || data.child('member2').val() === auth.uid || (!data.exists() && newData.child('memberUids').child(auth.uid).exists()))",
         "messages": {
           "$messageId": {
-            ".write": "auth != null && (!data.exists() || data.child('senderUid').val() === auth.uid)",
-            ".validate": "newData.hasChildren(['senderUid','text','createdAt']) && newData.child('senderUid').isString() && newData.child('text').isString() && newData.child('createdAt').isNumber() && newData.child('text').val().length <= 500"
+            ".write": "auth != null && data.parent().parent().child('memberUids').child(auth.uid).exists() && (!data.exists() || data.child('senderUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['senderUid','text','createdAt']) && newData.child('senderUid').isString() && newData.child('senderUid').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length <= 500 && newData.child('createdAt').isNumber()"
           }
         }
       }
