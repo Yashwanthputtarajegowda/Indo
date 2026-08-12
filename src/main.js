@@ -28,6 +28,15 @@ function goTo(screen) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+registerServiceWorker();
+
 function renderEditProfileScreen() {
   state.screen = 'edit-profile';
   renderEditProfile(app, state.profile);
