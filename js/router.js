@@ -7,6 +7,7 @@ import { renderProfilePage } from "./pages/profile.js";
 import { renderPublicProfilePage } from "./pages/public-profile.js";
 import { renderUploadVideoPage } from "./pages/upload-video.js";
 import { renderUploadReelPage } from "./pages/upload-reel.js";
+import { renderNotificationsPage } from "./pages/notifications.js";
 import { renderVideoPlayerPage } from "./pages/video-player.js";
 import { renderMessagesPage } from "./pages/messages.js";
 import { renderChatPage } from "./pages/chat.js";
@@ -14,14 +15,10 @@ import { renderNewMessagePage } from "./pages/new-message.js";
 import { getProfile } from "./services/profile-state.js";
 
 const styles = new Set();
-
 function loadStyle(path) {
   if (styles.has(path)) return;
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = path;
-  document.head.appendChild(link);
-  styles.add(path);
+  const link = document.createElement("link"); link.rel = "stylesheet"; link.href = path;
+  document.head.appendChild(link); styles.add(path);
 }
 
 export function navigate(container, page, data = {}) {
@@ -34,6 +31,7 @@ export function navigate(container, page, data = {}) {
     case "public-profile": loadStyle("./css/public-profile.css"); renderPublicProfilePage(container, data.profile || {}); return;
     case "upload-video": renderUploadVideoPage(container); return;
     case "upload-reel": renderUploadReelPage(container); return;
+    case "notifications": loadStyle("./css/notifications.css"); renderNotificationsPage(container); return;
     case "messages":
     case "message": loadStyle("./css/messages.css"); renderMessagesPage(container); return;
     case "new-message": loadStyle("./css/new-message.css"); renderNewMessagePage(container); return;
