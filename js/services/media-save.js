@@ -33,3 +33,6 @@ export async function toggleSavedMedia(mediaId) {
   else await set(savedRef, { mediaId: id, createdAt: Date.now() });
   return getSavedMediaStatus(id);
 }
+
+// Keep the named export available to all Reel actions on static hosts.
+export const getSaveStatus = getSavedMediaStatus;
