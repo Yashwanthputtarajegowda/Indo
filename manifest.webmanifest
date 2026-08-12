@@ -1,0 +1,13 @@
+{
+  "name": "Indo",
+  "short_name": "Indo",
+  "description": "Indo social video app",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050507",
+  "theme_color": "#08080d",
+  "lang": "en",
+  "categories": ["social", "video"]
+}
