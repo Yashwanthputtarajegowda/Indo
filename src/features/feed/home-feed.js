@@ -63,18 +63,27 @@ function bindWatchProgress(videoElement, mediaId) {
 }
 
 export function renderVideoCard(video) {
-  const creator = escapeHtml(video.creator || '@indo');
-  const title = escapeHtml(video.title || 'Video');
+  const creatorRaw = String(video.creator || '@indo');
+  const creator = escapeHtml(creatorRaw);
+  const usernameKey = escapeHtml(creatorRaw.replace(/^@/, ''));
+  const creatorAvatar = escapeHtml(video.creatorAvatar || video.avatarUrl || video.profilePhoto || video.photoURL || '');
   const caption = escapeHtml(video.caption || '');
   const views = Number(video.views || 0).toLocaleString();
   const likes = Number(video.likes || 0).toLocaleString();
   const mediaUrl = video.secureUrl || video.videoUrl || video.url || '';
   const poster = video.thumbnailUrl ? ` poster="${escapeHtml(video.thumbnailUrl)}"` : '';
+  const initial = escapeHtml(creatorRaw.replace(/^@/, '').charAt(0).toUpperCase() || 'I');
+  const avatar = creatorAvatar
+    ? `<img class="avatar small post-avatar-image" src="${creatorAvatar}" alt="${creator}" loading="lazy">`
+    : `<div class="avatar small">${initial}</div>`;
   const source = mediaUrl
     ? `<video class="post-video" autoplay playsinline preload="metadata"${poster} src="${escapeHtml(mediaUrl)}"></video>`
     : '<div class="post-video video-unavailable">Video unavailable</div>';
-  return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}">
-    <div class="post-head"><div class="avatar small">${escapeHtml(creator.replace(/^@/, '').charAt(0).toUpperCase() || 'I')}</div><div><strong>${creator}</strong><small>${title}</small></div><button class="icon-btn" aria-label="More options">⋯</button></div>
+  return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}" data-owner-uid="${escapeHtml(video.ownerUid || '')}">
+    <div class="post-head">
+      <button class="post-creator" type="button" data-profile-username="${usernameKey}" aria-label="Open ${creator} profile">${avatar}<span class="post-creator-name">${creator}</span></button>
+      <button class="icon-btn post-more" type="button" data-feed-more aria-label="More options">⋯</button>
+    </div>
     ${source}
     <div class="post-actions"><button data-engagement="like" aria-label="Like">♡ <small>${likes}</small></button><button data-engagement="comment" aria-label="Comment">◯</button><button data-engagement="share" aria-label="Share">↗</button><button class="push-right" data-engagement="save" aria-label="Save">🔖</button></div>
     <div class="post-copy"><strong>${views} views</strong><p><b>${creator}</b> ${caption}</p></div>
