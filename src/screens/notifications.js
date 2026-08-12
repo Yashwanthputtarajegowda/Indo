@@ -1,8 +1,9 @@
 import { nav } from '../components/nav.js';
 import { loadNotifications, markNotificationRead } from '../features/notifications/notifications.js';
+import { respondToFollowRequest } from '../features/social/follow.js';
 
 function escapeHtml(value = '') {
-  return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
+  return String(value).replace(/[&<>\"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' }[char]));
 }
 
 function timeAgo(timestamp) {
@@ -12,15 +13,17 @@ function timeAgo(timestamp) {
   if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
+  return `${Math.floor(hours / 24)}d`;
 }
 
 function renderNotification(item) {
   const actor = escapeHtml(item.actorUserId || '@user');
   const message = escapeHtml(item.text || 'You have a new notification.');
   const initial = escapeHtml((item.actorName || actor.replace(/^@/, 'I')).charAt(0).toUpperCase() || 'I');
-  return `<button class="notice ${item.read ? '' : 'unread'}" data-notification-id="${escapeHtml(item.id || '')}" type="button"><div class="avatar small">${initial}</div><p><b>${actor}</b> ${message}<small>${timeAgo(item.createdAt)}</small></p></button>`;
+  const requestActions = item.type === 'follow-request'
+    ? `<div class="notice-actions"><button data-follow-response="accept" data-requester-uid="${escapeHtml(item.actorUid || '')}">Accept</button><button data-follow-response="reject" data-requester-uid="${escapeHtml(item.actorUid || '')}">Reject</button></div>`
+    : '';
+  return `<div class="notice-wrap"><button class="notice ${item.read ? '' : 'unread'}" data-notification-id="${escapeHtml(item.id || '')}" type="button"><div class="avatar small">${initial}</div><p><b>${actor}</b> ${message}<small>${timeAgo(item.createdAt)}</small></p></button>${requestActions}</div>`;
 }
 
 export function renderNotifications(app) {
@@ -43,6 +46,21 @@ export function renderNotifications(app) {
           await markNotificationRead(item.dataset.notificationId);
           item.classList.remove('unread');
         } catch {}
+      });
+    });
+    list.querySelectorAll('[data-follow-response]').forEach((button) => {
+      button.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        const requesterUid = button.dataset.requesterUid;
+        const accept = button.dataset.followResponse === 'accept';
+        button.disabled = true;
+        try {
+          await respondToFollowRequest(requesterUid, accept);
+          button.closest('.notice-wrap')?.remove();
+        } catch (error) {
+          button.title = error.message || 'Could not respond to request.';
+          button.disabled = false;
+        }
       });
     });
   }).catch((error) => {
