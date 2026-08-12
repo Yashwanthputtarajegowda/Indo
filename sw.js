@@ -1,9 +1,10 @@
-const CACHE_NAME = 'indo-shell-v1';
+const CACHE_NAME = 'indo-shell-v2';
+const BASE_URL = new URL('./', self.location.href);
 const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/config/runtime-config.js'
+  new URL('./', BASE_URL).href,
+  new URL('index.html', BASE_URL).href,
+  new URL('manifest.webmanifest', BASE_URL).href,
+  new URL('config/runtime-config.js', BASE_URL).href
 ];
 
 self.addEventListener('install', (event) => {
@@ -24,16 +25,17 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (!url.pathname.startsWith(BASE_URL.pathname)) return;
 
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request).then((response) => {
-        if (response.ok && (request.mode === 'navigate' || url.pathname.startsWith('/src/') || url.pathname.startsWith('/styles/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css'))) {
+        if (response.ok && (request.mode === 'navigate' || url.pathname.endsWith('.js') || url.pathname.endsWith('.css'))) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         }
         return response;
-      }).catch(() => cached || caches.match('/index.html'));
+      }).catch(() => cached || caches.match(new URL('index.html', BASE_URL).href));
 
       return cached || network;
     })
