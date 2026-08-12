@@ -7,10 +7,10 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="manifest" href="./manifest.webmanifest?v=20260813-2" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-2" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-2" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-2" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./src/styles.css" />
+  <link rel="stylesheet" href="./src/auth.css" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css" />
   <title>Indo</title>
 </head>
 <body>
@@ -21,8 +21,26 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-2"></script>
-  <script type="module" src="./src/main.js?v=20260813-2"></script>
-  <script type="module" src="./src/features/messages/messages-bootstrap.js?v=20260813-2"></script>
+  <script src="./config/runtime-config.js"></script>
+  <script type="module">
+    const root = document.getElementById('root');
+
+    function showStartupError(error) {
+      const message = String(error?.message || error || 'Unknown startup error.');
+      const safe = message.replace(/[&<>\"']/g, '');
+      root.innerHTML = `
+        <main class="splash-screen splash-error">
+          <div class="splash-logo">I</div>
+          <div class="splash-name">Indo</div>
+          <p>Indo could not start.</p>
+          <small>${safe}</small>
+          <button type="button" onclick="location.reload()">Reload</button>
+        </main>`;
+    }
+
+    import('./src/main.js')
+      .then(() => import('./src/features/messages/messages-bootstrap.js').catch(() => null))
+      .catch(showStartupError);
+  </script>
 </body>
 </html>
