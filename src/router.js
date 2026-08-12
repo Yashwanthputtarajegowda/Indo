@@ -12,7 +12,7 @@ export function render(app) {
   if (state.screen === 'auth-login') return renderLogin(app);
   if (state.screen === 'auth-signup') return renderSignup(app);
   if (state.screen === 'profile') return renderProfile(app, state.profile);
-  if (state.screen === 'settings') return renderSettings(app, state.accountType);
+  if (state.screen === 'settings') return renderSettings(app, state.accountType, state.earning);
   const screens = { home: renderHome, reels: renderReels, create: renderCreate, search: renderSearch, notifications: renderNotifications };
   (screens[state.screen] || renderHome)(app);
 }
