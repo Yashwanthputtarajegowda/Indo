@@ -1,4 +1,4 @@
-import { openComments, shareReel, toggleLike, toggleSave, getLikeStatus } from "../services/reel-actions.js";
+import { openComments, shareReel, toggleLike, toggleSave, getLikeStatus, getSaveStatus } from "../services/reel-actions.js";
 import { setupReelMenuButton } from "../components/reel-menu-button.js";
 import { getReels } from "../services/media-upload.js";
 
@@ -27,17 +27,20 @@ function renderReel(reel, index) {
   `;
 }
 
-async function hydrateLikeState(article, reel) {
+async function hydrateReelState(article, reel) {
   if (!reel?.id || String(reel.id).startsWith("demo-")) return;
-  try {
-    const state = await getLikeStatus(reel.id);
-    const button = article.querySelector('[data-reel-action="like"]');
-    const count = article.querySelector("[data-like-count]");
-    if (button) button.firstChild.textContent = state.liked ? "♥ " : "♡ ";
-    if (count) count.textContent = String(state.likes || 0);
-  } catch (error) {
-    console.warn("Indo like state load failed:", error.message);
-  }
+  await Promise.allSettled([
+    getLikeStatus(reel.id).then((state) => {
+      const button = article.querySelector('[data-reel-action="like"]');
+      const count = article.querySelector("[data-like-count]");
+      if (button) button.firstChild.textContent = state.liked ? "♥ " : "♡ ";
+      if (count) count.textContent = String(state.likes || 0);
+    }),
+    getSaveStatus(reel.id).then((state) => {
+      const button = article.querySelector('[data-reel-action="save"]');
+      if (button) button.textContent = state.saved ? "▣" : "▢";
+    })
+  ]).catch((error) => console.warn("Indo reel state load failed:", error.message));
 }
 
 export function renderReelsPage(container) {
@@ -60,7 +63,7 @@ export function renderReelsPage(container) {
     reels = remoteReels;
     feed.innerHTML = reels.map(renderReel).join("");
     setupReelMenuButton(container);
-    reels.forEach((reel, index) => hydrateLikeState(feed.querySelector(`[data-reel-index="${index}"]`), reel));
+    reels.forEach((reel, index) => hydrateReelState(feed.querySelector(`[data-reel-index="${index}"]`), reel));
   }).catch((error) => console.warn("Indo reels load failed:", error.message));
 
   setupReelMenuButton(container);
@@ -98,7 +101,10 @@ export function renderReelsPage(container) {
       }
       if (actionButton.dataset.reelAction === "comment") openComments(reel.id);
       if (actionButton.dataset.reelAction === "share") { await shareReel(reel.id); actionButton.textContent = "✓"; }
-      if (actionButton.dataset.reelAction === "save") actionButton.textContent = toggleSave(reel.id) ? "▣" : "▢";
+      if (actionButton.dataset.reelAction === "save") {
+        const state = await toggleSave(reel.id);
+        actionButton.textContent = state.saved ? "▣" : "▢";
+      }
     } catch (error) {
       actionButton.title = error.message || "Action failed.";
     }
