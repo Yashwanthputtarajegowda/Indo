@@ -1,4 +1,5 @@
 const app = document.getElementById('root');
+const VERSION = '20260813-2';
 
 function renderBootSplash() {
   app.innerHTML = `
@@ -21,17 +22,24 @@ function showBootError(error) {
     </main>`;
 }
 
+function refreshServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register(`./sw.js?v=${VERSION}`).catch(() => {});
+}
+
 async function boot() {
   renderBootSplash();
+  refreshServiceWorker();
 
   try {
+    const withVersion = (path) => `${path}?v=${VERSION}`;
     const [navigation, sessionModule, clickModule, formModule] = await Promise.all([
-      import('./app/navigation.js'),
-      import('./app/session.js'),
-      import('./app/click-handlers.js'),
-      import('./app/form-handlers.js')
+      import(withVersion('./app/navigation.js')),
+      import(withVersion('./app/session.js')),
+      import(withVersion('./app/click-handlers.js')),
+      import(withVersion('./app/form-handlers.js'))
     ]);
-    const { startSplash } = await import('./features/splash/splash-flow.js');
+    const { startSplash } = await import(withVersion('./features/splash/splash-flow.js'));
     const { createSessionController } = sessionModule;
     const { createClickHandlers } = clickModule;
     const { createFormHandlers } = formModule;
