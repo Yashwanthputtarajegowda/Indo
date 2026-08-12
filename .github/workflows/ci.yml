@@ -24,3 +24,6 @@ jobs:
 
       - name: Check main entry syntax
         run: node --check src/main.js
+
+      - name: Check production config contract
+        run: node scripts/production-config-check.mjs
