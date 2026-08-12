@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getDatabase, ref, onValue, update, push, set } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { auth } from "./firebase-auth.js";
 
 const firebaseConfig = {
@@ -29,4 +29,21 @@ export async function markNotificationRead(notificationId) {
   const user = auth.currentUser;
   if (!user || !notificationId) return;
   await update(ref(database, `notifications/${user.uid}/${notificationId}`), { read: true });
+}
+
+export async function createClientNotification({ recipientUid, type, actorUid, actorName = "", actorUserId = "", text = "", targetId = "" }) {
+  const user = auth.currentUser;
+  if (!user || !recipientUid || !type || !actorUid || user.uid !== actorUid || user.uid === recipientUid) return;
+  const notificationRef = push(ref(database, `notifications/${recipientUid}`));
+  await set(notificationRef, {
+    id: notificationRef.key,
+    type,
+    actorUid,
+    actorName,
+    actorUserId,
+    text,
+    targetId,
+    read: false,
+    createdAt: Date.now()
+  });
 }
