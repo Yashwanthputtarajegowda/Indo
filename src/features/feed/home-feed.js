@@ -58,7 +58,7 @@ export function renderVideoCard(video) {
   const mediaUrl = video.secureUrl || video.videoUrl || video.url || '';
   const poster = video.thumbnailUrl ? ` poster="${escapeHtml(video.thumbnailUrl)}"` : '';
   const source = mediaUrl
-    ? `<video class="post-video" controls autoplay muted playsinline preload="metadata"${poster} src="${escapeHtml(mediaUrl)}"></video>`
+    ? `<video class="post-video" autoplay playsinline preload="metadata"${poster} src="${escapeHtml(mediaUrl)}"></video>`
     : '<div class="post-video video-unavailable">Video unavailable</div>';
   return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}">
     <div class="post-head"><div class="avatar small">${escapeHtml(creator.replace(/^@/, '').charAt(0).toUpperCase() || 'I')}</div><div><strong>${creator}</strong><small>${title}</small></div><button class="icon-btn" aria-label="More options">⋯</button></div>
@@ -72,10 +72,7 @@ export function bindVideoCards(root) {
   root.querySelectorAll('[data-video-id] .post-video').forEach((video) => {
     const card = video.closest('[data-video-id]');
     if (!card) return;
-    video.muted = true;
-    video.setAttribute('muted', '');
-    video.setAttribute('playsinline', '');
-    video.setAttribute('autoplay', '');
+
     video.addEventListener('error', () => {
       const fallback = document.createElement('div');
       fallback.className = 'post-video video-unavailable';
@@ -83,20 +80,33 @@ export function bindVideoCards(root) {
       video.replaceWith(fallback);
     }, { once: true });
 
-    const playWhenVisible = () => video.play().catch(() => {});
-    const pauseWhenHidden = () => { if (!video.paused) video.pause(); };
+    const playWithSound = () => {
+      video.muted = false;
+      video.removeAttribute('muted');
+      video.play().catch(() => {});
+    };
+
+    const pauseWhenHidden = () => {
+      if (!video.paused) video.pause();
+    };
+
+    video.addEventListener('canplay', playWithSound, { once: true });
 
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) playWhenVisible();
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) playWithSound();
           else pauseWhenHidden();
         }
       }, { threshold: [0, 0.5, 1] });
       observer.observe(video);
     } else {
-      playWhenVisible();
+      playWithSound();
     }
+
+    video.addEventListener('click', () => {
+      if (video.paused) playWithSound();
+    });
 
     bindWatchProgress(video, card.dataset.videoId);
   });
