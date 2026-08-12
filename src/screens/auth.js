@@ -1,0 +1,7 @@
+export function renderLogin(app) {
+  app.innerHTML = `<div class="auth-page"><div class="auth-card"><div class="brand auth-brand"><span>♥</span>indo</div><h1>Welcome back</h1><p>Login to continue</p><form id="login-form"><label>User ID<input id="login-user-id" placeholder="@yourid" required></label><label>Password<input id="login-password" type="password" placeholder="Password" required></label><button class="auth-submit" type="submit">Login</button></form><button class="auth-switch" data-auth="signup">Create a new account</button></div></div>`;
+}
+
+export function renderSignup(app) {
+  app.innerHTML = `<div class="auth-page"><div class="auth-card"><div class="brand auth-brand"><span>♥</span>indo</div><h1>Create account</h1><p>Join Indo</p><form id="signup-form"><label>Username<input id="signup-username" placeholder="Username" required></label><label>User ID<input id="signup-user-id" placeholder="@yourid" pattern="@[A-Za-z0-9_]+" required></label><label>Mobile Number<input id="signup-mobile" type="tel" placeholder="Mobile number" required></label><label>Email ID<input id="signup-email" type="email" placeholder="Email address" required></label><label>Password<input id="signup-password" type="password" placeholder="Password" minlength="8" required></label><button class="auth-submit" type="submit">Create Account</button></form><button class="auth-switch" data-auth="login">Already have an account? Login</button></div></div>`;
+}
