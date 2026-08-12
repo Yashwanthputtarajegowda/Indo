@@ -4,6 +4,7 @@ import { state } from './state.js';
 import { render } from './router.js';
 import { submitSignup } from './features/auth/signup-form.js';
 import { submitLogin } from './features/auth/login-form.js';
+import { resetPassword } from './features/auth/password-reset.js';
 import { startSplash } from './features/splash/splash-flow.js';
 import { setSettingsVisibility } from './features/account/settings-visibility.js';
 import { watchAuthSession } from './features/auth/auth-session.js';
@@ -167,6 +168,29 @@ document.addEventListener('click', async (event) => {
   if (await handleEarning(event)) return;
   if (await handleEngagement(event)) return;
   if (await handleFollow(event)) return;
+
+  const passwordResetTarget = event.target.closest('[data-password-reset]');
+  if (passwordResetTarget) {
+    const emailInput = document.querySelector('#login-email');
+    const message = document.querySelector('#login-message');
+    const email = emailInput?.value?.trim() || '';
+    if (!email) {
+      if (message) message.textContent = 'Enter your Email ID first.';
+      emailInput?.focus();
+      return;
+    }
+    passwordResetTarget.disabled = true;
+    if (message) message.textContent = 'Sending password reset email...';
+    try {
+      await resetPassword(email);
+      if (message) message.textContent = 'Password reset email sent. Check your inbox.';
+    } catch (error) {
+      if (message) message.textContent = error.message || 'Could not send password reset email.';
+    } finally {
+      passwordResetTarget.disabled = false;
+    }
+    return;
+  }
 
   const editProfileTarget = event.target.closest('[data-edit-profile]');
   if (editProfileTarget) {
