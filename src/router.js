@@ -8,6 +8,7 @@ import { renderSearch } from './screens/search.js';
 import { renderNotifications } from './screens/notifications.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 import { renderWallet } from './screens/wallet.js';
+import { renderBlockedUsers } from './screens/blocked-users.js';
 
 export function render(app) {
   if (state.screen === 'auth-login') return renderLogin(app);
@@ -15,6 +16,7 @@ export function render(app) {
   if (state.screen === 'profile') return renderProfile(app, state.profile);
   if (state.screen === 'settings') return renderSettings(app, state.accountType, state.earning, state.earningSummary);
   if (state.screen === 'wallet') return renderWallet(app);
+  if (state.screen === 'blocked-users') return renderBlockedUsers(app);
   const screens = { home: renderHome, reels: renderReels, create: renderCreate, search: renderSearch, notifications: renderNotifications };
   (screens[state.screen] || renderHome)(app);
 }
