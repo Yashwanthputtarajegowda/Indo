@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
 
-app.get('*', (_req, res) => {
+app.get('/{*splat}', (_req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
