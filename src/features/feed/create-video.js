@@ -20,6 +20,7 @@ async function uploadToCloudinary(file, config) {
   form.append('api_key', config.apiKey);
   form.append('timestamp', String(config.timestamp));
   form.append('signature', config.signature);
+  form.append('folder', 'indo/videos');
 
   const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`, {
     method: 'POST',
@@ -43,7 +44,9 @@ async function saveVideo(uploaded, formValues, token) {
       caption: formValues.caption,
       duration: uploaded.duration,
       width: uploaded.width,
-      height: uploaded.height
+      height: uploaded.height,
+      storage: 'cloudinary',
+      resourceType: uploaded.resource_type || 'video'
     })
   });
   const data = await response.json().catch(() => ({}));
@@ -55,11 +58,11 @@ export async function uploadVideo(file, { title = '', caption = '', onProgress =
   if (!(file instanceof File)) throw new Error('Select a video file.');
   if (!file.type.startsWith('video/')) throw new Error('Please select a valid video file.');
 
-  onProgress(5, 'Preparing upload...');
+  onProgress(5, 'Preparing Cloudinary upload...');
   const config = await getUploadSignature();
-  onProgress(15, 'Uploading video...');
+  onProgress(15, 'Uploading video to Cloudinary...');
   const uploaded = await uploadToCloudinary(file, config);
-  onProgress(85, 'Saving video...');
+  onProgress(85, 'Saving video details...');
   const video = await saveVideo(uploaded, { title, caption }, config.token);
   onProgress(100, 'Published successfully.');
   return video;
