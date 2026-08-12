@@ -2,5 +2,7 @@ export const state = {
   screen: 'home',
   authScreen: 'login',
   profile: null,
-  accountType: 'public'
+  accountType: 'public',
+  authenticated: false,
+  earning: null
 };
