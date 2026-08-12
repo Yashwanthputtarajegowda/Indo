@@ -7,9 +7,11 @@
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
         "following": {
+          ".read": "auth != null",
           "$targetUid": { ".write": "auth != null && auth.uid === $uid" }
         },
         "followers": {
+          ".read": "auth != null",
           "$followerUid": { ".write": false }
         }
       }
