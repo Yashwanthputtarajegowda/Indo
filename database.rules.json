@@ -28,6 +28,15 @@
         }
       }
     },
+    "savedMedia": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$mediaId": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['mediaId','createdAt']) && newData.child('mediaId').val() === $mediaId && newData.child('createdAt').isNumber()"
+        }
+      }
+    },
     "reelComments": {
       "$reelId": {
         ".read": "auth != null",
