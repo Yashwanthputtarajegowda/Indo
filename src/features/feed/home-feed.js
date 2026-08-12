@@ -7,7 +7,9 @@ function escapeHtml(value = '') {
 
 export async function loadHomeVideos(limit = 20) {
   const apiBase = window.INDO_API_BASE || '';
-  const response = await fetch(`${apiBase}/api/media/videos?type=video&limit=${limit}`);
+  const headers = {};
+  if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
+  const response = await fetch(`${apiBase}/api/media/videos?type=video&limit=${limit}`, { headers });
   if (!response.ok) throw new Error('Could not load videos.');
   const data = await response.json();
   return Array.isArray(data.videos) ? data.videos : [];
