@@ -48,3 +48,9 @@ export function profileFromBackend(profile) {
     lastActiveAt: profile.lastActiveAt || null
   });
 }
+
+export function clearProfile() {
+  localStorage.removeItem(PROFILE_STATE_KEY);
+  window.dispatchEvent(new CustomEvent("indo:profile-cleared"));
+  return { ...defaultProfile };
+}
