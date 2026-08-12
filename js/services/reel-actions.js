@@ -1,4 +1,5 @@
 import { getMediaLikeStatus, toggleMediaLike } from "./media-like.js";
+import { getSavedMediaStatus, toggleSavedMedia } from "./media-save.js";
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { auth } from "./firebase-auth.js";
@@ -24,6 +25,14 @@ export async function getLikeStatus(reelId) {
   return getMediaLikeStatus(reelId);
 }
 
+export async function getSaveStatus(reelId) {
+  return getSavedMediaStatus(reelId);
+}
+
+export async function toggleSave(reelId) {
+  return toggleSavedMedia(reelId);
+}
+
 export function openComments(reelId) {
   window.dispatchEvent(new CustomEvent("indo:reel-comment", { detail: { reelId } }));
 }
@@ -39,15 +48,6 @@ export async function shareReel(reelId) {
     return;
   }
   if (navigator.clipboard) await navigator.clipboard.writeText(shareData.url);
-}
-
-export function toggleSave(reelId) {
-  const saved = JSON.parse(localStorage.getItem("indo:saved-reels") || "[]");
-  const index = saved.indexOf(reelId);
-  if (index >= 0) saved.splice(index, 1);
-  else saved.push(reelId);
-  localStorage.setItem("indo:saved-reels", JSON.stringify(saved));
-  return index < 0;
 }
 
 export function watchReelComments(reelId, onComments) {
