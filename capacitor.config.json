@@ -1,7 +1,7 @@
 {
   "appId": "com.indo.app",
   "appName": "Indo",
-  "webDir": ".",
+  "webDir": "www",
   "server": {
     "androidScheme": "https"
   },
