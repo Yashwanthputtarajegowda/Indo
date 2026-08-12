@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { renderHome } from './screens/home.js';
 import { renderReels } from './screens/reels.js';
-import { renderCreate } from './screens/create.js';
+import { renderCreate } from './screens/create.js?v=20260813-1';
 import { renderProfile } from './screens/profile.js';
 import { renderSettings } from './screens/settings.js';
 import { renderSearch } from './screens/search.js';
