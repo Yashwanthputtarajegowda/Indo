@@ -24,11 +24,12 @@ export function renderVideoCard(video) {
   const title = escapeHtml(video.title || 'Video');
   const caption = escapeHtml(video.caption || '');
   const views = Number(video.views || 0).toLocaleString();
+  const likes = Number(video.likes || 0).toLocaleString();
   const poster = video.thumbnailUrl ? ` poster="${escapeHtml(video.thumbnailUrl)}"` : '';
   return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}">
     <div class="post-head"><div class="avatar small">${escapeHtml(creator.replace(/^@/, '').charAt(0).toUpperCase() || 'I')}</div><div><strong>${creator}</strong><small>${title}</small></div><button class="icon-btn" aria-label="More options">⋯</button></div>
     <video class="post-video" controls playsinline preload="metadata"${poster} src="${escapeHtml(video.secureUrl)}"></video>
-    <div class="post-actions"><button aria-label="Like">♡</button><button aria-label="Comment">◯</button><button aria-label="Share">↗</button><button class="push-right" aria-label="Save">🔖</button></div>
+    <div class="post-actions"><button data-engagement="like" aria-label="Like">♡ <small>${likes}</small></button><button data-engagement="comment" aria-label="Comment">◯</button><button data-engagement="share" aria-label="Share">↗</button><button class="push-right" data-engagement="save" aria-label="Save">🔖</button></div>
     <div class="post-copy"><strong>${views} views</strong><p><b>${creator}</b> ${caption}</p></div>
   </article>`;
 }
