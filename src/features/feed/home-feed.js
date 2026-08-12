@@ -1,4 +1,5 @@
 import { auth } from '../auth/firebase-client.js';
+import { recordWatchProgress } from '../earning/earning.js';
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
@@ -19,6 +20,21 @@ export async function recordVideoView(videoId) {
   await fetch(`${apiBase}/api/media/videos/${encodeURIComponent(videoId)}/view`, { method: 'POST', headers });
 }
 
+function bindWatchProgress(videoElement, mediaId) {
+  let lastReportedAt = 0;
+  const sendDelta = () => {
+    const current = Number(videoElement.currentTime || 0);
+    const delta = current - lastReportedAt;
+    if (delta >= 10) {
+      lastReportedAt = current;
+      recordWatchProgress(mediaId, Math.min(15, delta));
+    }
+  };
+  videoElement.addEventListener('timeupdate', sendDelta);
+  videoElement.addEventListener('pause', sendDelta);
+  videoElement.addEventListener('ended', sendDelta);
+}
+
 export function renderVideoCard(video) {
   const creator = escapeHtml(video.creator || '@indo');
   const title = escapeHtml(video.title || 'Video');
@@ -32,4 +48,11 @@ export function renderVideoCard(video) {
     <div class="post-actions"><button data-engagement="like" aria-label="Like">♡ <small>${likes}</small></button><button data-engagement="comment" aria-label="Comment">◯</button><button data-engagement="share" aria-label="Share">↗</button><button class="push-right" data-engagement="save" aria-label="Save">🔖</button></div>
     <div class="post-copy"><strong>${views} views</strong><p><b>${creator}</b> ${caption}</p></div>
   </article>`;
+}
+
+export function bindVideoCards(root) {
+  root.querySelectorAll('[data-video-id] .post-video').forEach((video) => {
+    const card = video.closest('[data-video-id]');
+    if (card) bindWatchProgress(video, card.dataset.videoId);
+  });
 }
