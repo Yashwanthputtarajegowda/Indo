@@ -14,6 +14,7 @@ import { updateCurrentProfile } from './features/profile/update-profile.js';
 import { renderEditProfile } from './screens/edit-profile.js';
 import { loadFollowStatus, toggleFollow } from './features/social/follow.js';
 import { searchUserId } from './features/search/user-search.js';
+import { loadEarningStatus, toggleEarning } from './features/earning/earning.js';
 
 const app = document.getElementById('root');
 let splashFinished = false;
@@ -34,6 +35,46 @@ function renderEditProfileScreen() {
 async function refreshProfile() {
   state.profile = await loadCurrentProfile();
   if (state.profile?.accountType) state.accountType = state.profile.accountType;
+}
+
+async function refreshEarning() {
+  if (!state.authenticated) {
+    state.earning = null;
+    return;
+  }
+  state.earning = await loadEarningStatus();
+}
+
+async function handleEarning(event) {
+  const toggleTarget = event.target.closest('[data-earning-action]');
+  const rowTarget = event.target.closest('[data-earning-toggle]');
+  if (!toggleTarget && !rowTarget) return false;
+
+  const target = toggleTarget || rowTarget;
+  if (rowTarget && !toggleTarget) {
+    const panel = document.querySelector('[data-earning-panel]');
+    if (panel) panel.classList.toggle('open');
+    return true;
+  }
+
+  const message = document.querySelector('[data-earning-message]');
+  const button = toggleTarget;
+  const nextEnabled = !Boolean(state.earning?.earningEnabled);
+  button.disabled = true;
+  if (message) message.textContent = 'Saving earning setting...';
+  try {
+    const result = await toggleEarning(nextEnabled);
+    await refreshEarning();
+    const status = document.querySelector('[data-earning-status]');
+    if (status) status.textContent = result.earningEnabled ? 'ON' : (result.eligible ? 'READY' : 'OFF');
+    button.textContent = result.earningEnabled ? 'Turn Earning OFF' : 'Turn Earning ON';
+    if (message) message.textContent = result.earningEnabled ? 'Earning started.' : 'Earning turned off.';
+  } catch (error) {
+    if (message) message.textContent = error.message || 'Could not update earning setting.';
+  } finally {
+    button.disabled = false;
+  }
+  return true;
 }
 
 async function handleEngagement(event) {
@@ -110,16 +151,19 @@ watchAuthSession(async (user) => {
   sessionUser = user;
   state.authenticated = true;
   await refreshProfile().catch(() => {});
+  await refreshEarning().catch(() => {});
   if (splashFinished && (state.screen === 'auth-login' || state.screen === 'auth-signup')) goTo('home');
 }, () => {
   sessionUser = null;
   state.authenticated = false;
   state.profile = null;
   state.accountType = 'public';
+  state.earning = null;
   if (splashFinished && !String(state.screen).startsWith('auth-')) goTo('auth-login');
 });
 
 document.addEventListener('click', async (event) => {
+  if (await handleEarning(event)) return;
   if (await handleEngagement(event)) return;
   if (await handleFollow(event)) return;
 
@@ -140,6 +184,7 @@ document.addEventListener('click', async (event) => {
   if (screenTarget) {
     const nextScreen = screenTarget.dataset.screen;
     if (nextScreen === 'profile' && state.authenticated) await refreshProfile().catch(() => {});
+    if (nextScreen === 'settings' && state.authenticated) await refreshEarning().catch(() => {});
     goTo(nextScreen);
     if (nextScreen === 'reels') await hydrateFollowButtons(app);
     return;
@@ -147,6 +192,26 @@ document.addEventListener('click', async (event) => {
 
   const authTarget = event.target.closest('[data-auth]');
   if (authTarget) goTo(`auth-${authTarget.dataset.auth}`);
+});
+
+document.addEventListener('change', async (event) => {
+  const visibility = event.target.closest('[data-visibility]');
+  if (!visibility) return;
+  const nextType = visibility.value;
+  const message = document.querySelector('.settings-message');
+  visibility.disabled = true;
+  if (message) message.textContent = 'Saving privacy setting...';
+  try {
+    const result = await setSettingsVisibility(nextType);
+    state.accountType = result.accountType;
+    if (state.profile) state.profile.accountType = result.accountType;
+    if (message) message.textContent = `Account is now ${result.accountType}.`;
+  } catch (error) {
+    visibility.value = state.accountType;
+    if (message) message.textContent = error.message || 'Could not update privacy setting.';
+  } finally {
+    visibility.disabled = false;
+  }
 });
 
 document.addEventListener('submit', async (event) => {
@@ -204,11 +269,13 @@ document.addEventListener('submit', async (event) => {
       const result = await submitSignup(form);
       state.accountType = result.accountType || 'public';
       await refreshProfile().catch(() => {});
+      await refreshEarning().catch(() => {});
       if (message) message.textContent = `Account created. Your User ID is ${result.username}.`;
     } else {
       const result = await submitLogin(form);
       state.accountType = result?.accountType || state.accountType;
       await refreshProfile().catch(() => {});
+      await refreshEarning().catch(() => {});
       if (message) message.textContent = 'Login successful.';
     }
     setTimeout(() => goTo('home'), 500);
