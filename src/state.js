@@ -1,4 +1,5 @@
 export const state = {
   screen: 'home',
-  authScreen: 'login'
+  authScreen: 'login',
+  profile: null
 };
