@@ -178,6 +178,24 @@ document.addEventListener('click', async (event) => {
   if (await handleEngagement(event)) return;
   if (await handleFollow(event)) return;
 
+  const searchFollowTarget = event.target.closest('[data-search-follow-uid]');
+  if (searchFollowTarget) {
+    const targetUid = searchFollowTarget.dataset.searchFollowUid;
+    if (!targetUid || sessionUser?.uid === targetUid) return;
+    searchFollowTarget.disabled = true;
+    try {
+      const current = await loadFollowStatus(targetUid);
+      const result = await toggleFollow(targetUid, !current.following);
+      searchFollowTarget.textContent = result.pending ? 'Requested' : (result.following ? 'Following' : 'Follow');
+      searchFollowTarget.classList.toggle('active', Boolean(result.following));
+    } catch (error) {
+      searchFollowTarget.title = error.message || 'Could not update follow status.';
+    } finally {
+      searchFollowTarget.disabled = false;
+    }
+    return;
+  }
+
   const passwordResetTarget = event.target.closest('[data-password-reset]');
   if (passwordResetTarget) {
     const emailInput = document.querySelector('#login-email');
@@ -264,7 +282,13 @@ document.addEventListener('submit', async (event) => {
       const profile = await loadPublicProfile(user.uid);
       const initial = String(profile?.name || user.name || user.userId || 'I').replace(/^@/, '').charAt(0).toUpperCase() || 'I';
       const accountType = profile?.accountType === 'private' ? 'Private account' : 'Public account';
-      resultBox.innerHTML = `<div class="search-user-result"><div class="avatar small">${initial}</div><div><b>${profile?.userId || user.userId}</b><small>${profile?.name || user.name || 'Indo User'}</small><small>${accountType}</small><small>${Number(profile?.followersCount || 0).toLocaleString()} followers · ${Number(profile?.followingCount || 0).toLocaleString()} following · ${Number(profile?.postsCount || 0).toLocaleString()} posts</small>${profile?.bio ? `<small>${String(profile.bio).replace(/[&<>\"']/g, '')}</small>` : ''}</div></div>`;
+      resultBox.innerHTML = `<div class="search-user-result"><div class="avatar small">${initial}</div><div class="search-user-copy"><b>${profile?.userId || user.userId}</b><small>${profile?.name || user.name || 'Indo User'}</small><small>${accountType}</small><small>${Number(profile?.followersCount || 0).toLocaleString()} followers · ${Number(profile?.followingCount || 0).toLocaleString()} following · ${Number(profile?.postsCount || 0).toLocaleString()} posts</small>${profile?.bio ? `<small>${String(profile.bio).replace(/[&<>\"']/g, '')}</small>` : ''}</div><button class="follow-btn" type="button" data-search-follow-uid="${profile?.uid || user.uid}">Follow</button></div>`;
+      const followButton = resultBox.querySelector('[data-search-follow-uid]');
+      if (followButton) {
+        const current = await loadFollowStatus(profile?.uid || user.uid).catch(() => ({ following: false, pending: false }));
+        followButton.textContent = current.pending ? 'Requested' : (current.following ? 'Following' : 'Follow');
+        followButton.classList.toggle('active', Boolean(current.following));
+      }
     } catch (error) { resultBox.textContent = error.message || 'Could not search User ID.'; }
     return;
   }
