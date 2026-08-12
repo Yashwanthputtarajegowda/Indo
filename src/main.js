@@ -13,6 +13,7 @@ import { loadCurrentProfile } from './features/profile/current-profile.js';
 import { updateCurrentProfile } from './features/profile/update-profile.js';
 import { renderEditProfile } from './screens/edit-profile.js';
 import { loadFollowStatus, toggleFollow } from './features/social/follow.js';
+import { searchUserId } from './features/search/user-search.js';
 
 const app = document.getElementById('root');
 let splashFinished = false;
@@ -148,28 +149,29 @@ document.addEventListener('click', async (event) => {
   if (authTarget) goTo(`auth-${authTarget.dataset.auth}`);
 });
 
-document.addEventListener('change', async (event) => {
-  const visibility = event.target.closest('[data-visibility]');
-  if (!visibility) return;
-  const nextType = visibility.value;
-  const message = document.querySelector('.settings-message');
-  visibility.disabled = true;
-  if (message) message.textContent = 'Saving privacy setting...';
-  try {
-    const result = await setSettingsVisibility(nextType);
-    state.accountType = result.accountType;
-    if (state.profile) state.profile.accountType = result.accountType;
-    if (message) message.textContent = `Account is now ${result.accountType}.`;
-  } catch (error) {
-    visibility.value = state.accountType;
-    if (message) message.textContent = error.message || 'Could not update privacy setting.';
-  } finally {
-    visibility.disabled = false;
-  }
-});
-
 document.addEventListener('submit', async (event) => {
   const form = event.target;
+
+  if (form.id === 'user-search-form') {
+    event.preventDefault();
+    const input = form.querySelector('[name="query"]');
+    const resultBox = document.querySelector('[data-search-result]');
+    const query = input?.value || '';
+    if (!resultBox) return;
+    resultBox.textContent = 'Searching...';
+    try {
+      const user = await searchUserId(query);
+      if (!user) {
+        resultBox.innerHTML = '<div class="search-empty">No Indo user found for that User ID.</div>';
+        return;
+      }
+      const initial = String(user.name || user.userId || 'I').replace(/^@/, '').charAt(0).toUpperCase() || 'I';
+      resultBox.innerHTML = `<div class="search-user-result"><div class="avatar small">${initial}</div><div><b>${user.userId}</b><small>${user.name || 'Indo User'}</small></div></div>`;
+    } catch (error) {
+      resultBox.textContent = error.message || 'Could not search User ID.';
+    }
+    return;
+  }
 
   if (form.id === 'edit-profile-form') {
     event.preventDefault();
