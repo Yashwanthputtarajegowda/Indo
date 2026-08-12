@@ -12,6 +12,7 @@ import { loadEngagement, toggleLike, toggleSave, addComment, loadComments, share
 import { loadCurrentProfile } from './features/profile/current-profile.js';
 import { updateCurrentProfile } from './features/profile/update-profile.js';
 import { renderEditProfile } from './screens/edit-profile.js';
+import { loadFollowStatus, toggleFollow } from './features/social/follow.js';
 
 const app = document.getElementById('root');
 let splashFinished = false;
@@ -70,6 +71,40 @@ async function handleEngagement(event) {
   return true;
 }
 
+async function handleFollow(event) {
+  const target = event.target.closest('[data-follow-uid]');
+  if (!target) return false;
+  const targetUid = target.dataset.followUid;
+  if (!targetUid) return false;
+  if (sessionUser?.uid === targetUid) return true;
+
+  target.disabled = true;
+  try {
+    const current = await loadFollowStatus(targetUid);
+    const result = await toggleFollow(targetUid, !current.following);
+    target.textContent = result.following ? 'Following' : 'Follow';
+    target.classList.toggle('active', Boolean(result.following));
+  } catch (error) {
+    target.title = error.message || 'Could not update follow status.';
+  } finally {
+    target.disabled = false;
+  }
+  return true;
+}
+
+async function hydrateFollowButtons(root) {
+  const buttons = root.querySelectorAll('[data-follow-uid]');
+  for (const button of buttons) {
+    const uid = button.dataset.followUid;
+    if (!uid || sessionUser?.uid === uid) continue;
+    try {
+      const result = await loadFollowStatus(uid);
+      button.textContent = result.following ? 'Following' : 'Follow';
+      button.classList.toggle('active', Boolean(result.following));
+    } catch {}
+  }
+}
+
 watchAuthSession(async (user) => {
   sessionUser = user;
   state.authenticated = true;
@@ -85,6 +120,7 @@ watchAuthSession(async (user) => {
 
 document.addEventListener('click', async (event) => {
   if (await handleEngagement(event)) return;
+  if (await handleFollow(event)) return;
 
   const editProfileTarget = event.target.closest('[data-edit-profile]');
   if (editProfileTarget) {
@@ -104,6 +140,7 @@ document.addEventListener('click', async (event) => {
     const nextScreen = screenTarget.dataset.screen;
     if (nextScreen === 'profile' && state.authenticated) await refreshProfile().catch(() => {});
     goTo(nextScreen);
+    if (nextScreen === 'reels') await hydrateFollowButtons(app);
     return;
   }
 
