@@ -35,6 +35,15 @@
         }
       }
     },
+    "notifications": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$notificationId": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['type','actorUid','read','createdAt']) && newData.child('type').isString() && newData.child('actorUid').isString() && newData.child('read').isBoolean() && newData.child('createdAt').isNumber()"
+        }
+      }
+    },
     "system": { ".read": false, ".write": false },
     "userConversations": {
       "$uid": {
