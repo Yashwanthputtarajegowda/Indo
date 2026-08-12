@@ -1,0 +1,41 @@
+name: Frontend Check
+
+on:
+  push:
+    paths:
+      - "**/*.js"
+      - "**/*.css"
+      - "index.html"
+      - ".github/workflows/frontend-check.yml"
+  pull_request:
+    paths:
+      - "**/*.js"
+      - "**/*.css"
+      - "index.html"
+      - ".github/workflows/frontend-check.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          files=(js/**/*.js)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No JavaScript files found."
+            exit 0
+          fi
+          for file in "${files[@]}"; do
+            node --check "$file"
+          done
