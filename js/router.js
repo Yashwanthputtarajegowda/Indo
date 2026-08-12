@@ -8,6 +8,7 @@ import { renderPublicProfilePage } from "./pages/public-profile.js";
 import { renderUploadVideoPage } from "./pages/upload-video.js";
 import { renderUploadReelPage } from "./pages/upload-reel.js";
 import { renderNotificationsPage } from "./pages/notifications.js";
+import { renderSavedPage } from "./pages/saved.js";
 import { renderVideoPlayerPage } from "./pages/video-player.js";
 import { renderMessagesPage } from "./pages/messages.js";
 import { renderChatPage } from "./pages/chat.js";
@@ -32,6 +33,7 @@ export function navigate(container, page, data = {}) {
     case "upload-video": renderUploadVideoPage(container); return;
     case "upload-reel": renderUploadReelPage(container); return;
     case "notifications": loadStyle("./css/notifications.css"); renderNotificationsPage(container); return;
+    case "saved": renderSavedPage(container); return;
     case "messages":
     case "message": loadStyle("./css/messages.css"); renderMessagesPage(container); return;
     case "new-message": loadStyle("./css/new-message.css"); renderNewMessagePage(container); return;
