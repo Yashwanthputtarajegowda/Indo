@@ -1,4 +1,5 @@
 import './styles.css';
+import { renderAuth } from './auth.js';
 
 const app = document.getElementById('root');
 
@@ -6,7 +7,7 @@ const icons = {
   home: '⌂', search: '⌕', reel: '▶', create: '+', profile: '●', heart: '♡', comment: '○', share: '➤', bookmark: '♧', bell: '♧', settings: '⚙', back: '‹', more: '⋯'
 };
 
-const state = { screen: 'home' };
+const state = { screen: 'auth' };
 
 const samplePosts = [
   { user: 'Yashwanth', id: '@yash123', image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80', likes: '142', comments: '12', caption: 'Nature is peace ✨' },
@@ -63,6 +64,10 @@ function renderNotifications() {
 }
 
 function render() {
+  if (state.screen === 'auth') {
+    renderAuth(app, (screen) => { state.screen = screen; render(); });
+    return;
+  }
   ({home:renderHome,reels:renderReels,create:renderCreate,profile:renderProfile,settings:renderSettings,search:renderSearch,notifications:renderNotifications}[state.screen] || renderHome)();
 }
 
