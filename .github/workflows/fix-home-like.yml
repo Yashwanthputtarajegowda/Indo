@@ -1,0 +1,43 @@
+name: One-time home like fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'chore: apply home like fix') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch like click handler
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/app/click-handlers.js')
+          text = path.read_text()
+
+          old = '''      if (action === 'like') {\n        const current = await loadEngagement(mediaId);\n        const result = await toggleLike(mediaId, !current.liked);\n        const small = target.querySelector('small');\n        if (small) small.textContent = Number(result.likes || 0).toLocaleString();\n        target.classList.toggle('active', Boolean(result.liked));\n      } else if (action === 'save') {'''
+
+          new = '''      if (action === 'like') {\n        if (target.dataset.busy === 'true') return true;\n        target.dataset.busy = 'true';\n        const small = target.querySelector('small');\n        const previousLiked = target.classList.contains('active');\n        const previousCount = Number((small?.textContent || '0').replace(/,/g, '')) || 0;\n        const optimisticLiked = !previousLiked;\n        target.classList.toggle('active', optimisticLiked);\n        if (small) {\n          const optimisticCount = Math.max(0, previousCount + (optimisticLiked ? 1 : -1));\n          small.textContent = optimisticCount.toLocaleString();\n        }\n        try {\n          const current = await loadEngagement(mediaId);\n          const result = await toggleLike(mediaId, !current.liked);\n          target.classList.toggle('active', Boolean(result.liked));\n          if (small) small.textContent = Number(result.likes || 0).toLocaleString();\n          target.title = result.liked ? 'Liked' : 'Like';\n        } catch (error) {\n          target.classList.toggle('active', previousLiked);\n          if (small) small.textContent = previousCount.toLocaleString();\n          target.title = error.message || 'Could not update like.';\n        } finally {\n          delete target.dataset.busy;\n        }\n      } else if (action === 'save') {'''
+
+          if old not in text:
+              raise SystemExit('Expected like handler block not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Remove one-time workflow
+        run: rm -f .github/workflows/fix-home-like.yml
+
+      - name: Commit like fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app/click-handlers.js .github/workflows/fix-home-like.yml
+          git commit -m "chore: apply home like fix"
+          git push
