@@ -10,6 +10,8 @@ import { watchAuthSession } from './features/auth/auth-session.js';
 import { handleLogout } from './features/auth/logout-button.js';
 import { loadEngagement, toggleLike, toggleSave, addComment, loadComments, shareMedia } from './features/feed/media-engagement.js';
 import { loadCurrentProfile } from './features/profile/current-profile.js';
+import { updateCurrentProfile } from './features/profile/update-profile.js';
+import { renderEditProfile } from './screens/edit-profile.js';
 
 const app = document.getElementById('root');
 let splashFinished = false;
@@ -18,6 +20,12 @@ let sessionUser = null;
 function goTo(screen) {
   state.screen = screen;
   render(app);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderEditProfileScreen() {
+  state.screen = 'edit-profile';
+  renderEditProfile(app, state.profile);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -78,6 +86,13 @@ watchAuthSession(async (user) => {
 document.addEventListener('click', async (event) => {
   if (await handleEngagement(event)) return;
 
+  const editProfileTarget = event.target.closest('[data-edit-profile]');
+  if (editProfileTarget) {
+    await refreshProfile().catch(() => {});
+    renderEditProfileScreen();
+    return;
+  }
+
   const logoutTarget = event.target.closest('[data-logout]');
   if (logoutTarget) {
     await handleLogout(document.querySelector('.settings-message'));
@@ -118,6 +133,27 @@ document.addEventListener('change', async (event) => {
 
 document.addEventListener('submit', async (event) => {
   const form = event.target;
+
+  if (form.id === 'edit-profile-form') {
+    event.preventDefault();
+    const button = form.querySelector('.primary-btn');
+    const message = form.querySelector('.edit-profile-message');
+    const name = form.querySelector('[name="name"]')?.value || '';
+    const bio = form.querySelector('[name="bio"]')?.value || '';
+    if (button) button.disabled = true;
+    if (message) message.textContent = 'Saving...';
+    try {
+      state.profile = await updateCurrentProfile({ name, bio });
+      state.accountType = state.profile?.accountType || state.accountType;
+      if (message) message.textContent = 'Profile updated.';
+      setTimeout(() => goTo('profile'), 400);
+    } catch (error) {
+      if (message) message.textContent = error.message || 'Could not update profile.';
+      if (button) button.disabled = false;
+    }
+    return;
+  }
+
   if (!['signup-form', 'login-form'].includes(form.id)) return;
   event.preventDefault();
   const button = form.querySelector('.auth-submit');
