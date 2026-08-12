@@ -2,6 +2,7 @@ import { icons } from '../data.js';
 import { nav } from '../components/nav.js';
 import { loadHomeVideos, recordVideoView, renderVideoCard, bindVideoCards } from '../features/feed/home-feed.js';
 import { loadNotifications } from '../features/notifications/notifications.js';
+import { loadStories, renderStoriesRow, bindStoryButtons } from '../features/stories/stories.js';
 
 function renderNotificationBadge(app) {
   const button = app.querySelector('[data-screen="notifications"]');
@@ -19,12 +20,26 @@ function renderNotificationBadge(app) {
   }).catch(() => {});
 }
 
+function renderStories(app) {
+  const row = app.querySelector('[data-stories]');
+  if (!row) return;
+  loadStories().then((stories) => {
+    if (!stories.length) {
+      row.innerHTML = '<div class="story add-story"><div class="avatar gradient">+</div><span>Your story</span></div>';
+      return;
+    }
+    row.innerHTML = '<div class="story add-story"><div class="avatar gradient">+</div><span>Your story</span></div>' + renderStoriesRow(stories);
+    bindStoryButtons(row);
+  }).catch(() => {});
+}
+
 export function renderHome(app) {
   app.innerHTML = `<div class="app-shell"><header class="topbar"><div class="brand"><span>♥</span>Indo</div><div class="top-actions"><button aria-label="Activity">${icons.heart}</button><button class="notification-button" data-screen="notifications" aria-label="Notifications">${icons.bell}</button></div></header>
-    <div class="stories"><div class="story add-story"><div class="avatar gradient">+</div><span>Your story</span></div></div>
+    <div class="stories" data-stories><div class="story add-story"><div class="avatar gradient">+</div><span>Your story</span></div></div>
     <main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>${nav('home')}</div>`;
 
   renderNotificationBadge(app);
+  renderStories(app);
 
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
