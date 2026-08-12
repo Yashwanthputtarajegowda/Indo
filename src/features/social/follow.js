@@ -28,3 +28,14 @@ export async function toggleFollow(targetUid, follow) {
     body: JSON.stringify({ targetUid, follow: Boolean(follow) })
   });
 }
+
+export async function loadFollowRequests() {
+  return request('/api/social/follow-requests');
+}
+
+export async function respondToFollowRequest(requesterUid, accept) {
+  return request(`/api/social/follow-requests/${encodeURIComponent(requesterUid)}`, {
+    method: 'POST',
+    body: JSON.stringify({ accept: Boolean(accept) })
+  });
+}
