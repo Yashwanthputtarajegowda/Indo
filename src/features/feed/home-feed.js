@@ -86,6 +86,16 @@ export function bindVideoCards(root) {
       video.play().catch(() => {});
     };
 
+    const togglePlayback = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (video.paused) {
+        playWithSound();
+      } else {
+        video.pause();
+      }
+    };
+
     const pauseWhenHidden = () => {
       if (!video.paused) video.pause();
     };
@@ -104,9 +114,7 @@ export function bindVideoCards(root) {
       playWithSound();
     }
 
-    video.addEventListener('click', () => {
-      if (video.paused) playWithSound();
-    });
+    video.addEventListener('click', togglePlayback);
 
     bindWatchProgress(video, card.dataset.videoId);
   });
