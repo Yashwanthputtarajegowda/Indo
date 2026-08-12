@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
     steps:
       - name: Checkout
@@ -27,7 +29,11 @@ jobs:
       - name: Install Firebase CLI
         run: npm install --global firebase-tools
 
+      - name: Validate Firebase rules files
+        run: node -e "JSON.parse(require('fs').readFileSync('database.rules.json','utf8')); JSON.parse(require('fs').readFileSync('firebase.json','utf8')); console.log('Firebase config files are valid JSON.')"
+
+      - name: Verify deployment secret
+        run: test -n "$FIREBASE_TOKEN"
+
       - name: Deploy Realtime Database rules
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: firebase deploy --only database --project indo-174f0 --token "$FIREBASE_TOKEN"
