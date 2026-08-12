@@ -8,6 +8,9 @@ on:
       - 'capacitor.config.json'
       - 'package.json'
       - 'index.html'
+      - 'manifest.webmanifest'
+      - 'sw.js'
+      - 'config/**'
       - 'src/**'
       - '.github/workflows/android.yml'
 
@@ -23,6 +26,16 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm install
+
+      - name: Stage web app for Capacitor
+        run: |
+          rm -rf www
+          mkdir -p www
+          cp index.html www/
+          cp manifest.webmanifest www/
+          cp sw.js www/
+          cp -R config www/
+          cp -R src www/
 
       - name: Add Android platform
         run: npx cap add android
