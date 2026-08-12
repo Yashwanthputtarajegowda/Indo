@@ -72,7 +72,7 @@
         "messages": {
           "$messageId": {
             ".write": "auth != null && (!data.exists() || data.child('senderUid').val() === auth.uid)",
-            ".validate": "newData.hasChildren(['senderUid','text','createdAt']) && newData.child('senderUid').isString() && newData.child('text').isString() && newData.child('createdAt').isNumber()"
+            ".validate": "newData.hasChildren(['senderUid','text','createdAt']) && newData.child('senderUid').isString() && newData.child('text').isString() && newData.child('createdAt').isNumber() && newData.child('text').val().length <= 500"
           }
         }
       }
