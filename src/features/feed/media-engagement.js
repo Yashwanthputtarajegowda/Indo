@@ -29,14 +29,17 @@ export function addComment(mediaId, text) {
   return request(`/api/media/${encodeURIComponent(mediaId)}/comments`, 'POST', { text });
 }
 
-export function loadComments(mediaId) {
+export async function loadComments(mediaId) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Please login first.');
+  const token = await user.getIdToken();
   const apiBase = window.INDO_API_BASE || '';
-  return fetch(`${apiBase}/api/media/${encodeURIComponent(mediaId)}/comments`)
-    .then(async (response) => {
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Could not load comments.');
-      return data.comments || [];
-    });
+  const response = await fetch(`${apiBase}/api/media/${encodeURIComponent(mediaId)}/comments`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Could not load comments.');
+  return data.comments || [];
 }
 
 export async function shareMedia(mediaId) {
