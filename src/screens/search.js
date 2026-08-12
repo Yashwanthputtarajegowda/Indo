@@ -15,13 +15,42 @@ async function searchUserId(query) {
   return data;
 }
 
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[char]));
+}
+
 function renderSearchResult(data) {
   if (!data?.exists || !data?.user) {
     return '<div class="profile-empty">No Indo user found for that User ID.</div>';
   }
+
   const user = data.user;
-  const initial = String(user.name || user.userId || 'I').replace(/^@/, '').trim().charAt(0).toUpperCase() || 'I';
-  return `<div class="search-user" data-user-uid="${String(user.uid || '').replace(/"/g, '&quot;')}"><div class="avatar small gradient">${initial}</div><div><b>${String(user.name || 'Indo User')}</b><small>${String(user.userId || '')}</small></div></div>`;
+  const uid = escapeHtml(user.uid || '');
+  const name = escapeHtml(user.name || 'Indo User');
+  const userId = escapeHtml(user.userId || '');
+  const initial = String(user.name || user.userId || 'I')
+    .replace(/^@/, '')
+    .trim()
+    .charAt(0)
+    .toUpperCase() || 'I';
+
+  return `
+    <div class="search-user" data-user-uid="${uid}">
+      <div class="avatar small gradient">${escapeHtml(initial)}</div>
+      <div class="search-user-copy">
+        <b>${name}</b>
+        <small>${userId}</small>
+      </div>
+      <div class="search-user-actions">
+        <button class="follow-btn" data-search-follow-uid="${uid}" type="button">Follow</button>
+      </div>
+    </div>`;
 }
 
 export function renderSearch(app) {
@@ -37,7 +66,7 @@ export function renderSearch(app) {
     try {
       result.innerHTML = renderSearchResult(await searchUserId(input.value));
     } catch (error) {
-      result.innerHTML = `<div class="profile-empty">${String(error.message || 'Could not search.').replace(/</g, '&lt;')}</div>`;
+      result.innerHTML = `<div class="profile-empty">${escapeHtml(error.message || 'Could not search.')}</div>`;
     }
   });
 }
