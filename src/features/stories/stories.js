@@ -1,7 +1,7 @@
-import { auth } from '../../auth/firebase-client.js';
+import { auth } from '../auth/firebase-client.js';
 
 function escapeHtml(value = '') {
-  return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
+  return String(value).replace(/[&<>\"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' }[char]));
 }
 
 export async function loadStories() {
