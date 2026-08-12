@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, query, limitToLast, set } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, query, limitToLast, set, update } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { auth } from "./firebase-auth.js";
 import { createClientNotification } from "./notifications.js";
 
@@ -72,6 +72,16 @@ export function watchUserConversations(onConversations) {
     const raw = snapshot.val() || {};
     const items = Object.values(raw).sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
     onConversations(items);
+  });
+}
+
+export async function markConversationRead(otherUid) {
+  const currentUid = auth.currentUser?.uid;
+  const key = conversationKey(otherUid);
+  if (!currentUid || !key) return;
+  await update(ref(database, `userConversations/${currentUid}/${key}`), {
+    unreadCount: 0,
+    updatedAt: Date.now()
   });
 }
 
