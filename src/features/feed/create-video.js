@@ -20,7 +20,7 @@ async function uploadToCloudinary(file, config) {
   form.append('api_key', config.apiKey);
   form.append('timestamp', String(config.timestamp));
   form.append('signature', config.signature);
-  form.append('folder', 'indo/videos');
+  form.append('folder', config.folder || 'indo/videos');
 
   const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`, {
     method: 'POST',
