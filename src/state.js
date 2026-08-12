@@ -4,5 +4,6 @@ export const state = {
   profile: null,
   accountType: 'public',
   authenticated: false,
-  earning: null
+  earning: null,
+  earningSummary: null
 };
