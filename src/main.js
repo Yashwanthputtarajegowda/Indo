@@ -15,6 +15,7 @@ import { renderEditProfile } from './screens/edit-profile.js';
 import { loadFollowStatus, toggleFollow } from './features/social/follow.js';
 import { searchUserId } from './features/search/user-search.js';
 import { loadEarningStatus, loadEarningSummary, toggleEarning } from './features/earning/earning.js';
+import { requestPayout } from './features/earning/wallet.js';
 
 const app = document.getElementById('root');
 let splashFinished = false;
@@ -193,28 +194,29 @@ document.addEventListener('click', async (event) => {
   if (authTarget) goTo(`auth-${authTarget.dataset.auth}`);
 });
 
-document.addEventListener('change', async (event) => {
-  const visibility = event.target.closest('[data-visibility]');
-  if (!visibility) return;
-  const nextType = visibility.value;
-  const message = document.querySelector('.settings-message');
-  visibility.disabled = true;
-  if (message) message.textContent = 'Saving privacy setting...';
-  try {
-    const result = await setSettingsVisibility(nextType);
-    state.accountType = result.accountType;
-    if (state.profile) state.profile.accountType = result.accountType;
-    if (message) message.textContent = `Account is now ${result.accountType}.`;
-  } catch (error) {
-    visibility.value = state.accountType;
-    if (message) message.textContent = error.message || 'Could not update privacy setting.';
-  } finally {
-    visibility.disabled = false;
-  }
-});
-
 document.addEventListener('submit', async (event) => {
   const form = event.target;
+  if (form.id === 'payout-form') {
+    event.preventDefault();
+    const button = form.querySelector('.primary-btn');
+    const message = form.querySelector('[data-wallet-message]');
+    const amount = Number(form.querySelector('[name="amount"]')?.value || 0);
+    const method = form.querySelector('[name="method"]')?.value || 'manual';
+    if (button) button.disabled = true;
+    if (message) message.textContent = 'Creating payout request...';
+    try {
+      const result = await requestPayout(amount, method);
+      if (message) message.textContent = `Payout request created for $${Number(result.payout.amount).toFixed(2)}.`;
+      form.reset();
+      setTimeout(() => goTo('wallet'), 500);
+    } catch (error) {
+      if (message) message.textContent = error.message || 'Could not create payout request.';
+    } finally {
+      button.disabled = false;
+    }
+    return;
+  }
+
   if (form.id === 'user-search-form') {
     event.preventDefault();
     const input = form.querySelector('[name="query"]');
