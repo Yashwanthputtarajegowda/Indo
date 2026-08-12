@@ -1,7 +1,9 @@
 import './styles.css';
+import './features/splash/splash.css';
 import { state } from './state.js';
 import { render } from './router.js';
 import { submitSignup } from './features/auth/signup-form.js';
+import { startSplash } from './features/splash/splash-flow.js';
 
 const app = document.getElementById('root');
 
@@ -42,4 +44,4 @@ document.addEventListener('submit', async (event) => {
   }
 });
 
-render(app);
+startSplash(app, () => goTo('auth-login'));
