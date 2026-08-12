@@ -17,9 +17,9 @@ function timeAgo(timestamp) {
 }
 
 function renderNotification(item) {
-  const actor = escapeHtml(item.actorUsername || '@user');
-  const message = escapeHtml(item.message || 'You have a new notification.');
-  const initial = escapeHtml(actor.replace(/^@/, '').charAt(0).toUpperCase() || 'I');
+  const actor = escapeHtml(item.actorUserId || '@user');
+  const message = escapeHtml(item.text || 'You have a new notification.');
+  const initial = escapeHtml((item.actorName || actor.replace(/^@/, 'I')).charAt(0).toUpperCase() || 'I');
   return `<button class="notice ${item.read ? '' : 'unread'}" data-notification-id="${escapeHtml(item.id || '')}" type="button"><div class="avatar small">${initial}</div><p><b>${actor}</b> ${message}<small>${timeAgo(item.createdAt)}</small></p></button>`;
 }
 
