@@ -1,10 +1,5 @@
 import { watchUserConversations } from "../services/chat-realtime.js";
 
-const demoThreads = [
-  { uid: "demo-indo-creator", userId: "@indo_creator", name: "Indo Creator", preview: "Welcome to Indo!", time: "Now" },
-  { uid: "demo-user", userId: "@demo_user", name: "Demo User", preview: "Let's connect.", time: "5m" }
-];
-
 function formatTime(timestamp) {
   if (!timestamp) return "Now";
   const date = new Date(timestamp);
@@ -38,17 +33,23 @@ export function renderMessagesPage(container) {
   let threads = [];
 
   const renderThreads = (items) => {
-    threads = items.length ? items : [];
-    list.innerHTML = threads.length ? threads.map((thread, index) => `
-      <button class="message-thread" type="button" data-message-index="${index}">
-        <div class="message-avatar" aria-hidden="true">${String(thread.otherUserId || "@?").replace('@','').slice(0,1).toUpperCase()}</div>
-        <div class="message-thread-info">
-          <p class="message-user">${thread.otherUserId || "@user"}</p>
-          <p class="message-preview">${thread.preview || ""}</p>
-        </div>
-        <span class="message-time">${formatTime(thread.updatedAt)}</span>
-      </button>
-    `).join("") : `<p class="messages-empty">No conversations yet.</p>`;
+    threads = Array.isArray(items) ? items : [];
+    list.innerHTML = threads.length ? threads.map((thread, index) => {
+      const unreadCount = Math.max(0, Number(thread.unreadCount) || 0);
+      return `
+        <button class="message-thread${unreadCount ? " has-unread" : ""}" type="button" data-message-index="${index}">
+          <div class="message-avatar" aria-hidden="true">${String(thread.otherUserId || "@?").replace('@','').slice(0,1).toUpperCase()}</div>
+          <div class="message-thread-info">
+            <p class="message-user">${thread.otherUserId || "@user"}</p>
+            <p class="message-preview">${thread.preview || ""}</p>
+          </div>
+          <span class="message-thread-meta">
+            <span class="message-time">${formatTime(thread.updatedAt)}</span>
+            ${unreadCount ? `<span class="message-unread-badge" aria-label="${unreadCount} unread messages">${unreadCount > 99 ? "99+" : unreadCount}</span>` : ""}
+          </span>
+        </button>
+      `;
+    }).join("") : `<p class="messages-empty">No conversations yet.</p>`;
   };
 
   const unsubscribe = watchUserConversations((items) => renderThreads(items));
