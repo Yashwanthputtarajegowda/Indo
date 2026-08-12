@@ -22,11 +22,11 @@
     </main>
   </div>
   <script src="./config/runtime-config.js"></script>
-  <script type="module">
-    const root = document.getElementById('root');
-
-    function showStartupError(error) {
-      const message = String(error?.message || error || 'Unknown startup error.');
+  <script>
+    window.addEventListener('error', (event) => {
+      const message = String(event.error?.message || event.message || 'Application failed to load.');
+      const root = document.getElementById('root');
+      if (!root || !root.querySelector('.splash-screen')) return;
       const safe = message.replace(/[&<>\"']/g, '');
       root.innerHTML = `
         <main class="splash-screen splash-error">
@@ -36,31 +36,11 @@
           <small>${safe}</small>
           <button type="button" onclick="location.reload()">Reload</button>
         </main>`;
-    }
-
-    async function prepareServiceWorker() {
-      if (!('serviceWorker' in navigator)) return;
-      try {
-        await navigator.serviceWorker.register('./sw.js');
-      } catch (error) {
-        console.warn('Indo service worker registration failed:', error);
-      }
-    }
-
-    const startupTimeout = window.setTimeout(() => {
-      if (root.querySelector('.splash-screen')) {
-        showStartupError(new Error('Startup timed out before the first screen opened.'));
-      }
-    }, 5000);
-
-    Promise.resolve(prepareServiceWorker())
-      .then(() => import('./src/main.js'))
-      .then(() => import('./src/features/messages/messages-bootstrap.js').catch(() => null))
-      .then(() => window.clearTimeout(startupTimeout))
-      .catch((error) => {
-        window.clearTimeout(startupTimeout);
-        showStartupError(error);
-      });
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      window.dispatchEvent(new ErrorEvent('error', { error: event.reason, message: String(event.reason?.message || event.reason || 'Startup failed.') }));
+    });
   </script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
