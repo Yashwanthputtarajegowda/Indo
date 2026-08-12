@@ -1,6 +1,5 @@
 import { state } from '../state.js';
 import { requestPayout } from '../features/earning/wallet.js';
-import { searchUserId, loadPublicProfile } from '../features/search/user-search.js';
 import { updateCurrentProfile } from '../features/profile/update-profile.js';
 import { submitSignup } from '../features/auth/signup-form.js';
 import { submitLogin } from '../features/auth/login-form.js';
@@ -28,50 +27,6 @@ export function createFormHandlers({ goTo, refreshProfile, refreshEarning }) {
           if (message) message.textContent = error.message || 'Could not create payout request.';
         } finally {
           if (button) button.disabled = false;
-        }
-        return;
-      }
-
-      if (form.id === 'user-search-form') {
-        event.preventDefault();
-        const input = form.querySelector('[name="query"]');
-        const resultBox = document.querySelector('[data-search-result]');
-        const query = input?.value || '';
-        if (!resultBox) return;
-        resultBox.textContent = 'Searching...';
-
-        try {
-          const user = await searchUserId(query);
-          if (!user) {
-            resultBox.innerHTML = '<div class="search-empty">No Indo user found for that User ID.</div>';
-            return;
-          }
-
-          const profile = await loadPublicProfile(user.uid);
-          const targetUid = profile?.uid || user.uid;
-          const initial = String(profile?.name || user.name || user.userId || 'I')
-            .replace(/^@/, '')
-            .charAt(0)
-            .toUpperCase() || 'I';
-          const accountType = profile?.accountType === 'private' ? 'Private account' : 'Public account';
-          const safeBio = profile?.bio ? String(profile.bio).replace(/[&<>\"']/g, '') : '';
-
-          resultBox.innerHTML = `
-            <div class="search-user-result">
-              <div class="avatar small">${initial}</div>
-              <div class="search-user-copy">
-                <b>${profile?.userId || user.userId}</b>
-                <small>${profile?.name || user.name || 'Indo User'}</small>
-                <small>${accountType}</small>
-                <small>${Number(profile?.followersCount || 0).toLocaleString()} followers · ${Number(profile?.followingCount || 0).toLocaleString()} following · ${Number(profile?.postsCount || 0).toLocaleString()} posts</small>
-                ${safeBio ? `<small>${safeBio}</small>` : ''}
-              </div>
-              <button class="follow-btn" type="button" data-search-follow-uid="${targetUid}">Follow</button>
-              <button class="message-btn" type="button" data-message-uid="${targetUid}" data-message-user-name="${String(profile?.name || user.name || 'Indo User').replace(/[&<>\"']/g, '')}">Message</button>
-            </div>`;
-          return;
-        } catch (error) {
-          resultBox.textContent = error.message || 'Could not search User ID.';
         }
         return;
       }
