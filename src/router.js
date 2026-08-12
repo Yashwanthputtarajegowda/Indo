@@ -17,6 +17,7 @@ export function render(app) {
   if (state.screen === 'settings') return renderSettings(app, state.accountType, state.earning, state.earningSummary);
   if (state.screen === 'wallet') return renderWallet(app);
   if (state.screen === 'blocked-users') return renderBlockedUsers(app);
+  if (state.screen === 'activity') return renderNotifications(app, 'activity');
   const screens = { home: renderHome, reels: renderReels, create: renderCreate, search: renderSearch, notifications: renderNotifications };
   (screens[state.screen] || renderHome)(app);
 }
