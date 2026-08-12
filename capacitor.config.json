@@ -1,0 +1,11 @@
+{
+  "appId": "com.indo.app",
+  "appName": "Indo",
+  "webDir": ".",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
