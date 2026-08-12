@@ -1,0 +1,26 @@
+name: Indo CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check frontend server syntax
+        run: node --check server.js
+
+      - name: Check service worker syntax
+        run: node --check sw.js
+
+      - name: Check main entry syntax
+        run: node --check src/main.js
