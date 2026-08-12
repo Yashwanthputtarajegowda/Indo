@@ -7,34 +7,47 @@ function showStartupError(error) {
 
 async function start() {
   try {
-    // Do not statically import the application graph. A broken secondary screen
-    // must never prevent the login screen from appearing.
     const { renderLogin } = await import('./screens/auth.js');
     renderLogin(app);
 
-    // Register form handlers only after the login screen is visible.
-    // If a secondary handler module has a problem, login UI still remains usable.
-    try {
-      const [{ createFormHandlers }, { state }] = await Promise.all([
-        import('./app/form-handlers.js'),
-        import('./state.js')
-      ]);
-      const { goTo } = await import('./app/navigation.js');
-      const session = {
-        refreshProfile: async () => {},
-        refreshEarning: async () => {}
-      };
-      createFormHandlers({
-        goTo: (screen) => {
-          state.screen = screen;
-          import('./router.js').then(({ render }) => render(app)).catch(() => {});
-        },
-        refreshProfile: session.refreshProfile,
-        refreshEarning: session.refreshEarning
-      }).register();
-    } catch (handlerError) {
-      console.error('Optional startup handlers failed:', handlerError);
-    }
+    const form = app.querySelector('#login-form');
+    if (!form) throw new Error('Login form could not be created.');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = form.querySelector('.auth-submit');
+      const message = form.querySelector('#login-message');
+      const email = form.querySelector('#login-email')?.value?.trim() || '';
+      const password = form.querySelector('#login-password')?.value || '';
+
+      if (!email) {
+        if (message) message.textContent = 'Email ID is required.';
+        return;
+      }
+      if (!password) {
+        if (message) message.textContent = 'Password is required.';
+        return;
+      }
+
+      if (button) button.disabled = true;
+      if (message) message.textContent = 'Logging in...';
+
+      try {
+        const { auth, signInWithEmailAndPassword } = await import('./features/auth/firebase-client.js');
+        await signInWithEmailAndPassword(auth, email, password);
+
+        if (message) message.textContent = 'Login successful.';
+        const { state } = await import('./state.js');
+        state.authenticated = true;
+        state.screen = 'home';
+        const { render } = await import('./router.js');
+        render(app);
+      } catch (error) {
+        console.error('Login failed:', error);
+        if (message) message.textContent = error?.message || 'Login failed. Please check your email and password.';
+        if (button) button.disabled = false;
+      }
+    });
   } catch (error) {
     console.error('Indo startup failed:', error);
     showStartupError(error);
