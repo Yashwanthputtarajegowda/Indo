@@ -34,7 +34,7 @@ function renderStories(app) {
 }
 
 export function renderHome(app) {
-  app.innerHTML = `<div class="app-shell"><header class="topbar"><div class="brand"><span>♥</span>Indo</div><div class="top-actions"><button aria-label="Activity">${icons.heart}</button><button class="notification-button" data-screen="notifications" aria-label="Notifications">${icons.bell}</button></div></header>
+  app.innerHTML = `<div class="app-shell"><header class="topbar"><div class="brand"><span>♥</span>Indo</div><div class="top-actions"><button data-screen="notifications" aria-label="Activity">${icons.heart}</button><button class="notification-button" data-screen="notifications" aria-label="Notifications">${icons.bell}</button></div></header>
     <div class="stories" data-stories><div class="story add-story"><div class="avatar gradient">+</div><span>Your story</span></div></div>
     <main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>${nav('home')}</div>`;
 
