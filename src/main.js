@@ -7,6 +7,7 @@ import { submitLogin } from './features/auth/login-form.js';
 import { startSplash } from './features/splash/splash-flow.js';
 import { setSettingsVisibility } from './features/account/settings-visibility.js';
 import { watchAuthSession } from './features/auth/auth-session.js';
+import { handleLogout } from './features/auth/logout-button.js';
 
 const app = document.getElementById('root');
 let splashFinished = false;
@@ -28,7 +29,12 @@ watchAuthSession((user) => {
   if (splashFinished && !String(state.screen).startsWith('auth-')) goTo('auth-login');
 });
 
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
+  const logoutTarget = event.target.closest('[data-logout]');
+  if (logoutTarget) {
+    await handleLogout(document.querySelector('.settings-message'));
+    return;
+  }
   const screenTarget = event.target.closest('[data-screen]');
   if (screenTarget) {
     goTo(screenTarget.dataset.screen);
