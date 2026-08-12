@@ -58,7 +58,6 @@ async function handleEarning(event) {
     if (panel) panel.classList.toggle('open');
     return true;
   }
-
   const message = document.querySelector('[data-earning-message]');
   const button = toggleTarget;
   const nextEnabled = !Boolean(state.earning?.earningEnabled);
@@ -123,8 +122,9 @@ async function handleFollow(event) {
   try {
     const current = await loadFollowStatus(targetUid);
     const result = await toggleFollow(targetUid, !current.following);
-    target.textContent = result.following ? 'Following' : 'Follow';
+    target.textContent = result.pending ? 'Requested' : (result.following ? 'Following' : 'Follow');
     target.classList.toggle('active', Boolean(result.following));
+    target.dataset.pending = result.pending ? 'true' : 'false';
   } catch (error) {
     target.title = error.message || 'Could not update follow status.';
   } finally {
@@ -140,8 +140,9 @@ async function hydrateFollowButtons(root) {
     if (!uid || sessionUser?.uid === uid) continue;
     try {
       const result = await loadFollowStatus(uid);
-      button.textContent = result.following ? 'Following' : 'Follow';
+      button.textContent = result.pending ? 'Requested' : (result.following ? 'Following' : 'Follow');
       button.classList.toggle('active', Boolean(result.following));
+      button.dataset.pending = result.pending ? 'true' : 'false';
     } catch {}
   }
 }
