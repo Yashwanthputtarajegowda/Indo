@@ -1,18 +1,17 @@
-import { auth } from '../auth/firebase-client.js';
+const STORAGE_KEY = 'indo_blocked_users';
 
-async function request(path, options = {}) {
-  const user = auth.currentUser;
-  if (!user) throw new Error('Please login first.');
-  const token = await user.getIdToken();
-  const apiBase = window.INDO_API_BASE || '';
-  const response = await fetch(`${apiBase}${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(options.headers || {}) }
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Blocked-user request failed.');
-  return data;
+function read() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+function write(users) { localStorage.setItem(STORAGE_KEY, JSON.stringify(users)); }
+
+export function loadBlockedUsers() { return Promise.resolve({ users: read() }); }
+
+export function toggleBlockedUser(targetUid, blocked, profile = null) {
+  const users = read().filter((item) => item.uid !== targetUid);
+  if (blocked) users.push({ uid: targetUid, username: profile?.username || `@${targetUid.slice(0, 8)}`, name: profile?.name || 'Indo User' });
+  write(users);
+  return Promise.resolve({ ok: true, blocked });
 }
 
-export const loadBlockedUsers = () => request('/api/social/blocked');
-export const toggleBlockedUser = (targetUid, blocked) => request('/api/social/block', { method: 'POST', body: JSON.stringify({ targetUid, blocked: Boolean(blocked) }) });
+export function isBlocked(targetUid) { return read().some((item) => item.uid === targetUid); }
