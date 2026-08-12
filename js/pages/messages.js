@@ -19,6 +19,7 @@ export function renderMessagesPage(container) {
         <h1 class="messages-title">Messages</h1>
         <button class="messages-new" type="button" data-message-new aria-label="New message">＋</button>
       </header>
+      <button class="messages-search" type="button" data-message-search>Search @UserID or name</button>
       <section class="messages-list" data-messages-list aria-label="Message conversations"></section>
       <nav class="messages-bottom-nav" aria-label="Main navigation">
         <button class="messages-nav-button" type="button" data-message-nav="home">Home</button>
@@ -59,6 +60,7 @@ export function renderMessagesPage(container) {
     const thread = event.target.closest("[data-message-index]");
     const nav = event.target.closest("[data-message-nav]");
     const newMessage = event.target.closest("[data-message-new]");
+    const search = event.target.closest("[data-message-search]");
 
     if (thread) {
       const selected = threads[Number(thread.dataset.messageIndex)];
@@ -67,7 +69,7 @@ export function renderMessagesPage(container) {
       }));
       return;
     }
-    if (newMessage) {
+    if (newMessage || search) {
       window.dispatchEvent(new CustomEvent("indo:new-message"));
       return;
     }
