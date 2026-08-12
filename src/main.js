@@ -31,7 +31,8 @@ function goTo(screen) {
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    const serviceWorkerUrl = new URL('../sw.js', import.meta.url);
+    navigator.serviceWorker.register(serviceWorkerUrl).catch(() => {});
   });
 }
 
