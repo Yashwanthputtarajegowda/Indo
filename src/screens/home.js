@@ -12,7 +12,9 @@ function renderNotificationBadge(app) {
     if (!unread) return;
     const badge = document.createElement('span');
     badge.className = 'notification-badge';
+    badge.style.cssText = 'position:absolute;top:-5px;right:-8px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#ff3b81;color:#fff;font-size:9px;font-weight:800;line-height:17px;text-align:center;border:2px solid #07070a;';
     badge.textContent = unread > 99 ? '99+' : String(unread);
+    button.style.position = 'relative';
     button.appendChild(badge);
   }).catch(() => {});
 }
