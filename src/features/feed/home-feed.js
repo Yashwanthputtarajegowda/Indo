@@ -58,7 +58,7 @@ export function renderVideoCard(video) {
   const mediaUrl = video.secureUrl || video.videoUrl || video.url || '';
   const poster = video.thumbnailUrl ? ` poster="${escapeHtml(video.thumbnailUrl)}"` : '';
   const source = mediaUrl
-    ? `<video class="post-video" autoplay muted playsinline preload="metadata"${poster} src="${escapeHtml(mediaUrl)}"></video>`
+    ? `<video class="post-video" autoplay playsinline preload="metadata"${poster} src="${escapeHtml(mediaUrl)}"></video>`
     : '<div class="post-video video-unavailable">Video unavailable</div>';
   return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}">
     <div class="post-head"><div class="avatar small">${escapeHtml(creator.replace(/^@/, '').charAt(0).toUpperCase() || 'I')}</div><div><strong>${creator}</strong><small>${title}</small></div><button class="icon-btn" aria-label="More options">⋯</button></div>
@@ -73,8 +73,8 @@ export function bindVideoCards(root) {
     const card = video.closest('[data-video-id]');
     if (!card) return;
 
-    video.muted = true;
-    video.setAttribute('muted', '');
+    video.muted = false;
+    video.removeAttribute('muted');
     video.setAttribute('autoplay', '');
     video.setAttribute('playsinline', '');
 
@@ -85,23 +85,27 @@ export function bindVideoCards(root) {
       video.replaceWith(fallback);
     }, { once: true });
 
-    const autoplay = () => video.play().catch(() => {});
+    const autoplayWithSound = () => {
+      video.muted = false;
+      video.removeAttribute('muted');
+      video.play().catch(() => {});
+    };
     const pauseWhenHidden = () => {
       if (!video.paused) video.pause();
     };
 
-    video.addEventListener('canplay', autoplay, { once: true });
+    video.addEventListener('canplay', autoplayWithSound, { once: true });
 
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) autoplay();
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) autoplayWithSound();
           else pauseWhenHidden();
         }
       }, { threshold: [0, 0.5, 1] });
       observer.observe(video);
     } else {
-      autoplay();
+      autoplayWithSound();
     }
 
     video.addEventListener('click', (event) => {
