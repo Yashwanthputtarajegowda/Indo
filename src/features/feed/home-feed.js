@@ -1,6 +1,8 @@
 import { auth } from '../auth/firebase-client.js';
 import { recordWatchProgress } from '../earning/earning.js';
 
+const VIEW_COOLDOWN_MS = 30 * 60 * 1000;
+
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
 }
@@ -32,6 +34,17 @@ export async function recordVideoView(videoId) {
   const headers = {};
   if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
   await fetch(`${apiBase}/api/media/videos/${encodeURIComponent(videoId)}/view`, { method: 'POST', headers });
+}
+
+function maybeRecordVideoView(videoId) {
+  const uid = auth.currentUser?.uid;
+  if (!uid || !videoId) return;
+  const key = `indo:view:${uid}:${videoId}`;
+  const now = Date.now();
+  const lastViewedAt = Number(localStorage.getItem(key) || 0);
+  if (Number.isFinite(lastViewedAt) && now - lastViewedAt < VIEW_COOLDOWN_MS) return;
+  localStorage.setItem(key, String(now));
+  recordVideoView(videoId).catch(() => localStorage.removeItem(key));
 }
 
 function bindWatchProgress(videoElement, mediaId) {
@@ -72,6 +85,7 @@ export function bindVideoCards(root) {
   root.querySelectorAll('[data-video-id] .post-video').forEach((video) => {
     const card = video.closest('[data-video-id]');
     if (!card) return;
+    const videoId = card.dataset.videoId;
 
     video.muted = false;
     video.removeAttribute('muted');
@@ -94,6 +108,7 @@ export function bindVideoCards(root) {
       if (!video.paused) video.pause();
     };
 
+    video.addEventListener('play', () => maybeRecordVideoView(videoId), { passive: true });
     video.addEventListener('canplay', autoplayWithSound, { once: true });
 
     if ('IntersectionObserver' in window) {
@@ -120,6 +135,6 @@ export function bindVideoCards(root) {
       }
     });
 
-    bindWatchProgress(video, card.dataset.videoId);
+    bindWatchProgress(video, videoId);
   });
 }
