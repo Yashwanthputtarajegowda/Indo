@@ -1,23 +1,45 @@
 import { state } from './state.js';
 import { renderHome } from './screens/home.js';
-import { renderReels } from './screens/reels.js';
-import { renderCreate } from './screens/create.js?v=20260813-1';
-import { renderProfile } from './screens/profile.js';
-import { renderSettings } from './screens/settings.js';
-import { renderSearch } from './screens/search.js';
-import { renderNotifications } from './screens/notifications.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
-import { renderWallet } from './screens/wallet.js';
-import { renderBlockedUsers } from './screens/blocked-users.js';
+
+function renderRouteError(app, error) {
+  const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\"']/g, '');
+  app.innerHTML = `
+    <main class="splash-screen splash-error">
+      <div class="splash-logo">I</div>
+      <div class="splash-name">Indo</div>
+      <p>Indo could not open this screen.</p>
+      <small>${message}</small>
+      <button type="button" onclick="location.reload()">Reload</button>
+    </main>`;
+}
+
+async function renderLazy(app, modulePath, exportName, args = []) {
+  try {
+    const module = await import(modulePath);
+    const renderer = module[exportName];
+    if (typeof renderer !== 'function') throw new Error(`Missing screen renderer: ${exportName}`);
+    renderer(app, ...args);
+  } catch (error) {
+    console.error(`Failed to load ${modulePath}:`, error);
+    renderRouteError(app, error);
+  }
+}
 
 export function render(app) {
   if (state.screen === 'auth-login') return renderLogin(app);
   if (state.screen === 'auth-signup') return renderSignup(app);
-  if (state.screen === 'profile') return renderProfile(app, state.profile);
-  if (state.screen === 'settings') return renderSettings(app, state.accountType, state.earning, state.earningSummary);
-  if (state.screen === 'wallet') return renderWallet(app);
-  if (state.screen === 'blocked-users') return renderBlockedUsers(app);
-  if (state.screen === 'activity') return renderNotifications(app, 'activity');
-  const screens = { home: renderHome, reels: renderReels, create: renderCreate, search: renderSearch, notifications: renderNotifications };
-  (screens[state.screen] || renderHome)(app);
+
+  if (state.screen === 'home') return renderHome(app);
+  if (state.screen === 'reels') return renderLazy(app, './screens/reels.js', 'renderReels');
+  if (state.screen === 'create') return renderLazy(app, './screens/create.js', 'renderCreate');
+  if (state.screen === 'profile') return renderLazy(app, './screens/profile.js', 'renderProfile', [state.profile]);
+  if (state.screen === 'settings') return renderLazy(app, './screens/settings.js', 'renderSettings', [state.accountType, state.earning, state.earningSummary]);
+  if (state.screen === 'search') return renderLazy(app, './screens/search.js', 'renderSearch');
+  if (state.screen === 'notifications') return renderLazy(app, './screens/notifications.js', 'renderNotifications');
+  if (state.screen === 'activity') return renderLazy(app, './screens/notifications.js', 'renderNotifications', ['activity']);
+  if (state.screen === 'wallet') return renderLazy(app, './screens/wallet.js', 'renderWallet');
+  if (state.screen === 'blocked-users') return renderLazy(app, './screens/blocked-users.js', 'renderBlockedUsers');
+
+  return renderHome(app);
 }
