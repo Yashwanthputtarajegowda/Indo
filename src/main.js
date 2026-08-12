@@ -1,37 +1,72 @@
 import './styles.css';
 import './features/splash/splash.css';
 
-import { startSplash } from './features/splash/splash-flow.js';
-import { createSessionController } from './app/session.js';
-import { createClickHandlers } from './app/click-handlers.js';
-import { createFormHandlers } from './app/form-handlers.js';
-import { goTo, renderEditProfileScreen, registerServiceWorker } from './app/navigation.js';
-
 const app = document.getElementById('root');
-const session = createSessionController(app);
 
-registerServiceWorker();
-session.start();
+function renderBootSplash() {
+  app.innerHTML = `
+    <main class="splash-screen" aria-busy="true" aria-label="Loading Indo">
+      <div class="splash-logo">I</div>
+      <div class="splash-name">Indo</div>
+      <div class="splash-spinner" aria-hidden="true"></div>
+    </main>`;
+}
 
-const clickHandlers = createClickHandlers({
-  app,
-  getSessionUser: session.getSessionUser,
-  refreshEarning: session.refreshEarning,
-  refreshProfile: session.refreshProfile,
-  goTo: (screen) => goTo(app, screen),
-  renderEditProfileScreen: () => renderEditProfileScreen(app)
-});
+function showBootError(error) {
+  const message = error?.message || String(error || 'Unknown startup error.');
+  app.innerHTML = `
+    <main class="splash-screen splash-error">
+      <div class="splash-logo">I</div>
+      <div class="splash-name">Indo</div>
+      <p>Indo could not start.</p>
+      <small>${message.replace(/[&<>\"']/g, '')}</small>
+      <button type="button" onclick="location.reload()">Reload</button>
+    </main>`;
+}
 
-const formHandlers = createFormHandlers({
-  goTo: (screen) => goTo(app, screen),
-  refreshProfile: session.refreshProfile,
-  refreshEarning: session.refreshEarning
-});
+async function boot() {
+  renderBootSplash();
 
-clickHandlers.register();
-formHandlers.register();
+  try {
+    const [navigation, sessionModule, clickModule, formModule] = await Promise.all([
+      import('./app/navigation.js'),
+      import('./app/session.js'),
+      import('./app/click-handlers.js'),
+      import('./app/form-handlers.js')
+    ]);
+    const { startSplash } = await import('./features/splash/splash-flow.js');
+    const { createSessionController } = sessionModule;
+    const { createClickHandlers } = clickModule;
+    const { createFormHandlers } = formModule;
+    const { goTo, renderEditProfileScreen, registerServiceWorker } = navigation;
 
-startSplash(app, () => {
-  session.markSplashFinished();
-  goTo(app, session.getSessionUser() ? 'home' : 'auth-login');
-});
+    const session = createSessionController(app);
+    registerServiceWorker();
+    session.start();
+
+    createClickHandlers({
+      app,
+      getSessionUser: session.getSessionUser,
+      refreshEarning: session.refreshEarning,
+      refreshProfile: session.refreshProfile,
+      goTo: (screen) => goTo(app, screen),
+      renderEditProfileScreen: () => renderEditProfileScreen(app)
+    }).register();
+
+    createFormHandlers({
+      goTo: (screen) => goTo(app, screen),
+      refreshProfile: session.refreshProfile,
+      refreshEarning: session.refreshEarning
+    }).register();
+
+    startSplash(app, () => {
+      session.markSplashFinished();
+      goTo(app, session.getSessionUser() ? 'home' : 'auth-login');
+    });
+  } catch (error) {
+    console.error('Indo startup failed:', error);
+    showBootError(error);
+  }
+}
+
+boot();
