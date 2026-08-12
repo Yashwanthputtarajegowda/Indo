@@ -21,11 +21,22 @@ function loadStyle(path) {
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = path;
-  document.head.appendChild(link);
+  const theme = document.querySelector('link[data-indo-theme]');
+  if (theme && path !== "./css/theme.css") document.head.insertBefore(link, theme);
+  else document.head.appendChild(link);
   styles.add(path);
 }
 
 export function navigate(container, page, data = {}) {
+  if (!document.querySelector('link[data-indo-theme]')) {
+    const theme = document.createElement("link");
+    theme.rel = "stylesheet";
+    theme.href = "./css/theme.css";
+    theme.dataset.indoTheme = "true";
+    document.head.appendChild(theme);
+    styles.add("./css/theme.css");
+  }
+
   switch (page) {
     case "auth": loadStyle("./css/auth-choice.css"); renderAuthChoicePage(container); return;
     case "login": loadStyle("./css/login.css"); renderLoginPage(container); return;
@@ -36,7 +47,7 @@ export function navigate(container, page, data = {}) {
     case "upload-video": loadStyle("./css/upload-video.css"); renderUploadVideoPage(container); return;
     case "upload-reel": loadStyle("./css/upload-reel.css"); renderUploadReelPage(container); return;
     case "notifications": loadStyle("./css/notifications.css"); renderNotificationsPage(container); return;
-    case "saved": renderSavedPage(container); return;
+    case "saved": loadStyle("./css/saved.css"); renderSavedPage(container); return;
     case "messages":
     case "message": loadStyle("./css/messages.css"); renderMessagesPage(container); return;
     case "new-message": loadStyle("./css/new-message.css"); renderNewMessagePage(container); return;
