@@ -21,13 +21,14 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js"></script>
+  <script src="./config/runtime-config.js?v=20260813-6"></script>
   <script>
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
+      const source = event.filename ? ` ${event.filename}${event.lineno ? `:${event.lineno}` : ''}${event.colno ? `:${event.colno}` : ''}` : '';
       const root = document.getElementById('root');
       if (!root || !root.querySelector('.splash-screen')) return;
-      const safe = message.replace(/[&<>\"']/g, '');
+      const safe = `${message}${source}`.replace(/[&<>\"']/g, '');
       root.innerHTML = `
         <main class="splash-screen splash-error">
           <div class="splash-logo">I</div>
@@ -41,6 +42,6 @@
       window.dispatchEvent(new ErrorEvent('error', { error: event.reason, message: String(event.reason?.message || event.reason || 'Startup failed.') }));
     });
   </script>
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="./src/main.js?v=20260813-6"></script>
 </body>
 </html>
