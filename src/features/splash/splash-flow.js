@@ -1,4 +1,5 @@
 import { renderSplash } from '../../screens/splash.js';
+import { renderLogin } from '../../screens/auth.js';
 
 function renderTransitionError(app, error) {
   const message = error?.message || String(error || 'Unknown navigation error.');
@@ -15,14 +16,29 @@ function renderTransitionError(app, error) {
 export function startSplash(app, nextScreen, delay = 1800) {
   renderSplash(app);
   let transitioned = false;
+
   window.setTimeout(() => {
     if (transitioned) return;
     transitioned = true;
+
     try {
       nextScreen();
     } catch (error) {
       console.error('Indo splash transition failed:', error);
-      renderTransitionError(app, error);
+      try {
+        renderLogin(app);
+      } catch (fallbackError) {
+        renderTransitionError(app, fallbackError || error);
+      }
     }
+
+    window.setTimeout(() => {
+      if (!app.querySelector('.splash-screen')) return;
+      try {
+        renderLogin(app);
+      } catch (error) {
+        renderTransitionError(app, error);
+      }
+    }, 600);
   }, delay);
 }
