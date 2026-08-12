@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, query, limitToLast, set } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { auth } from "./firebase-auth.js";
+import { createClientNotification } from "./notifications.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBv8eQ9rX8xQ8oY0dYqKqf9mG7pKq7r7xY",
@@ -45,7 +46,8 @@ async function writeConversationIndex(otherUid, otherUserId, otherName, preview)
     otherUserId: "",
     otherName: "",
     preview: preview || "",
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    unreadCount: 1
   });
 }
 
@@ -89,4 +91,15 @@ export async function sendConversationMessage({ otherUid, otherUserId, otherName
   });
 
   await writeConversationIndex(otherUid, otherUserId, otherName, cleanText);
+
+  const actorName = currentUser.displayName || currentUser.email || "Indo User";
+  await createClientNotification({
+    recipientUid: otherUid,
+    type: "message",
+    actorUid: currentUser.uid,
+    actorName,
+    actorUserId: otherUserId,
+    text: `New message from ${actorName}`,
+    targetId: key
+  }).catch(() => {});
 }
