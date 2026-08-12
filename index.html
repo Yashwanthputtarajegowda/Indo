@@ -38,9 +38,29 @@
         </main>`;
     }
 
-    import('./src/main.js')
+    async function prepareServiceWorker() {
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        await navigator.serviceWorker.register('./sw.js');
+      } catch (error) {
+        console.warn('Indo service worker registration failed:', error);
+      }
+    }
+
+    const startupTimeout = window.setTimeout(() => {
+      if (root.querySelector('.splash-screen')) {
+        showStartupError(new Error('Startup timed out before the first screen opened.'));
+      }
+    }, 5000);
+
+    Promise.resolve(prepareServiceWorker())
+      .then(() => import('./src/main.js'))
       .then(() => import('./src/features/messages/messages-bootstrap.js').catch(() => null))
-      .catch(showStartupError);
+      .then(() => window.clearTimeout(startupTimeout))
+      .catch((error) => {
+        window.clearTimeout(startupTimeout);
+        showStartupError(error);
+      });
   </script>
 </body>
 </html>
