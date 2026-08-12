@@ -18,8 +18,11 @@ import { getProfile } from "./services/profile-state.js";
 const styles = new Set();
 function loadStyle(path) {
   if (styles.has(path)) return;
-  const link = document.createElement("link"); link.rel = "stylesheet"; link.href = path;
-  document.head.appendChild(link); styles.add(path);
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = path;
+  document.head.appendChild(link);
+  styles.add(path);
 }
 
 export function navigate(container, page, data = {}) {
@@ -30,8 +33,8 @@ export function navigate(container, page, data = {}) {
     case "reels": loadStyle("./css/reels.css"); renderReelsPage(container); return;
     case "profile": loadStyle("./css/profile.css"); renderProfilePage(container, getProfile()); return;
     case "public-profile": loadStyle("./css/public-profile.css"); renderPublicProfilePage(container, data.profile || {}); return;
-    case "upload-video": renderUploadVideoPage(container); return;
-    case "upload-reel": renderUploadReelPage(container); return;
+    case "upload-video": loadStyle("./css/upload-video.css"); renderUploadVideoPage(container); return;
+    case "upload-reel": loadStyle("./css/upload-reel.css"); renderUploadReelPage(container); return;
     case "notifications": loadStyle("./css/notifications.css"); renderNotificationsPage(container); return;
     case "saved": renderSavedPage(container); return;
     case "messages":
