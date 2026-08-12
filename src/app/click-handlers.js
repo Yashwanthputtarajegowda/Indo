@@ -45,11 +45,29 @@ export function createClickHandlers({ app, getSessionUser, refreshEarning, refre
     const action = target.dataset.engagement;
     try {
       if (action === 'like') {
-        const current = await loadEngagement(mediaId);
-        const result = await toggleLike(mediaId, !current.liked);
+        if (target.dataset.busy === 'true') return true;
+        target.dataset.busy = 'true';
         const small = target.querySelector('small');
-        if (small) small.textContent = Number(result.likes || 0).toLocaleString();
-        target.classList.toggle('active', Boolean(result.liked));
+        const previousLiked = target.classList.contains('active');
+        const previousCount = Number((small?.textContent || '0').replace(/,/g, '')) || 0;
+        const optimisticLiked = !previousLiked;
+        target.classList.toggle('active', optimisticLiked);
+        if (small) {
+          small.textContent = Math.max(0, previousCount + (optimisticLiked ? 1 : -1)).toLocaleString();
+        }
+        try {
+          const current = await loadEngagement(mediaId);
+          const result = await toggleLike(mediaId, !current.liked);
+          target.classList.toggle('active', Boolean(result.liked));
+          if (small) small.textContent = Number(result.likes || 0).toLocaleString();
+          target.title = result.liked ? 'Liked' : 'Like';
+        } catch (error) {
+          target.classList.toggle('active', previousLiked);
+          if (small) small.textContent = previousCount.toLocaleString();
+          target.title = error.message || 'Could not update like.';
+        } finally {
+          delete target.dataset.busy;
+        }
       } else if (action === 'save') {
         const current = await loadEngagement(mediaId);
         const result = await toggleSave(mediaId, !current.saved);
