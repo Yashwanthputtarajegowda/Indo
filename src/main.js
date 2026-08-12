@@ -1,6 +1,3 @@
-import './styles.css';
-import './features/splash/splash.css';
-
 const app = document.getElementById('root');
 
 function renderBootSplash() {
@@ -38,7 +35,11 @@ async function boot() {
     const { createSessionController } = sessionModule;
     const { createClickHandlers } = clickModule;
     const { createFormHandlers } = formModule;
-    const { goTo, renderEditProfileScreen, registerServiceWorker } = navigation;
+    const {
+      goTo,
+      renderEditProfileScreen,
+      registerServiceWorker
+    } = navigation;
 
     const session = createSessionController(app);
     registerServiceWorker();
