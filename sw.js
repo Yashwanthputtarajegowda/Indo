@@ -1,4 +1,4 @@
-const CACHE_NAME = 'indo-shell-v2';
+const CACHE_NAME = 'indo-shell-v3';
 const BASE_URL = new URL('./', self.location.href);
 const APP_SHELL = [
   new URL('./', BASE_URL).href,
@@ -8,13 +8,21 @@ const APP_SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
+    )
   );
   self.clients.claim();
 });
@@ -27,17 +35,26 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (!url.pathname.startsWith(BASE_URL.pathname)) return;
 
+  const isAppCode =
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    request.mode === 'navigate';
+
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request).then((response) => {
-        if (response.ok && (request.mode === 'navigate' || url.pathname.endsWith('.js') || url.pathname.endsWith('.css'))) {
+    fetch(request)
+      .then((response) => {
+        if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         }
         return response;
-      }).catch(() => cached || caches.match(new URL('index.html', BASE_URL).href));
-
-      return cached || network;
-    })
+      })
+      .catch(() =>
+        caches.match(request).then((cached) => {
+          if (cached) return cached;
+          if (isAppCode) return new Response('', { status: 503 });
+          return caches.match(new URL('index.html', BASE_URL).href);
+        })
+      )
   );
 });
