@@ -22,6 +22,10 @@ export async function getSavedMediaStatus(mediaId) {
   return { saved: snapshot.exists() };
 }
 
+// Backward-compatible alias used by existing page modules.
+export const getSavedMedia = getSavedMediaStatus;
+export const getSaveStatus = getSavedMediaStatus;
+
 export async function toggleSavedMedia(mediaId) {
   const user = auth.currentUser;
   if (!user) throw new Error("Authentication required.");
@@ -33,6 +37,3 @@ export async function toggleSavedMedia(mediaId) {
   else await set(savedRef, { mediaId: id, createdAt: Date.now() });
   return getSavedMediaStatus(id);
 }
-
-// Keep the named export available to all Reel actions on static hosts.
-export const getSaveStatus = getSavedMediaStatus;
