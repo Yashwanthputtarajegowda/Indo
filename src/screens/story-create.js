@@ -41,8 +41,6 @@ export function renderStoryCreate(app) {
       message.textContent = 'Story published successfully.';
       input.value = '';
       window.setTimeout(() => {
-        const { state } = window.__indoStateRef || {};
-        if (state) state.screen = 'home';
         window.location.hash = '#home';
         window.location.reload();
       }, 700);
