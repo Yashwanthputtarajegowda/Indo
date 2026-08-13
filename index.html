@@ -7,9 +7,9 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-41" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-41" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-41" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-42" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-42" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-42" />
   <title>Indo</title>
 </head>
 <body>
@@ -20,7 +20,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-41"></script>
+  <script src="./config/runtime-config.js?v=20260813-42"></script>
   <script>
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
@@ -64,7 +64,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-41'),
+          import('./src/features/auth/firebase-client.js?v=20260813-42'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -130,6 +130,6 @@
     });
     storyEditorObserver.observe(document.body, { childList: true, subtree: true });
   </script>
-  <script type="module" src="./src/main.js?v=20260813-41"></script>
+  <script type="module" src="./src/main.js?v=20260813-42"></script>
 </body>
 </html>
