@@ -71,7 +71,7 @@ function ensureStyles() {
     .story-add-panel button{height:40px;border:0;border-radius:10px;background:#24242d;color:#fff;font-weight:800;cursor:pointer}
     .story-add-panel .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
     .story-add-panel .emoji-grid button{height:34px;padding:0;font-size:20px;border:1px solid #292932;background:#17171f}
-    .story-file-name{font-size:12px;color:#aaa;min-height:18px;margin:0 0 10px}
+    .story-file-name{font-size:12px;color:#aaa;min-height:18px;margin:0 0 10px;display:none!important}
     .story-publish{width:100%;height:44px;border:0;border-radius:10px;background:#7b3cff;color:#fff;font-weight:800}
     .story-publish:disabled{opacity:.55}
     .story-message{font-size:12px;color:#aaa;min-height:18px}
@@ -87,9 +87,9 @@ function positionToPercent(clientX, clientY, preview) {
   };
 }
 
-export function renderStoryCreate(app) {
+export function renderStoryCreate(app, draftFileOverride = null) {
   ensureStyles();
-  const draftFile = window[DRAFT_FILE_KEY] instanceof File ? window[DRAFT_FILE_KEY] : null;
+  const draftFile = draftFileOverride instanceof File ? draftFileOverride : (window[DRAFT_FILE_KEY] instanceof File ? window[DRAFT_FILE_KEY] : null);
   app.innerHTML = `
     <div class="app-shell">
       <header class="page-head">
@@ -118,7 +118,7 @@ export function renderStoryCreate(app) {
             <div id="story-font-picker" class="story-font-picker" hidden></div>
           </div>
         </div>
-        <div class="story-file-name" id="story-create-name">${draftFile ? escapeHtml(draftFile.name) : 'Choose a video to start.'}</div>
+        <div class="story-file-name" id="story-create-name">${draftFile ? escapeHtml(draftFile.name) : ''}</div>
         <button id="story-create-select" type="button" class="story-publish" hidden>Choose video</button>
         <button id="story-publish-button" type="button" class="story-publish" disabled>Publish story</button>
         <div id="story-create-message" class="story-message">Tap anywhere on the video to type a title.</div>
@@ -210,237 +210,62 @@ export function renderStoryCreate(app) {
   };
 
   const closeFontPicker = () => { fontPicker.hidden = true; };
-
   const applyTitleFont = (font) => {
     currentTitleFont = font;
     if (activeTitleInput) activeTitleInput.style.fontFamily = font;
     if (titleElement) titleElement.style.fontFamily = font;
     fontPicker.querySelectorAll('button').forEach((button) => button.classList.toggle('active', button.dataset.font === font));
   };
-
   const positionFloatingPanel = (panel, clientX, clientY) => {
     const rect = preview.getBoundingClientRect();
     const x = Math.max(8, Math.min(rect.width - 158, clientX - rect.left - 75));
     const y = Math.max(8, Math.min(rect.height - 120, clientY - rect.top - 56));
-    panel.style.left = `${x}px`;
-    panel.style.top = `${y}px`;
-    panel.style.right = 'auto';
-    panel.style.bottom = 'auto';
+    panel.style.left = `${x}px`; panel.style.top = `${y}px`; panel.style.right = 'auto'; panel.style.bottom = 'auto';
   };
-
   const buildFontPicker = (clientX, clientY) => {
-    fontPicker.innerHTML = FONT_OPTIONS.map((font) => `<button type="button" data-font="${escapeHtml(font.value)}" style="font-family:${font.value}">${escapeHtml(font.name)}</button>`).join('');
-    fontPicker.querySelectorAll('button').forEach((button) => {
-      button.classList.toggle('active', button.dataset.font === currentTitleFont);
-      button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        applyTitleFont(button.dataset.font);
-        closeFontPicker();
-      });
-    });
-    positionFloatingPanel(fontPicker, clientX, clientY);
-    fontPicker.hidden = false;
+    const fonts = [
+      ['Poppins','Poppins,sans-serif'],['Roboto','Roboto,sans-serif'],['Montserrat','Montserrat,sans-serif'],['Playfair Display','Playfair Display,serif'],['Lora','Lora,serif'],['Merriweather','Merriweather,serif'],['Oswald','Oswald,sans-serif'],['Bebas Neue','Bebas Neue,sans-serif'],['Pacifico','Pacifico,cursive'],['Lobster','Lobster,cursive'],['Comfortaa','Comfortaa,sans-serif'],['Raleway','Raleway,sans-serif'],['Abril Fatface','Abril Fatface,cursive'],['Dancing Script','Dancing Script,cursive'],['Bangers','Bangers,cursive'],['Permanent Marker','Permanent Marker,cursive'],['Anton','Anton,sans-serif'],['Satisfy','Satisfy,cursive'],['Caveat','Caveat,cursive'],['Quicksand','Quicksand,sans-serif']
+    ];
+    if (!document.getElementById('indo-story-fonts-v1')) {
+      const link = document.createElement('link'); link.id='indo-story-fonts-v1'; link.rel='stylesheet';
+      link.href='https://fonts.googleapis.com/css2?family=Anton&family=Abril+Fatface&family=Bangers&family=Bebas+Neue&family=Caveat:wght@400;600;700&family=Comfortaa:wght@400;600;700&family=Dancing+Script:wght@400;600;700&family=Lobster&family=Lora:wght@400;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700;800&family=Oswald:wght@400;500;600;700&family=Pacifico&family=Permanent+Marker&family=Playfair+Display:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&family=Quicksand:wght@400;600;700&family=Raleway:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Satisfy&display=swap';
+      document.head.appendChild(link);
+    }
+    fontPicker.innerHTML = fonts.map(([name,value]) => `<button type="button" data-font="${escapeHtml(value)}" style="font-family:${value}">${escapeHtml(name)}</button>`).join('');
+    fontPicker.querySelectorAll('button').forEach((button) => { button.classList.toggle('active', button.dataset.font===currentTitleFont); button.addEventListener('click',(event)=>{event.stopPropagation();applyTitleFont(button.dataset.font);closeFontPicker();}); });
+    positionFloatingPanel(fontPicker,clientX,clientY); fontPicker.hidden=false;
+    fontPicker.style.maxHeight='300px'; fontPicker.style.overflowY='auto'; fontPicker.style.overflowX='hidden';
   };
-
   const finishTitleInput = () => {
     if (!activeTitleInput) return;
-    const value = activeTitleInput.value.trim();
-    const left = activeTitleInput.style.left || '50%';
-    const top = activeTitleInput.style.top || '50%';
-    activeTitleInput.remove();
-    const input = activeTitleInput;
-    activeTitleInput = null;
+    const value=activeTitleInput.value.trim(), left=activeTitleInput.style.left||'50%', top=activeTitleInput.style.top||'50%';
+    activeTitleInput.remove(); const old=activeTitleInput; activeTitleInput=null; void old;
     if (!value) return;
-    if (!titleElement) {
-      titleElement = document.createElement('div');
-      titleElement.className = 'story-element story-title-element';
-      preview.appendChild(titleElement);
-      makeDraggable(titleElement, (point) => {
-        titleElement.dataset.x = String(point.x);
-        titleElement.dataset.y = String(point.y);
-      });
-    }
-    titleElement.textContent = value;
-    titleElement.style.left = left;
-    titleElement.style.top = top;
-    titleElement.style.fontFamily = currentTitleFont;
-    titleElement.dataset.font = currentTitleFont;
-    titleElement.dataset.x = String(parseFloat(left) || 50);
-    titleElement.dataset.y = String(parseFloat(top) || 50);
-    void input;
+    if (!titleElement) { titleElement=document.createElement('div'); titleElement.className='story-element story-title-element'; preview.appendChild(titleElement); makeDraggable(titleElement,(point)=>{titleElement.dataset.x=String(point.x);titleElement.dataset.y=String(point.y);}); }
+    titleElement.textContent=value; titleElement.style.left=left; titleElement.style.top=top; titleElement.style.fontFamily=currentTitleFont; titleElement.dataset.font=currentTitleFont; titleElement.dataset.x=String(parseFloat(left)||50); titleElement.dataset.y=String(parseFloat(top)||50);
   };
-
-  const startTitleInput = (clientX, clientY, existingValue = '') => {
-    closeFontPicker();
-    finishTitleInput();
-    const point = positionToPercent(clientX, clientY, preview);
-    const field = document.createElement('input');
-    field.type = 'text';
-    field.maxLength = 80;
-    field.value = existingValue;
-    field.className = 'story-title-input';
-    field.style.left = `${point.x}%`;
-    field.style.top = `${point.y}%`;
-    field.style.fontFamily = titleElement?.style.fontFamily || currentTitleFont;
-    preview.appendChild(field);
-    activeTitleInput = field;
-    requestAnimationFrame(() => {
-      field.focus();
-      field.select();
-      field.setSelectionRange(field.value.length, field.value.length);
-    });
-    field.addEventListener('input', () => {
-      const text = field.value.trim();
-      message.textContent = text ? 'Tap the text to choose a font. Drag it to move.' : 'Type your story title.';
-    });
-    field.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        finishTitleInput();
-      }
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        field.remove();
-        activeTitleInput = null;
-      }
-    });
-    field.addEventListener('blur', () => window.setTimeout(finishTitleInput, 0), { once: true });
+  const startTitleInput = (clientX,clientY,existingValue='') => {
+    closeFontPicker(); finishTitleInput(); const point=positionToPercent(clientX,clientY,preview); const field=document.createElement('input');
+    field.type='text'; field.maxLength=80; field.value=existingValue; field.className='story-title-input'; field.style.left=`${point.x}%`; field.style.top=`${point.y}%`; field.style.fontFamily=titleElement?.style.fontFamily||currentTitleFont; preview.appendChild(field); activeTitleInput=field;
+    requestAnimationFrame(()=>{field.focus();field.select();field.setSelectionRange(field.value.length,field.value.length);});
+    field.addEventListener('input',()=>{message.textContent=field.value.trim()?'Tap the text to choose a font. Drag it to move.':'Type your story title.';});
+    field.addEventListener('keydown',(event)=>{if(event.key==='Enter'){event.preventDefault();finishTitleInput();}if(event.key==='Escape'){event.preventDefault();field.remove();activeTitleInput=null;}});
+    field.addEventListener('blur',()=>window.setTimeout(finishTitleInput,0),{once:true});
   };
-
-  const updateTitleByClick = (event) => {
-    if (event.target.closest('.story-element, .story-add-button, .story-add-panel, .story-font-picker, .story-trash-zone')) return;
-    const point = { x: event.clientX, y: event.clientY };
-    startTitleInput(point.x, point.y);
-  };
-
-  preview.addEventListener('click', (event) => {
-    if (event.target.closest('.story-title-element')) {
-      const element = event.target.closest('.story-title-element');
-      finishTitleInput();
-      currentTitleFont = element.dataset.font || element.style.fontFamily || currentTitleFont;
-      buildFontPicker(event.clientX, event.clientY);
-      return;
-    }
-    updateTitleByClick(event);
-  });
-
-  const applyCrop = () => {
-    preview.classList.remove('crop-cover', 'crop-square', 'crop-landscape');
-    if (cropInput.value === 'cover') preview.classList.add('crop-cover');
-    if (cropInput.value === 'square') preview.classList.add('crop-square');
-    if (cropInput.value === 'landscape') preview.classList.add('crop-landscape');
-  };
-
-  const addPhoto = async (file) => {
-    if (!file) return;
-    try {
-      const dataUrl = await compressSticker(file);
-      const image = document.createElement('img');
-      image.src = dataUrl;
-      image.alt = '';
-      image.className = 'story-element story-photo-element';
-      image.style.left = '50%';
-      image.style.top = '50%';
-      const entry = { element: image, dataUrl, x: 50, y: 50, scale: 1 };
-      photoElements.push(entry);
-      preview.appendChild(image);
-      makeDraggable(image, (point) => { entry.x = point.x; entry.y = point.y; });
-    } catch {
-      message.textContent = 'Could not add that photo.';
-    }
-  };
-
-  addButton.addEventListener('click', (event) => {
-    event.stopPropagation();
-    closeFontPicker();
-    addPanel.hidden = !addPanel.hidden;
-    if (addPanel.hidden) emojiPicker.hidden = true;
-  });
-  cropInput.addEventListener('change', applyCrop);
-  stickerButton.addEventListener('click', (event) => { event.stopPropagation(); stickerInput.click(); });
-  stickerInput.addEventListener('change', async () => {
-    await addPhoto(stickerInput.files?.[0]);
-    stickerInput.value = '';
-  });
-  emojiToggle.addEventListener('click', (event) => { event.stopPropagation(); emojiPicker.hidden = !emojiPicker.hidden; });
-  emojiPicker.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-emoji]');
-    if (!button) return;
-    event.stopPropagation();
-    const emoji = button.dataset.emoji || '';
-    const node = document.createElement('div');
-    node.className = 'story-element story-emoji-element';
-    node.textContent = emoji;
-    node.style.left = '50%';
-    node.style.top = '50%';
-    const entry = { element: node, emoji, x: 50, y: 50 };
-    emojiElements.push(entry);
-    preview.appendChild(node);
-    makeDraggable(node, (point) => { entry.x = point.x; entry.y = point.y; });
-    emojiPicker.hidden = true;
-  });
-
-  preview.addEventListener('pointerdown', (event) => {
-    if (event.target.closest('.story-title-element, .story-photo-element, .story-emoji-element, .story-add-button, .story-add-panel, .story-font-picker, .story-trash-zone')) return;
-    const point = { x: event.clientX, y: event.clientY };
-    startTitleInput(point.x, point.y);
-  });
-
-  const setFile = (file) => {
-    if (!(file instanceof File) || !file.type.startsWith('video/')) return;
-    currentFile = file;
-    window[DRAFT_FILE_KEY] = file;
-    name.textContent = `${file.name} • ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
-    objectUrl = URL.createObjectURL(file);
-    video.src = objectUrl;
-    video.load();
-    video.play().catch(() => {});
-    publish.disabled = false;
-  };
-
-  select.addEventListener('click', () => input.click());
-  input.addEventListener('change', () => setFile(input.files?.[0]));
-  cancel.addEventListener('click', () => {
-    window[DRAFT_FILE_KEY] = null;
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
-    window.__indoNavigate?.('home');
-  });
-
-  publish.addEventListener('click', async () => {
-    if (!currentFile) return;
-    finishTitleInput();
-    publish.disabled = true;
-    addButton.disabled = true;
-    message.textContent = 'Uploading story...';
-    try {
-      const elements = [
-        ...(titleElement ? [{ type: 'title', text: titleElement.textContent || '', x: Number(titleElement.dataset.x || 50), y: Number(titleElement.dataset.y || 14), font: titleElement.dataset.font || currentTitleFont }] : []),
-        ...photoElements.map((item) => ({ type: 'photo', dataUrl: item.dataUrl, x: item.x, y: item.y, scale: item.scale })),
-        ...emojiElements.map((item) => ({ type: 'emoji', emoji: item.emoji, x: item.x, y: item.y }))
-      ];
-      await publishStory(currentFile, () => {}, {
-        title: titleElement?.textContent || '',
-        titleFont: titleElement?.dataset.font || currentTitleFont,
-        titleX: Number(titleElement?.dataset.x || 50),
-        titleY: Number(titleElement?.dataset.y || 14),
-        crop: cropInput.value,
-        stickerDataUrl: photoElements[0]?.dataUrl || '',
-        stickerX: photoElements[0]?.x ?? 50,
-        stickerY: photoElements[0]?.y ?? 50,
-        stickerScale: photoElements[0]?.scale ?? 1,
-        elements
-      });
-      window[DRAFT_FILE_KEY] = null;
-      message.textContent = 'Story published successfully.';
-      window.setTimeout(() => window.__indoNavigate?.('home'), 500);
-    } catch (error) {
-      message.textContent = error?.message || 'Story upload failed. Please try again.';
-      publish.disabled = false;
-      addButton.disabled = false;
-    }
-  });
-
-  if (draftFile) setFile(draftFile);
-  applyCrop();
+  const updateTitleByClick=(event)=>{if(event.target.closest('.story-element,.story-add-button,.story-add-panel,.story-font-picker,.story-trash-zone'))return;startTitleInput(event.clientX,event.clientY);};
+  preview.addEventListener('click',(event)=>{if(event.target.closest('.story-title-element')){const el=event.target.closest('.story-title-element');finishTitleInput();currentTitleFont=el.dataset.font||el.style.fontFamily||currentTitleFont;buildFontPicker(event.clientX,event.clientY);return;}updateTitleByClick(event);});
+  const applyCrop=()=>{preview.classList.remove('crop-cover','crop-square','crop-landscape');if(cropInput.value==='cover')preview.classList.add('crop-cover');if(cropInput.value==='square')preview.classList.add('crop-square');if(cropInput.value==='landscape')preview.classList.add('crop-landscape');};
+  const addPhoto=async(file)=>{if(!file)return;try{const dataUrl=await compressSticker(file);const image=document.createElement('img');image.src=dataUrl;image.alt='';image.className='story-element story-photo-element';image.style.left='50%';image.style.top='50%';const entry={element:image,dataUrl,x:50,y:50,scale:1};photoElements.push(entry);preview.appendChild(image);makeDraggable(image,(point)=>{entry.x=point.x;entry.y=point.y;});}catch{message.textContent='Could not add that photo.';}};
+  addButton.addEventListener('click',(event)=>{event.stopPropagation();closeFontPicker();addPanel.hidden=!addPanel.hidden;if(addPanel.hidden)emojiPicker.hidden=true;});
+  cropInput.addEventListener('change',applyCrop);
+  stickerButton.addEventListener('click',(event)=>{event.stopPropagation();stickerInput.click();});
+  stickerInput.addEventListener('change',async()=>{await addPhoto(stickerInput.files?.[0]);stickerInput.value='';});
+  emojiToggle.addEventListener('click',(event)=>{event.stopPropagation();emojiPicker.hidden=!emojiPicker.hidden;});
+  emojiPicker.addEventListener('click',(event)=>{const button=event.target.closest('[data-emoji]');if(!button)return;event.stopPropagation();const emoji=button.dataset.emoji||'';const node=document.createElement('div');node.className='story-element story-emoji-element';node.textContent=emoji;node.style.left='50%';node.style.top='50%';const entry={element:node,emoji,x:50,y:50};emojiElements.push(entry);preview.appendChild(node);makeDraggable(node,(point)=>{entry.x=point.x;entry.y=point.y;});emojiPicker.hidden=true;});
+  preview.addEventListener('pointerdown',(event)=>{if(event.target.closest('.story-title-element,.story-photo-element,.story-emoji-element,.story-add-button,.story-add-panel,.story-font-picker,.story-trash-zone'))return;startTitleInput(event.clientX,event.clientY);});
+  const setFile=(file)=>{if(!(file instanceof File)||!file.type.startsWith('video/')){message.textContent='Please select a video file.';return;}currentFile=file;window[DRAFT_FILE_KEY]=file;if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(file);video.src=objectUrl;video.load();video.play().catch(()=>{});publish.disabled=false;message.textContent='Video ready. Tap the video to add a title.';};
+  select.addEventListener('click',()=>input.click()); input.addEventListener('change',()=>setFile(input.files?.[0]));
+  cancel.addEventListener('click',()=>{window[DRAFT_FILE_KEY]=null;if(objectUrl)URL.revokeObjectURL(objectUrl);window.__indoNavigate?.('home');});
+  publish.addEventListener('click',async()=>{if(!currentFile)return;finishTitleInput();publish.disabled=true;addButton.disabled=true;message.textContent='Uploading story...';try{const elements=[...(titleElement?[{type:'title',text:titleElement.textContent||'',x:Number(titleElement.dataset.x||50),y:Number(titleElement.dataset.y||14),font:titleElement.dataset.font||currentTitleFont}]:[]),...photoElements.map(item=>({type:'photo',dataUrl:item.dataUrl,x:item.x,y:item.y,scale:item.scale})),...emojiElements.map(item=>({type:'emoji',emoji:item.emoji,x:item.x,y:item.y}))];await publishStory(currentFile,()=>({}),{title:titleElement?.textContent||'',titleFont:titleElement?.dataset.font||currentTitleFont,titleX:Number(titleElement?.dataset.x||50),titleY:Number(titleElement?.dataset.y||14),crop:cropInput.value,stickerDataUrl:photoElements[0]?.dataUrl||'',stickerX:photoElements[0]?.x??50,stickerY:photoElements[0]?.y??50,stickerScale:photoElements[0]?.scale??1,elements});window[DRAFT_FILE_KEY]=null;message.textContent='Story published successfully.';window.setTimeout(()=>window.__indoNavigate?.('home'),500);}catch(error){message.textContent=error?.message||'Story upload failed. Please try again.';publish.disabled=false;addButton.disabled=false;}});
+  if(draftFile) setFile(draftFile); applyCrop();
 }
