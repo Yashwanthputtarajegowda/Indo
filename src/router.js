@@ -5,7 +5,7 @@ import { installCloudinaryVideoCompatibility } from './features/feed/cloudinary-
 import './features/ui/cleanup-topbar.js';
 import './features/ui/profile-nav-frame-fix.js';
 
-const VERSION = '20260813-89';
+const VERSION = '20260813-90';
 
 installCloudinaryVideoCompatibility();
 
