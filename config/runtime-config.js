@@ -2,23 +2,19 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV17) return;
-  window.__indoStoryRuntimeV17 = true;
-
-  // Disable the legacy inline story layout poll in index.html. The poll was
-  // re-showing the old full-width publish box after our editor fix ran.
-  try {
-    Object.defineProperty(window,'__indoFixStoryEditor',{value:()=>false,writable:false,configurable:false});
-  } catch {}
+  if (window.__indoStoryRuntimeV18) return;
+  window.__indoStoryRuntimeV18 = true;
 
   const mobileStyle = document.createElement('style');
-  mobileStyle.id = 'indo-mobile-runtime-v11';
+  mobileStyle.id = 'indo-mobile-runtime-v12';
   mobileStyle.textContent = `
     html,body{width:100%;min-height:100%;-webkit-text-size-adjust:100%}
     body{overflow-x:hidden;overflow-y:auto}
     button,a,input,textarea,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .app-shell,.auth-shell{width:100%;max-width:520px;min-height:100dvh;min-height:100svh}
     #story-preview{position:relative!important;overflow:hidden!important}
+
+    /* One real Done control is rendered by this runtime. The old publish control is never visible. */
     #story-preview #story-publish-button,
     #story-preview .story-publish{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;max-width:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;outline:0!important}
     #indo-story-done-hit{position:absolute!important;left:auto!important;right:0!important;top:auto!important;bottom:0!important;width:20%!important;height:44px!important;min-height:44px!important;margin:0!important;padding:0!important;border:0!important;border-radius:10px!important;background:#7b3cff!important;color:#fff!important;font-weight:800!important;display:block!important;visibility:visible!important;opacity:1!important;z-index:200!important;cursor:pointer!important;pointer-events:auto!important}
@@ -29,7 +25,11 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
   `;
   document.head.appendChild(mobileStyle);
 
-  const warmScreens=()=>{const version='20260813-72';const screens=['./src/screens/home-v2.js','./src/screens/reels.js','./src/screens/create.js','./src/screens/story-create.js','./src/screens/profile-direct.js','./src/screens/settings.js','./src/screens/search.js','./src/screens/notifications.js','./src/screens/activity.js','./src/screens/wallet.js','./src/screens/blocked-users.js'];screens.forEach(path=>import(`${path}?v=${version}`).catch(()=>{}));};
+  const warmScreens=()=>{
+    const version='20260813-73';
+    const screens=['./src/screens/home-v2.js','./src/screens/reels.js','./src/screens/create.js','./src/screens/story-create.js','./src/screens/profile-direct.js','./src/screens/settings.js','./src/screens/search.js','./src/screens/notifications.js','./src/screens/activity.js','./src/screens/wallet.js','./src/screens/blocked-users.js'];
+    screens.forEach(path=>import(`${path}?v=${version}`).catch(()=>{}));
+  };
   if('requestIdleCallback' in window)window.requestIdleCallback(warmScreens,{timeout:1800});else window.setTimeout(warmScreens,500);
 
   function ensureDone(preview,publish){
@@ -49,7 +49,8 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
         done.textContent='Posting...';
         publish.disabled=false;
         publish.removeAttribute('disabled');
-        try{publish.click();}catch(error){console.error('Story Done publish failed:',error);done.disabled=false;done.textContent='Done';}
+        try{publish.click();}
+        catch(error){console.error('Story Done publish failed:',error);done.disabled=false;done.textContent='Done';}
       },true);
       done.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();},true);
       preview.appendChild(done);
@@ -78,6 +79,7 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     publish.style.setProperty('margin','0','important');
     publish.style.setProperty('border','0','important');
     publish.style.setProperty('box-shadow','none','important');
+
     ensureDone(preview,publish);
 
     add.style.setProperty('position','absolute','important');
@@ -87,8 +89,14 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     add.style.setProperty('bottom','62px','important');
     add.style.setProperty('transform','none','important');
     add.style.setProperty('z-index','101','important');
+
     const panel=document.getElementById('story-add-panel');
-    if(panel){panel.style.setProperty('right','14px','important');panel.style.setProperty('left','auto','important');panel.style.setProperty('top','auto','important');panel.style.setProperty('bottom','118px','important');}
+    if(panel){
+      panel.style.setProperty('right','14px','important');
+      panel.style.setProperty('left','auto','important');
+      panel.style.setProperty('top','auto','important');
+      panel.style.setProperty('bottom','118px','important');
+    }
     document.getElementById('story-create-select')?.style.setProperty('display','none','important');
     document.getElementById('indo-story-share-button')?.remove();
 
@@ -96,8 +104,17 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     if(!textButton||textButton.parentElement!==preview){
       textButton?.remove();
       textButton=document.createElement('button');
-      textButton.id='story-text-button';textButton.type='button';textButton.textContent='T';textButton.setAttribute('aria-label','Add text');
-      const openText=event=>{event.preventDefault();event.stopPropagation();const rect=preview.getBoundingClientRect();window.__indoStoryTextMode=true;window.__indoStoryStartTitle?.(rect.left+rect.width/2,rect.top+rect.height/2);};
+      textButton.id='story-text-button';
+      textButton.type='button';
+      textButton.textContent='T';
+      textButton.setAttribute('aria-label','Add text');
+      const openText=event=>{
+        event.preventDefault();
+        event.stopPropagation();
+        const rect=preview.getBoundingClientRect();
+        window.__indoStoryTextMode=true;
+        window.__indoStoryStartTitle?.(rect.left+rect.width/2,rect.top+rect.height/2);
+      };
       textButton.addEventListener('pointerup',openText,true);
       textButton.addEventListener('touchend',openText,{capture:true,passive:false});
       textButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();},true);
@@ -106,20 +123,36 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     return true;
   }
 
-  function start(){let attempts=0;const timer=setInterval(()=>{attempts+=1;if(apply()||attempts>=120)clearInterval(timer);},100);apply();}
-  start();window.addEventListener('hashchange',start);
-  document.addEventListener('click',()=>{if(document.getElementById('story-preview'))window.setTimeout(apply,0);},true);
-
-  const observer=new MutationObserver(()=>{
-    const preview=document.getElementById('story-preview');
-    if(!preview)return;
-    preview.querySelectorAll('.story-publish:not(#story-publish-button)').forEach(node=>node.remove());
+  function start(){
+    let attempts=0;
+    const timer=setInterval(()=>{
+      attempts+=1;
+      if(apply()||attempts>=80)clearInterval(timer);
+    },100);
     apply();
-  });
-  observer.observe(document.body,{childList:true,subtree:true});
+  }
+  start();
+  window.addEventListener('hashchange',start);
+  document.addEventListener('click',()=>{
+    if(document.getElementById('story-preview'))window.setTimeout(apply,0);
+  },true);
 
-  const swallowGenericStoryText=(event)=>{const target=event.target instanceof Element?event.target:null;const preview=target?.closest('#story-preview');if(!preview)return;if(target?.closest('#story-text-button,#indo-story-done-hit,#story-publish-button,#story-add-button,#story-add-panel,#story-font-picker,.story-title-element,.story-photo-element,.story-emoji-element,.story-trash-zone'))return;if(!window.__indoStoryTextMode&&(event.type==='pointerdown'||event.type==='click'))event.stopImmediatePropagation();};
+  /* Deliberately no document-wide MutationObserver: the app has active DOM updates and
+     observing the whole body caused a render loop / Page Unresponsive condition. */
+  const swallowGenericStoryText=event=>{
+    const target=event.target instanceof Element?event.target:null;
+    const preview=target?.closest('#story-preview');
+    if(!preview)return;
+    if(target?.closest('#story-text-button,#indo-story-done-hit,#story-publish-button,#story-add-button,#story-add-panel,#story-font-picker,.story-title-element,.story-photo-element,.story-emoji-element,.story-trash-zone'))return;
+    if(!window.__indoStoryTextMode&&(event.type==='pointerdown'||event.type==='click'))event.stopImmediatePropagation();
+  };
   document.addEventListener('pointerdown',swallowGenericStoryText,true);
   document.addEventListener('click',swallowGenericStoryText,true);
-  window.__indoStoryStartTitle=(x,y)=>{const preview=document.getElementById('story-preview');if(!preview)return;window.__indoStoryTextMode=true;preview.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:x,clientY:y}));window.setTimeout(()=>{window.__indoStoryTextMode=false;},250);};
+  window.__indoStoryStartTitle=(x,y)=>{
+    const preview=document.getElementById('story-preview');
+    if(!preview)return;
+    window.__indoStoryTextMode=true;
+    preview.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:x,clientY:y}));
+    window.setTimeout(()=>{window.__indoStoryTextMode=false;},250);
+  };
 })();
