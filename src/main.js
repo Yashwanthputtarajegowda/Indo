@@ -6,8 +6,14 @@ function showStartupError(error) {
 }
 
 async function renderCurrentScreen() {
-  const { render } = await import('./router.js');
+  const { render } = await import('./router.js?v=20260813-14');
   render(app);
+}
+
+async function navigate(screen) {
+  const { state } = await import('./state.js');
+  state.screen = screen;
+  await renderCurrentScreen();
 }
 
 async function openHomeAfterLogin() {
@@ -18,25 +24,26 @@ async function openHomeAfterLogin() {
 }
 
 function bindNavigation() {
+  if (window.__indoNavigationBound) return;
+  window.__indoNavigationBound = true;
+
   document.addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-screen]');
-    if (!button || !app.contains(button)) return;
+    const target = event.target instanceof Element ? event.target.closest('[data-screen]') : null;
+    if (!target || !app.contains(target)) return;
 
-    event.preventDefault();
-    event.stopPropagation();
-
-    const screen = button.dataset.screen;
+    const screen = target.dataset.screen;
     if (!screen) return;
 
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
     try {
-      const { state } = await import('./state.js');
-      state.screen = screen;
-      await renderCurrentScreen();
+      await navigate(screen);
     } catch (error) {
       console.error('Navigation failed:', error);
       showStartupError(error);
     }
-  });
+  }, true);
 }
 
 async function start() {
