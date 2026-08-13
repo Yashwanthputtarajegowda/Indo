@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
+import './features/ui/feed-follow-button.js';
 
 const VERSION = '20260814-132';
 const NAV_STYLE_ID = 'indo-global-nav-v132';
