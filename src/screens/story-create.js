@@ -63,7 +63,7 @@ function ensureStyles() {
     .story-preview.is-dragging .story-trash-zone{display:flex}
     .story-preview.is-over-trash .story-trash-zone{background:#d83434;border-color:rgba(255,255,255,.45);transform:translateX(-50%) scale(1.04)}
     .story-add-button{position:absolute;right:12px;bottom:12px;z-index:20;width:48px;height:48px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:rgba(20,20,27,.88);color:#fff;font-size:28px;font-weight:900;line-height:1;box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer}
-    .story-add-panel{position:absolute;right:12px;bottom:68px;z-index:19;width:min(300px,calc(100% - 24px));padding:10px;border:1px solid #2b2b35;border-radius:14px;background:rgba(12,12,18,.96);box-shadow:0 12px 34px rgba(0,0,0,.5);display:grid;gap:10px}
+    .story-add-panel{position:absolute;right:12px;bottom:68px;z-index:19;width:min(300px,calc(100% - 24px));padding:10px;border:0;border-radius:0;background:transparent;box-shadow:none;display:grid;gap:10px}
     .story-add-panel[hidden]{display:none}
     .story-add-panel label{font-size:12px;color:#aaa;display:grid;gap:6px}
     .story-add-panel select{height:40px;border:1px solid #2a2a32;border-radius:10px;background:#101016;color:#fff;padding:0 11px;outline:none}
