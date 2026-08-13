@@ -7,9 +7,9 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-39" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-39" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-39" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-40" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-40" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-40" />
   <title>Indo</title>
 </head>
 <body>
@@ -20,7 +20,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-39"></script>
+  <script src="./config/runtime-config.js?v=20260813-40"></script>
   <script>
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
@@ -49,11 +49,8 @@
           input.remove();
           if (!file || !file.type.startsWith('video/')) return;
           window.__indoStoryDraftFile = file;
-          try {
-            await window.__indoNavigate?.('story-create');
-          } catch (error) {
-            console.error('Story editor navigation failed:', error);
-          }
+          try { await window.__indoNavigate?.('story-create'); }
+          catch (error) { console.error('Story editor navigation failed:', error); }
         }, { once: true });
         input.click();
         return;
@@ -67,7 +64,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-39'),
+          import('./src/features/auth/firebase-client.js?v=20260813-40'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -133,6 +130,6 @@
     });
     storyEditorObserver.observe(document.body, { childList: true, subtree: true });
   </script>
-  <script type="module" src="./src/main.js?v=20260813-39"></script>
+  <script type="module" src="./src/main.js?v=20260813-40"></script>
 </body>
 </html>
