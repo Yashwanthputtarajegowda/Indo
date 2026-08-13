@@ -30,10 +30,9 @@ function renderMediaGrid(videos) {
   }).join('');
 }
 
-export function renderProfile(app, profile = null) {
+export async function renderProfile(app, profile = null) {
   ensureProfileLayoutStyles();
   const username = escapeHtml(profile?.username || '');
-  const bio = escapeHtml(profile?.bio || 'Welcome to Indo.');
   const initial = escapeHtml((profile?.name || profile?.username || 'I').replace(/^@/, '').charAt(0).toUpperCase() || 'I');
   const followers = Number(profile?.followersCount || 0);
   const following = Number(profile?.followingCount || 0);
@@ -50,7 +49,6 @@ export function renderProfile(app, profile = null) {
         <div><b>${followers}</b><span>Followers</span></div>
         <div><b>${following}</b><span>Following</span></div>
       </section>
-      <p class="bio">${bio}</p>
       <button class="edit-btn" data-edit-profile>Edit Profile</button>
       <div class="tabs"><button class="active">▦</button><button>▶</button><button>♧</button></div>
       <div class="grid" data-profile-media><div class="profile-empty">Loading posts...</div></div>
@@ -61,18 +59,13 @@ export function renderProfile(app, profile = null) {
   const mediaGrid = app.querySelector('[data-profile-media]');
   const postCount = app.querySelector('[data-post-count]');
 
-  loadProfileMedia().then(({ profile: latestProfile, videos }) => {
+  try {
+    const { videos } = await loadProfileMedia(profile);
     postCount.textContent = String(videos.length);
     mediaGrid.innerHTML = renderMediaGrid(videos);
-    if (latestProfile?.username) {
-      const latestUsername = escapeHtml(latestProfile.username.replace(/^@/, ''));
-      const userId = app.querySelector('.profile-userid');
-      const header = app.querySelector('.profile-head h2');
-      if (userId) userId.textContent = `@${latestUsername}`;
-      if (header) header.textContent = latestUsername;
-    }
-  }).catch(() => {
+  } catch (error) {
     postCount.textContent = '0';
     mediaGrid.innerHTML = '<div class="profile-empty">Could not load posts right now.</div>';
-  });
+    console.error('Profile media failed:', error);
+  }
 }
