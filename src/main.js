@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-39';
+const ROUTER_VERSION = '20260813-40';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
@@ -43,12 +43,7 @@ async function openCreatorProfile(username, uid = '') {
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.profile) profile = data.profile;
     }
-    profile = {
-      ...(profile || {}),
-      username: profile?.username || cleanUsername,
-      uid: profile?.uid || profile?.userId || cleanUid,
-      ownerUid: profile?.ownerUid || cleanUid
-    };
+    profile = { ...(profile || {}), username: profile?.username || cleanUsername, uid: profile?.uid || profile?.userId || cleanUid, ownerUid: profile?.ownerUid || cleanUid };
     if (!profile.username && !profile.uid && !profile.ownerUid) throw new Error('Creator information is missing.');
     state.profile = profile;
     state.screen = 'profile';
@@ -73,12 +68,8 @@ function bindNavigation() {
     if (profileTarget && app.contains(profileTarget)) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      try {
-        await openCreatorProfile(profileTarget.dataset.profileUsername || '', profileTarget.dataset.profileUid || '');
-      } catch (error) {
-        console.error('Creator profile navigation failed:', error);
-        showStartupError(error);
-      }
+      try { await openCreatorProfile(profileTarget.dataset.profileUsername || '', profileTarget.dataset.profileUid || ''); }
+      catch (error) { console.error('Creator profile navigation failed:', error); showStartupError(error); }
       return;
     }
     const target = element?.closest('[data-screen]');
@@ -87,12 +78,8 @@ function bindNavigation() {
     if (!screen) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    try {
-      await navigate(screen);
-    } catch (error) {
-      console.error('Navigation failed:', error);
-      showStartupError(error);
-    }
+    try { await navigate(screen); }
+    catch (error) { console.error('Navigation failed:', error); showStartupError(error); }
   }, true);
 }
 
@@ -119,10 +106,7 @@ async function start() {
   try {
     bindNavigation();
     const authenticated = await waitForFirebaseSession();
-    if (authenticated) {
-      await renderCurrentScreen();
-      return;
-    }
+    if (authenticated) { await renderCurrentScreen(); return; }
     const { renderLogin } = await import('./screens/auth.js');
     renderLogin(app);
     const form = app.querySelector('#login-form');
@@ -165,9 +149,7 @@ async function start() {
         const code = error?.code || '';
         const text = code === 'auth/user-not-found' ? 'No account was found for this email ID.' : code === 'auth/invalid-email' ? 'Enter a valid email ID.' : code === 'auth/too-many-requests' ? 'Too many requests. Please wait and try again.' : (error?.message || 'Could not send password reset email.');
         if (message) message.textContent = text;
-      } finally {
-        resetButton.disabled = false;
-      }
+      } finally { resetButton.disabled = false; }
     });
   } catch (error) {
     console.error('Indo startup failed:', error);
