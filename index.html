@@ -7,12 +7,12 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-54" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-54" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-54" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-55" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-55" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-55" />
   <style>
     .story-file-name{display:none!important}
-    #story-preview .story-done-positioned{position:absolute!important;left:20%!important;right:0!important;bottom:12px!important;width:80%!important;max-width:none!important;height:46px!important;z-index:21!important;margin:0!important}
+    #story-preview .story-done-positioned{position:absolute!important;left:0!important;right:auto!important;bottom:12px!important;width:20%!important;max-width:none!important;height:46px!important;z-index:21!important;margin:0!important}
     #story-preview .story-add-positioned{position:absolute!important;right:14px!important;bottom:68px!important;z-index:22!important}
   </style>
   <title>Indo</title>
@@ -25,7 +25,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-54"></script>
+  <script src="./config/runtime-config.js?v=20260813-55"></script>
   <script>
     window.__indoFixStoryEditor = function fixStoryEditorLayout() {
       const preview = document.getElementById('story-preview');
@@ -43,7 +43,6 @@
       return true;
     };
 
-    // Lightweight one-shot polling only while the lazy Story screen is loading.
     (function startStoryEditorFixPoll() {
       let attempts = 0;
       const timer = setInterval(() => {
@@ -77,7 +76,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-54'),
+          import('./src/features/auth/firebase-client.js?v=20260813-55'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -106,6 +105,6 @@
       }
     }, true);
   </script>
-  <script type="module" src="./src/main.js?v=20260813-54"></script>
+  <script type="module" src="./src/main.js?v=20260813-55"></script>
 </body>
 </html>
