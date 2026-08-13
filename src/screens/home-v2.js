@@ -46,7 +46,7 @@ async function loadFeed(app) {
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-23');
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-25');
     const videos = await loadHomeVideos();
     if (!videos.length) {
       status.textContent = 'No videos yet. Upload your first video.';
@@ -64,7 +64,7 @@ async function loadFeed(app) {
 async function loadStories(app) {
   const row = app.querySelector('[data-stories-v2]');
   try {
-    const { loadStories } = await import('../features/stories/stories.js?v=20260813-23');
+    const { loadStories } = await import('../features/stories/stories.js?v=20260813-25');
     const stories = await loadStories();
     row.innerHTML = addStoryItem() + stories.map(storyItem).join('');
   } catch (error) {
@@ -77,7 +77,7 @@ async function loadNotifications(app) {
   try {
     const button = app.querySelector('[data-screen="notifications"]');
     if (!button) return;
-    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-23');
+    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-25');
     const items = await loadNotifications();
     const unread = items.filter((item) => !item.read).length;
     if (!unread) return;
