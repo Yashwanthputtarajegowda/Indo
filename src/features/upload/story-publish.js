@@ -30,7 +30,7 @@ async function uploadToCloudinary(file, config) {
   return data;
 }
 
-export async function publishStory(file, onProgress = () => {}) {
+export async function publishStory(file, onProgress = () => {}, editor = {}) {
   if (!(file instanceof File) || !file.type.startsWith('video/')) throw new Error('Please select a video story.');
   onProgress(10, 'Preparing story upload...');
   const config = await getStorySignature();
@@ -41,7 +41,16 @@ export async function publishStory(file, onProgress = () => {}) {
   const response = await fetch(`${apiBase}/api/stories`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.token}` },
-    body: JSON.stringify({ publicId: uploaded.public_id, secureUrl: uploaded.secure_url })
+    body: JSON.stringify({
+      publicId: uploaded.public_id,
+      secureUrl: uploaded.secure_url,
+      title: String(editor.title || '').trim().slice(0, 80),
+      crop: String(editor.crop || 'portrait'),
+      stickerDataUrl: String(editor.stickerDataUrl || '').slice(0, 500000),
+      stickerX: Number(editor.stickerX ?? 50),
+      stickerY: Number(editor.stickerY ?? 50),
+      stickerScale: Number(editor.stickerScale ?? 1)
+    })
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Could not publish story.');
