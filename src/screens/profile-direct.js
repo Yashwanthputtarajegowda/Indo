@@ -32,6 +32,10 @@ function installStyles() {
     .profile-direct-item{aspect-ratio:1;border:0;padding:0;position:relative;overflow:hidden;background:#111;cursor:pointer}
     .profile-direct-item video{width:100%;height:100%;object-fit:cover;display:block;background:#111}
     .profile-direct-empty{grid-column:1/-1;padding:45px 15px;text-align:center;color:#858591;font-size:13px}
+    .profile-video-viewer{position:fixed;inset:0;z-index:30000;background:rgba(0,0,0,.96);display:grid;place-items:center;padding:12px;touch-action:none}
+    .profile-video-viewer-card{position:relative;width:min(100%,520px);height:min(92vh,820px);background:#000;overflow:hidden;border-radius:14px;display:flex;align-items:center;justify-content:center}
+    .profile-video-viewer-card video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+    .profile-video-viewer-close{position:absolute;top:12px;left:12px;z-index:3;width:38px;height:38px;border:0;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;font-size:25px;line-height:1;cursor:pointer}
   `;
   document.head.appendChild(s);
 }
@@ -55,69 +59,78 @@ function profileVideoUrl(rawUrl) {
   if (index < 0) return url;
   const prefix = url.slice(0, index + marker.length);
   const rest = url.slice(index + marker.length);
-  const clean = rest.replace(/^f_mp4,vc_h264,ac_aac\//, '');
-  return `${prefix}f_mp4,vc_h264,ac_aac/${clean}`;
+  if (rest.startsWith('f_mp4,vc_h264,ac_aac/')) return url;
+  return `${prefix}f_mp4,vc_h264,ac_aac/${rest}`;
+}
+
+function closeProfileVideoViewer() {
+  const viewer = document.querySelector('.profile-video-viewer');
+  if (!viewer) return;
+  const video = viewer.querySelector('video');
+  video?.pause();
+  viewer.remove();
+}
+
+function openProfileVideoViewer(video) {
+  const src = String(video?.currentSrc || video?.src || '').trim();
+  const original = String(video?.dataset.originalSrc || '').trim();
+  if (!src && !original) return;
+  document.querySelector('.profile-video-viewer')?.remove();
+  document.querySelectorAll('.profile-direct-item video').forEach((item) => item.pause());
+  const viewer = document.createElement('div');
+  viewer.className = 'profile-video-viewer';
+  viewer.innerHTML = `<div class="profile-video-viewer-card"><button type="button" class="profile-video-viewer-close" aria-label="Close">×</button><video controls playsinline preload="auto" src="${esc(src || original)}"></video></div>`;
+  document.body.appendChild(viewer);
+  const player = viewer.querySelector('video');
+  const close = () => closeProfileVideoViewer();
+  viewer.querySelector('.profile-video-viewer-close')?.addEventListener('click', close);
+  viewer.addEventListener('click', (event) => { if (event.target === viewer) close(); });
+  viewer.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
+  viewer.setAttribute('tabindex', '-1');
+  viewer.focus({ preventScroll: true });
+  player?.addEventListener('error', () => {
+    if (original && player.src !== original) {
+      player.src = original;
+      player.load();
+      player.play().catch(() => {});
+    }
+  }, { once: true });
+  player?.play().catch(() => {});
 }
 
 function bindProfileVideos(app) {
   const videos = Array.from(app.querySelectorAll('.profile-direct-item video'));
   if (!videos.length) return;
-
-  const stopOthers = (current) => {
-    document.querySelectorAll('video').forEach((other) => {
-      if (other !== current && !other.paused) other.pause();
-    });
-  };
-
-  const prepareAudio = (video) => {
-    stopOthers(video);
-    video.playsInline = true;
+  const playInline = (video) => {
+    videos.forEach((other) => { if (other !== video) other.pause(); });
     video.preload = 'auto';
-    if (window.__indoAudioUnlocked) {
-      video.removeAttribute('muted');
-      video.defaultMuted = false;
-      video.muted = false;
-      video.volume = 1;
-    }
+    video.playsInline = true;
+    const tryPlay = () => video.play().catch(() => {});
+    if (video.readyState >= 2) tryPlay();
+    else video.addEventListener('loadeddata', tryPlay, { once: true });
   };
-
-  const playVideo = (video) => {
-    prepareAudio(video);
-    const start = () => video.play().catch(() => {});
-    if (video.readyState >= 2) start();
-    else video.addEventListener('loadeddata', start, { once: true });
+  videos.forEach((video) => {
+    video.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openProfileVideoViewer(video);
+    });
     video.addEventListener('error', () => {
       const raw = String(video.dataset.originalSrc || '');
       if (raw && video.src !== raw) {
         video.src = raw;
         video.load();
-        video.addEventListener('loadeddata', start, { once: true });
       }
-    }, { once: true });
-  };
-
-  videos.forEach((video) => {
-    video.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (video.paused) playVideo(video); else video.pause();
-    });
-    video.addEventListener('loadedmetadata', () => {
-      if (video.videoWidth > 0 && video.videoHeight > 0) return;
-      const raw = String(video.dataset.originalSrc || '');
-      if (raw && video.src !== raw) { video.src = raw; video.load(); }
     });
   });
-
   const observer = typeof IntersectionObserver === 'function' ? new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const video = entry.target;
-      if (entry.isIntersecting && entry.intersectionRatio >= 0.5) playVideo(video);
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.6) playInline(video);
       else if (!entry.isIntersecting) video.pause();
     });
-  }, { threshold: [0, 0.5, 0.75, 1] }) : null;
+  }, { threshold: [0, 0.6, 1] }) : null;
   if (observer) videos.forEach((video) => observer.observe(video));
-  else videos.forEach((video) => playVideo(video));
 }
 
 async function loadTargetVideos(targetUid) {
@@ -190,7 +203,7 @@ export async function renderProfile(app, profile = null) {
     grid.innerHTML = videos.length ? videos.map((v) => {
       const raw = v.secureUrl || v.videoUrl || v.url || '';
       const src = profileVideoUrl(raw);
-      return `<button class="profile-direct-item" type="button"><video playsinline preload="auto" src="${esc(src)}" data-original-src="${esc(raw)}" controls></video></button>`;
+      return `<button class="profile-direct-item" type="button"><video playsinline preload="metadata" src="${esc(src)}" data-original-src="${esc(raw)}"></video></button>`;
     }).join('') : '<div class="profile-direct-empty">No posts yet.</div>';
     bindProfileVideos(app);
   } catch {
