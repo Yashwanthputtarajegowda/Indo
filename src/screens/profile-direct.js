@@ -1,13 +1,15 @@
 import { auth } from '../features/auth/firebase-client.js';
+import '../features/feed/cloudinary-video-fix.js';
+import '../features/feed/cloudinary-playback-hardener.js';
 
 function esc(value = '') {
   return String(value).replace(/[&<>\"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[c]));
 }
 
 function installStyles() {
-  if (document.getElementById('indo-profile-direct-v6')) return;
+  if (document.getElementById('indo-profile-direct-v7')) return;
   const s = document.createElement('style');
-  s.id = 'indo-profile-direct-v6';
+  s.id = 'indo-profile-direct-v7';
   s.textContent = `
     .profile-direct-shell{width:100%;max-width:520px;min-height:100vh;margin:0 auto;background:#07070a;position:relative;padding-bottom:78px;overflow-x:hidden}
     .profile-direct-page{width:100%;max-width:520px;min-height:calc(100vh - 64px);padding:20px 15px 20px;margin:0 auto;box-sizing:border-box}
@@ -27,8 +29,8 @@ function installStyles() {
     .profile-direct-stats b{display:block;font-size:16px;line-height:1.1}.profile-direct-stats span{display:block;font-size:10px;color:#8e8e98;margin:0}
     .profile-direct-edit{width:100%;height:38px;border:1px solid #292931;border-radius:7px;background:#17171d;color:#fff;font-weight:700;margin:0 0 18px}
     .profile-direct-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:2px;width:100%}
-    .profile-direct-item{aspect-ratio:1;border:0;padding:0;position:relative;overflow:hidden;background:#111}
-    .profile-direct-item video{width:100%;height:100%;object-fit:cover;display:block}
+    .profile-direct-item{aspect-ratio:1;border:0;padding:0;position:relative;overflow:hidden;background:#111;cursor:pointer}
+    .profile-direct-item video{width:100%;height:100%;object-fit:cover;display:block;background:#111}
     .profile-direct-empty{grid-column:1/-1;padding:45px 15px;text-align:center;color:#858591;font-size:13px}
   `;
   document.head.appendChild(s);
@@ -43,6 +45,54 @@ async function authRequest(path, options = {}) {
     ...options,
     headers: { ...(options.headers || {}), 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
   });
+}
+
+function profileVideoUrl(rawUrl) {
+  const url = String(rawUrl || '').trim();
+  if (!url || !url.includes('res.cloudinary.com') || !url.includes('/video/upload/')) return url;
+  const marker = '/video/upload/';
+  const index = url.indexOf(marker);
+  if (index < 0) return url;
+  const prefix = url.slice(0, index + marker.length);
+  const rest = url.slice(index + marker.length);
+  if (rest.startsWith('f_mp4,vc_h264,ac_aac/')) return url;
+  return `${prefix}f_mp4,vc_h264,ac_aac/${rest}`;
+}
+
+function bindProfileVideos(app) {
+  const videos = Array.from(app.querySelectorAll('.profile-direct-item video'));
+  if (!videos.length) return;
+  const playVideo = (video) => {
+    videos.forEach((other) => { if (other !== video) other.pause(); });
+    video.preload = 'auto';
+    video.playsInline = true;
+    video.load();
+    const tryPlay = () => video.play().catch(() => {});
+    if (video.readyState >= 2) tryPlay();
+    else video.addEventListener('loadeddata', tryPlay, { once: true });
+  };
+  videos.forEach((video) => {
+    video.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (video.paused) playVideo(video); else video.pause();
+    });
+    video.addEventListener('error', () => {
+      const raw = String(video.dataset.originalSrc || '');
+      if (raw && video.src !== raw) {
+        video.src = raw;
+        video.load();
+      }
+    });
+  });
+  const observer = typeof IntersectionObserver === 'function' ? new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      const video = entry.target;
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.6) playVideo(video);
+      else if (!entry.isIntersecting) video.pause();
+    });
+  }, { threshold: [0, 0.6, 1] }) : null;
+  if (observer) videos.forEach((video) => observer.observe(video));
 }
 
 async function loadTargetVideos(targetUid) {
@@ -66,8 +116,6 @@ export async function renderProfile(app, profile = null) {
   const followers = Number(profile?.followersCount || 0);
   const following = Number(profile?.followingCount || 0);
 
-  // The navigation is a direct sibling of the page shell, exactly like Home,
-  // so it is not affected by the profile content's scrolling container.
   app.innerHTML = `<div class="profile-direct-shell">
     <header class="profile-direct-head"><button type="button" data-screen="home" aria-label="Back">‹</button><h2>${esc(username)}</h2><span>${own ? '⚙' : ''}</span></header>
     <main class="profile-direct-page">
@@ -114,7 +162,12 @@ export async function renderProfile(app, profile = null) {
     const videos = await loadTargetVideos(targetUid);
     app.querySelector('[data-posts]').textContent = String(videos.length);
     const grid = app.querySelector('[data-grid]');
-    grid.innerHTML = videos.length ? videos.map((v) => `<button class="profile-direct-item" type="button"><video muted playsinline preload="metadata" src="${esc(v.secureUrl || v.videoUrl || v.url || '')}"></video></button>`).join('') : '<div class="profile-direct-empty">No posts yet.</div>';
+    grid.innerHTML = videos.length ? videos.map((v) => {
+      const raw = v.secureUrl || v.videoUrl || v.url || '';
+      const src = profileVideoUrl(raw);
+      return `<button class="profile-direct-item" type="button"><video playsinline preload="metadata" src="${esc(src)}" data-original-src="${esc(raw)}"></video></button>`;
+    }).join('') : '<div class="profile-direct-empty">No posts yet.</div>';
+    bindProfileVideos(app);
   } catch {
     app.querySelector('[data-grid]').innerHTML = '<div class="profile-direct-empty">Could not load posts right now.</div>';
   }
