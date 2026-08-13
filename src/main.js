@@ -9,7 +9,7 @@ async function openHomeAfterLogin() {
   const { state } = await import('./state.js');
   state.authenticated = true;
   state.screen = 'home';
-  const { renderHome } = await import('./screens/home.js');
+  const { renderHome } = await import('./screens/home.js?v=20260813-9');
   renderHome(app);
 }
 
