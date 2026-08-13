@@ -2,33 +2,34 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV16) return;
-  window.__indoStoryRuntimeV16 = true;
+  if (window.__indoStoryRuntimeV17) return;
+  window.__indoStoryRuntimeV17 = true;
+
+  // Disable the legacy inline story layout poll in index.html. The poll was
+  // re-showing the old full-width publish box after our editor fix ran.
+  try {
+    Object.defineProperty(window,'__indoFixStoryEditor',{value:()=>false,writable:false,configurable:false});
+  } catch {}
 
   const mobileStyle = document.createElement('style');
-  mobileStyle.id = 'indo-mobile-runtime-v10';
+  mobileStyle.id = 'indo-mobile-runtime-v11';
   mobileStyle.textContent = `
     html,body{width:100%;min-height:100%;-webkit-text-size-adjust:100%}
     body{overflow-x:hidden;overflow-y:auto}
     button,a,input,textarea,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .app-shell,.auth-shell{width:100%;max-width:520px;min-height:100dvh;min-height:100svh}
     #story-preview{position:relative!important;overflow:hidden!important}
-
-    /* The old full-width publish button is only a hidden trigger now. */
     #story-preview #story-publish-button,
     #story-preview .story-publish{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;max-width:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;outline:0!important}
-
-    /* There is exactly one visible Done control. */
     #indo-story-done-hit{position:absolute!important;left:auto!important;right:0!important;top:auto!important;bottom:0!important;width:20%!important;height:44px!important;min-height:44px!important;margin:0!important;padding:0!important;border:0!important;border-radius:10px!important;background:#7b3cff!important;color:#fff!important;font-weight:800!important;display:block!important;visibility:visible!important;opacity:1!important;z-index:200!important;cursor:pointer!important;pointer-events:auto!important}
     #indo-story-done-hit:disabled{opacity:.65!important}
-
     #story-text-button{position:absolute!important;left:auto!important;right:14px!important;top:auto!important;bottom:118px!important;z-index:140!important;width:44px!important;height:44px!important;border-radius:50%!important;background:rgba(20,20,27,.88)!important;border:1px solid rgba(255,255,255,.18)!important;color:#fff!important;font-size:18px!important;font-weight:900!important;display:grid!important;place-items:center!important;box-shadow:0 8px 24px rgba(0,0,0,.45)!important;cursor:pointer!important}
     #story-preview #story-add-button{position:absolute!important;left:auto!important;right:14px!important;top:auto!important;bottom:62px!important;transform:none!important;z-index:101!important;width:48px!important;height:48px!important;margin:0!important}
     #story-preview #story-add-panel{right:14px!important;bottom:118px!important;left:auto!important;top:auto!important;z-index:120!important}
   `;
   document.head.appendChild(mobileStyle);
 
-  const warmScreens=()=>{const version='20260813-71';const screens=['./src/screens/home-v2.js','./src/screens/reels.js','./src/screens/create.js','./src/screens/story-create.js','./src/screens/profile-direct.js','./src/screens/settings.js','./src/screens/search.js','./src/screens/notifications.js','./src/screens/activity.js','./src/screens/wallet.js','./src/screens/blocked-users.js'];screens.forEach(path=>import(`${path}?v=${version}`).catch(()=>{}));};
+  const warmScreens=()=>{const version='20260813-72';const screens=['./src/screens/home-v2.js','./src/screens/reels.js','./src/screens/create.js','./src/screens/story-create.js','./src/screens/profile-direct.js','./src/screens/settings.js','./src/screens/search.js','./src/screens/notifications.js','./src/screens/activity.js','./src/screens/wallet.js','./src/screens/blocked-users.js'];screens.forEach(path=>import(`${path}?v=${version}`).catch(()=>{}));};
   if('requestIdleCallback' in window)window.requestIdleCallback(warmScreens,{timeout:1800});else window.setTimeout(warmScreens,500);
 
   function ensureDone(preview,publish){
@@ -64,7 +65,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     if(!preview||!publish||!add)return false;
     preview.style.setProperty('position','relative','important');
 
-    /* Keep the original publish handler alive but make its visual box impossible to show. */
     publish.textContent='Publish story';
     publish.style.setProperty('display','none','important');
     publish.style.setProperty('visibility','hidden','important');
@@ -78,7 +78,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     publish.style.setProperty('margin','0','important');
     publish.style.setProperty('border','0','important');
     publish.style.setProperty('box-shadow','none','important');
-
     ensureDone(preview,publish);
 
     add.style.setProperty('position','absolute','important');
@@ -111,7 +110,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
   start();window.addEventListener('hashchange',start);
   document.addEventListener('click',()=>{if(document.getElementById('story-preview'))window.setTimeout(apply,0);},true);
 
-  /* Remove any accidental duplicate publish elements immediately. */
   const observer=new MutationObserver(()=>{
     const preview=document.getElementById('story-preview');
     if(!preview)return;
