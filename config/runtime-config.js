@@ -2,19 +2,17 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV18) return;
-  window.__indoStoryRuntimeV18 = true;
+  if (window.__indoStoryRuntimeV19) return;
+  window.__indoStoryRuntimeV19 = true;
 
   const mobileStyle = document.createElement('style');
-  mobileStyle.id = 'indo-mobile-runtime-v12';
+  mobileStyle.id = 'indo-mobile-runtime-v13';
   mobileStyle.textContent = `
     html,body{width:100%;min-height:100%;-webkit-text-size-adjust:100%}
     body{overflow-x:hidden;overflow-y:auto}
     button,a,input,textarea,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .app-shell,.auth-shell{width:100%;max-width:520px;min-height:100dvh;min-height:100svh}
     #story-preview{position:relative!important;overflow:hidden!important}
-
-    /* One real Done control is rendered by this runtime. The old publish control is never visible. */
     #story-preview #story-publish-button,
     #story-preview .story-publish{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;max-width:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;outline:0!important}
     #indo-story-done-hit{position:absolute!important;left:auto!important;right:0!important;top:auto!important;bottom:0!important;width:20%!important;height:44px!important;min-height:44px!important;margin:0!important;padding:0!important;border:0!important;border-radius:10px!important;background:#7b3cff!important;color:#fff!important;font-weight:800!important;display:block!important;visibility:visible!important;opacity:1!important;z-index:200!important;cursor:pointer!important;pointer-events:auto!important}
@@ -26,7 +24,7 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
   document.head.appendChild(mobileStyle);
 
   const warmScreens=()=>{
-    const version='20260813-73';
+    const version='20260813-75';
     const screens=['./src/screens/home-v2.js','./src/screens/reels.js','./src/screens/create.js','./src/screens/story-create.js','./src/screens/profile-direct.js','./src/screens/settings.js','./src/screens/search.js','./src/screens/notifications.js','./src/screens/activity.js','./src/screens/wallet.js','./src/screens/blocked-users.js'];
     screens.forEach(path=>import(`${path}?v=${version}`).catch(()=>{}));
   };
@@ -65,7 +63,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     const add=document.getElementById('story-add-button');
     if(!preview||!publish||!add)return false;
     preview.style.setProperty('position','relative','important');
-
     publish.textContent='Publish story';
     publish.style.setProperty('display','none','important');
     publish.style.setProperty('visibility','hidden','important');
@@ -79,9 +76,7 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     publish.style.setProperty('margin','0','important');
     publish.style.setProperty('border','0','important');
     publish.style.setProperty('box-shadow','none','important');
-
     ensureDone(preview,publish);
-
     add.style.setProperty('position','absolute','important');
     add.style.setProperty('left','auto','important');
     add.style.setProperty('right','14px','important');
@@ -89,7 +84,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     add.style.setProperty('bottom','62px','important');
     add.style.setProperty('transform','none','important');
     add.style.setProperty('z-index','101','important');
-
     const panel=document.getElementById('story-add-panel');
     if(panel){
       panel.style.setProperty('right','14px','important');
@@ -99,7 +93,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     }
     document.getElementById('story-create-select')?.style.setProperty('display','none','important');
     document.getElementById('indo-story-share-button')?.remove();
-
     let textButton=document.getElementById('story-text-button');
     if(!textButton||textButton.parentElement!==preview){
       textButton?.remove();
@@ -135,6 +128,31 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
   window.addEventListener('hashchange',start);
   document.addEventListener('click',()=>{
     if(document.getElementById('story-preview'))window.setTimeout(apply,0);
+  },true);
+
+  async function removeBrokenStory(video){
+    const viewer=video.closest('.story-viewer-v2');
+    const url=String(video?.currentSrc||video?.src||'').trim();
+    const ownerItem=[...document.querySelectorAll('[data-story-open]')].find(item=>String(item.dataset.storyUrl||'').trim()===url);
+    const storyId=String(ownerItem?.dataset?.storyId||'').trim();
+    const ownerUid=String(ownerItem?.dataset?.storyOwner||'').trim();
+    const uid=String(window.__indoCurrentUid||'').trim();
+    viewer?.remove();
+    ownerItem?.remove();
+    if(storyId&&ownerUid&&uid&&ownerUid===uid){
+      try{
+        const {auth}=await import('../src/features/auth/firebase-client.js');
+        if(auth.currentUser?.uid===uid){
+          const token=await auth.currentUser.getIdToken();
+          await fetch(`${window.INDO_API_BASE}/api/stories/${encodeURIComponent(storyId)}/delete`,{method:'POST',headers:{Authorization:`Bearer ${token}`}});
+        }
+      }catch(error){console.warn('Broken story cleanup failed:',error);}
+    }
+  }
+
+  document.addEventListener('error',event=>{
+    const target=event.target;
+    if(target instanceof HTMLVideoElement && target.closest('.story-viewer-v2'))void removeBrokenStory(target);
   },true);
 
   /* Deliberately no document-wide MutationObserver: the app has active DOM updates and
