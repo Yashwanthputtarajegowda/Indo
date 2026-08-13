@@ -5,9 +5,9 @@ function esc(value = '') {
 }
 
 function installStyles() {
-  if (document.getElementById('indo-profile-direct-v2')) return;
+  if (document.getElementById('indo-profile-direct-v3')) return;
   const s = document.createElement('style');
-  s.id = 'indo-profile-direct-v2';
+  s.id = 'indo-profile-direct-v3';
   s.textContent = `
     .profile-direct-page{width:100%;max-width:520px;min-height:calc(100vh - 64px);padding:20px 15px 88px;margin:0 auto;box-sizing:border-box}
     .profile-direct-head{width:100%;max-width:520px;height:64px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 18px;margin:0 auto;border-bottom:1px solid #18181e;background:rgba(7,7,10,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(16px)}
@@ -29,10 +29,15 @@ function installStyles() {
     .profile-direct-item{aspect-ratio:1;border:0;padding:0;position:relative;overflow:hidden;background:#111}
     .profile-direct-item video{width:100%;height:100%;object-fit:cover;display:block}
     .profile-direct-empty{grid-column:1/-1;padding:45px 15px;text-align:center;color:#858591;font-size:13px}
-    .profile-direct-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(520px,100%);height:70px;box-sizing:border-box;background:rgba(9,9,12,.96);border-top:1px solid #1a1a21;display:flex;justify-content:space-around;align-items:center;z-index:10;backdrop-filter:blur(18px)}
-    .profile-direct-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:55px;padding:0;border:0;background:none;color:#888893;font-size:24px;line-height:1}.profile-direct-nav button span{display:block;font-size:9px;line-height:1}.profile-direct-nav button[data-screen="create"]{font-size:31px}
+    .profile-direct-nav{position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;transform:translateX(-50%)!important;width:520px!important;max-width:100vw!important;height:70px!important;box-sizing:border-box!important;background:rgba(9,9,12,.96)!important;border-top:1px solid #1a1a21!important;display:flex!important;justify-content:space-around!important;align-items:center!important;z-index:9999!important;backdrop-filter:blur(18px)!important}
+    .profile-direct-nav button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;min-width:55px!important;padding:0!important;border:0!important;background:none!important;color:#888893!important;font-size:24px!important;line-height:1!important}.profile-direct-nav button span{display:block!important;font-size:9px!important;line-height:1!important}.profile-direct-nav button[data-screen="create"]{font-size:31px!important}
   `;
   document.head.appendChild(s);
+}
+
+function removeForeignBottomNavs(app) {
+  document.querySelectorAll('.bottom-nav').forEach((node) => { if (!app.contains(node)) node.remove(); });
+  document.querySelectorAll('.profile-direct-nav').forEach((node) => { if (!app.contains(node)) node.remove(); });
 }
 
 async function authRequest(path, options = {}) {
@@ -56,6 +61,7 @@ async function loadTargetVideos(targetUid) {
 
 export async function renderProfile(app, profile = null) {
   installStyles();
+  removeForeignBottomNavs(app);
 
   const currentUid = String(auth.currentUser?.uid || '').trim();
   const requestedUid = String(profile?.uid || profile?.userId || profile?.ownerUid || '').trim();
@@ -81,7 +87,7 @@ export async function renderProfile(app, profile = null) {
       ${own ? '<button class="profile-direct-edit" type="button" data-screen="settings">Edit Profile</button>' : ''}
       <div class="profile-direct-grid" data-grid><div class="profile-direct-empty">Loading posts...</div></div>
     </main>
-    <nav class="profile-direct-nav"><button data-screen="home">⌂<span>Home</span></button><button data-screen="search">⌕<span>Search</span></button><button data-screen="reels">▶<span>Reels</span></button><button data-screen="create">＋<span>Create</span></button><button data-screen="profile">●<span>Profile</span></button></nav>
+    <nav class="profile-direct-nav" style="position:fixed;left:50%;right:auto;bottom:0;transform:translateX(-50%);width:520px;max-width:100vw;height:70px;display:flex;justify-content:space-around;align-items:center;z-index:9999"><button data-screen="home">⌂<span>Home</span></button><button data-screen="search">⌕<span>Search</span></button><button data-screen="reels">▶<span>Reels</span></button><button data-screen="create">＋<span>Create</span></button><button data-screen="profile">●<span>Profile</span></button></nav>
   </div>`;
 
   const followButton = app.querySelector('[data-follow]');
