@@ -1,58 +1,8 @@
 import { state } from '../../state.js';
 import { submitSignup } from './signup-form.js';
 
-function getRoot() { return document.getElementById('root'); }
-
-function installBottomNavigation() {
-  if (globalThis.__indoBottomNavV4) return;
-  globalThis.__indoBottomNavV4 = true;
-
-  const patchNav = () => {
-    document.querySelectorAll('.bottom-nav').forEach((nav) => {
-      if (nav.dataset.bottomNavV4 === '1') return;
-      const active = nav.querySelector('button.active')?.dataset.screen || 'home';
-      nav.dataset.bottomNavV4 = '1';
-      nav.innerHTML = `
-        <button type="button" data-screen="home" class="${active === 'home' ? 'active' : ''}">⌂<span>Home</span></button>
-        <button type="button" data-message-section aria-label="Message">⌕<span>Message</span></button>
-        <button type="button" data-screen="reels" class="${active === 'reels' ? 'active' : ''}">▶<span>Reels</span></button>
-        <button type="button" data-video-section aria-label="Video">▣<span>Video</span></button>
-        <button type="button" data-screen="profile" class="${active === 'profile' ? 'active' : ''}">●<span>Profile</span></button>
-      `;
-    });
-  };
-
-  const patchHomeTopActions = () => {
-    document.querySelectorAll('.top-actions').forEach((actions) => {
-      if (actions.querySelector('[data-home-search]')) return;
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'search-button';
-      button.dataset.screen = 'search';
-      button.dataset.homeSearch = '1';
-      button.setAttribute('aria-label', 'Search');
-      button.textContent = '⌕';
-      actions.appendChild(button);
-    });
-  };
-
-  const patchAll = () => {
-    patchNav();
-    patchHomeTopActions();
-  };
-
-  patchAll();
-  const observer = new MutationObserver(patchAll);
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  document.addEventListener('click', (event) => {
-    const element = event.target instanceof Element ? event.target : null;
-    const videoButton = element?.closest('[data-video-section]');
-    const messageButton = element?.closest('[data-message-section]');
-    if (!videoButton && !messageButton) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  }, true);
+function getRoot() {
+  return document.getElementById('root');
 }
 
 async function goTo(screen) {
@@ -61,8 +11,8 @@ async function goTo(screen) {
     return;
   }
   state.screen = screen;
-  const router = await import('../../router.js?v=20260813-115');
-  await router.render(getRoot());
+  const { render } = await import(`../../router.js?v=20260813-120`);
+  await render(getRoot());
 }
 
 function bindSignupForm() {
@@ -80,7 +30,6 @@ function bindSignupForm() {
       state.authenticated = true;
       state.screen = 'home';
       state.profile = null;
-      if (message) message.textContent = 'Account created successfully.';
       await goTo('home');
     } catch (error) {
       console.error('Signup failed:', error);
@@ -106,7 +55,7 @@ function bindAuthSwitches() {
     button.dataset.authControllerBound = '1';
     button.addEventListener('click', async (event) => {
       event.preventDefault();
-      event.stopImmediatePropagation();
+      event.stopPropagation();
       const screen = button.dataset.auth === 'signup' ? 'auth-signup' : 'auth-login';
       await goTo(screen);
       bindAuthSwitches();
@@ -116,10 +65,4 @@ function bindAuthSwitches() {
   bindSignupForm();
 }
 
-const observer = new MutationObserver(() => bindAuthSwitches());
-observer.observe(document.body, { childList: true, subtree: true });
-
-installBottomNavigation();
-bindAuthSwitches();
-
-export { bindAuthSwitches, bindSignupForm, installBottomNavigation };
+export { bindAuthSwitches, bindSignupForm };
