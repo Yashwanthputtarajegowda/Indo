@@ -18,7 +18,7 @@ function ensureStoryStyles() {
     .story-v2{position:relative!important;display:flex!important;flex:0 0 66px!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;width:66px!important;min-width:66px!important;height:72px!important;padding:0!important;margin:0!important;gap:6px!important;color:#d8d8df!important;text-align:center!important;border:0!important;background:none!important;cursor:pointer!important}
     .story-v2-avatar{position:relative!important;display:grid!important;place-items:center!important;width:56px!important;height:56px!important;border-radius:50%!important;background:linear-gradient(135deg,#743cff,#f83ab8)!important;color:#fff!important;font-size:15px!important;font-weight:800!important;margin:0 auto!important;overflow:visible!important}
     .story-v2-name{display:block!important;width:100%!important;margin:0!important;padding:0!important;color:#d8d8df!important;font-size:10px!important;font-weight:600!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-    .story-v2-add{position:absolute!important;right:-2px!important;bottom:-2px!important;width:20px!important;height:20px!important;border-radius:50%!important;border:2px solid #09090e!important;background:#7b3cff!important;color:#fff!important;font-size:13px!important;font-weight:900!important;padding:0!important;display:grid!important;place-items:center!important;z-index:3!important;cursor:pointer!important}
+    .story-v2-add{position:absolute!important;right:-2px!important;bottom:-2px!important;width:20px!important;height:20px!important;border-radius:50%!important;border:2px solid #09090e!important;background:#7b3cff!important;color:#fff!important;font-size:13px!important;font-weight:900!important;padding:0!important;display:grid!important;place-items:center!important;z-index:3!important;cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important}
     .story-viewer-v2{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.96);display:grid;place-items:center;padding:18px}
     .story-viewer-v2-card{position:relative;width:min(100%,420px);height:min(90vh,760px);display:flex;align-items:center;justify-content:center;background:#000;border-radius:16px;overflow:hidden}
     .story-viewer-v2-card video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
@@ -133,33 +133,54 @@ function openStoryViewer(story, isOwn = false) {
   document.body.appendChild(overlay);
 }
 
-async function openStoryCreateFromPicker(event) {
+function openStoryCreateFromPicker(event) {
   event.preventDefault();
-  event.stopImmediatePropagation();
+  event.stopPropagation();
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'video/*';
-  input.style.display = 'none';
+  input.style.position = 'fixed';
+  input.style.left = '-9999px';
+  input.style.width = '1px';
+  input.style.height = '1px';
   document.body.appendChild(input);
   input.addEventListener('change', async () => {
     const file = input.files?.[0];
     input.remove();
     if (!file || !file.type.startsWith('video/')) return;
     window.__indoStoryDraftFile = file;
-    try { await window.__indoNavigate?.('story-create'); }
-    catch (error) { console.error('Story create navigation failed:', error); }
+    try {
+      await window.__indoNavigate?.('story-create');
+    } catch (error) {
+      console.error('Story create navigation failed:', error);
+    }
   }, { once: true });
-  input.click();
+  try {
+    if (typeof input.showPicker === 'function') input.showPicker();
+    else input.click();
+  } catch {
+    input.click();
+  }
 }
 
 function bindStoryInteractions(app) {
   app.querySelectorAll('[data-story-add]').forEach((button) => {
-    button.addEventListener('click', async (event) => {
-      try { await openStoryCreateFromPicker(event); } catch (error) { console.error('Story create navigation failed:', error); }
-    });
+    button.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (button.dataset.pickerOpen === '1') return;
+      button.dataset.pickerOpen = '1';
+      openStoryCreateFromPicker(event);
+      window.setTimeout(() => { button.dataset.pickerOpen = '0'; }, 1000);
+    }, { capture: true });
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    }, { capture: true });
   });
   app.querySelectorAll('[data-story-open]').forEach((item) => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (event) => {
+      if (event.target instanceof Element && event.target.closest('[data-story-add]')) return;
       const ownerUid = String(item.dataset.storyOwner || '');
       import('../features/auth/firebase-client.js').then(({ auth }) => {
         const isOwn = Boolean(auth.currentUser?.uid && ownerUid === auth.currentUser.uid);
