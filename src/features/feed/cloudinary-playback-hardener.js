@@ -30,10 +30,20 @@ function getCandidates(video) {
   return list;
 }
 
+function makeAudible(video) {
+  if (!(video instanceof HTMLVideoElement)) return;
+  video.autoplay = true;
+  video.removeAttribute('muted');
+  video.defaultMuted = false;
+  video.muted = false;
+  video.volume = 1;
+}
+
 function activate(video, index = 0, autoplay = true) {
   if (!(video instanceof HTMLVideoElement)) return false;
   const list = getCandidates(video);
   if (!list.length || index >= list.length) return false;
+  const shouldBeAudible = Boolean(window.__indoAudioUnlocked);
   video.dataset.indoCloudinaryIndex = String(index);
   video.dataset.indoCloudinaryBusy = '1';
   video.dataset.loaded = '0';
@@ -43,6 +53,7 @@ function activate(video, index = 0, autoplay = true) {
   video.querySelectorAll('source').forEach((node) => node.remove());
   video.src = url;
   video.preload = 'auto';
+  if (shouldBeAudible) makeAudible(video);
   video.load();
   if (autoplay) video.play().catch(() => {});
   return true;
@@ -101,7 +112,30 @@ function install() {
     const video = isCloudinaryVideo(event);
     if (!video) return;
     video.dataset.indoCloudinaryBusy = '0';
+    if (window.__indoAudioUnlocked) makeAudible(video);
   }, true);
+
+  document.addEventListener('playing', (event) => {
+    const video = isCloudinaryVideo(event);
+    if (!video) return;
+    if (window.__indoAudioUnlocked) makeAudible(video);
+  }, true);
+
+  const unlockAudio = () => {
+    window.__indoAudioUnlocked = true;
+    const videos = Array.from(document.querySelectorAll('#root video.post-video'));
+    const current = videos.find((video) => !video.paused) || videos[0];
+    if (current) {
+      videos.forEach((video) => { if (video !== current) video.pause(); });
+      makeAudible(current);
+      current.play().catch(() => {});
+    }
+  };
+
+  document.addEventListener('pointerup', unlockAudio, { capture: true, passive: true });
+  document.addEventListener('touchend', unlockAudio, { capture: true, passive: true });
+  document.addEventListener('click', unlockAudio, { capture: true, passive: true });
+  document.addEventListener('keydown', unlockAudio, { capture: true, passive: true });
 
   const scan = () => {
     document.querySelectorAll('#root video.post-video, #root video[data-video-src]').forEach((video) => {
