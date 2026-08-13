@@ -37,9 +37,7 @@ export function renderStoryCreate(app) {
     select.disabled = true;
     message.textContent = 'Uploading story...';
     try {
-      await publishStory(file, (_percent, text) => {
-        message.textContent = text;
-      });
+      await publishStory(file, () => {});
       message.textContent = 'Story published successfully.';
       input.value = '';
       window.setTimeout(() => {
