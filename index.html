@@ -8,9 +8,9 @@
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <meta name="mobile-web-app-capable" content="yes" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-37" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-37" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-37" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-38" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-38" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-38" />
   <title>Indo</title>
 </head>
 <body>
@@ -21,14 +21,14 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-37"></script>
+  <script src="./config/runtime-config.js?v=20260813-38"></script>
   <script>
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
       const source = event.filename ? ` ${event.filename}${event.lineno ? `:${event.lineno}` : ''}${event.colno ? `:${event.colno}` : ''}` : '';
       const root = document.getElementById('root');
       if (!root || !root.querySelector('.splash-screen')) return;
-      const safe = `${message}${source}`.replace(/[&<>\"']/g, '');
+      const safe = `${message}${source}`.replace(/[&<>\\"']/g, '');
       root.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${safe}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
     });
     window.addEventListener('unhandledrejection', (event) => {
@@ -36,6 +36,30 @@
     });
 
     document.addEventListener('click', async (event) => {
+      const storyAdd = event.target instanceof Element ? event.target.closest('[data-story-add]') : null;
+      if (storyAdd) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'video/*';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        input.addEventListener('change', async () => {
+          const file = input.files?.[0];
+          input.remove();
+          if (!file || !file.type.startsWith('video/')) return;
+          window.__indoStoryDraftFile = file;
+          try {
+            await window.__indoNavigate?.('story-create');
+          } catch (error) {
+            console.error('Story editor navigation failed:', error);
+          }
+        }, { once: true });
+        input.click();
+        return;
+      }
+
       const button = event.target instanceof Element ? event.target.closest('.story-delete') : null;
       if (!button) return;
       event.preventDefault();
@@ -44,7 +68,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-37'),
+          import('./src/features/auth/firebase-client.js?v=20260813-38'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -72,7 +96,44 @@
         button.textContent = error?.message || 'Could not delete story.';
       }
     }, true);
+
+    const storyEditorObserver = new MutationObserver(() => {
+      const overlay = document.querySelector('.story-viewer-v2');
+      if (!overlay || overlay.dataset.editorEnhanced === '1') return;
+      overlay.dataset.editorEnhanced = '1';
+      try {
+        const cached = JSON.parse(localStorage.getItem('indo:last-story') || 'null');
+        const title = String(cached?.title || '').trim();
+        const sticker = String(cached?.stickerDataUrl || '').trim();
+        const crop = String(cached?.crop || 'portrait');
+        const card = overlay.querySelector('.story-viewer-v2-card');
+        const video = overlay.querySelector('video');
+        if (!card || !video) return;
+        if (crop === 'cover' || crop === 'square' || crop === 'landscape') {
+          video.style.objectFit = 'cover';
+          if (crop === 'square') card.style.aspectRatio = '1 / 1';
+          if (crop === 'landscape') card.style.aspectRatio = '16 / 9';
+        }
+        if (title) {
+          const titleNode = document.createElement('div');
+          titleNode.textContent = title;
+          titleNode.style.cssText = 'position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:5;max-width:86%;padding:6px 12px;border-radius:8px;background:rgba(0,0,0,.34);color:#fff;font-size:22px;font-weight:900;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.6);pointer-events:none;';
+          card.appendChild(titleNode);
+        }
+        if (sticker) {
+          const image = document.createElement('img');
+          image.src = sticker;
+          image.alt = '';
+          const x = Number(cached?.stickerX ?? 50);
+          const y = Number(cached?.stickerY ?? 50);
+          const scale = Number(cached?.stickerScale ?? 1);
+          image.style.cssText = `position:absolute;left:${x}%;top:${y}%;width:${88 * scale}px;height:${88 * scale}px;transform:translate(-50%,-50%);object-fit:contain;z-index:5;pointer-events:none;filter:drop-shadow(0 3px 10px rgba(0,0,0,.45));`;
+          card.appendChild(image);
+        }
+      } catch {}
+    });
+    storyEditorObserver.observe(document.body, { childList: true, subtree: true });
   </script>
-  <script type="module" src="./src/main.js?v=20260813-37"></script>
+  <script type="module" src="./src/main.js?v=20260813-38"></script>
 </body>
 </html>
