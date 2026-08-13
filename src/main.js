@@ -1,106 +1,103 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-57';
+const ROUTER_VERSION = '20260813-56';
+const LAST_STORY_KEY = 'indo:last-story';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
-  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
+  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
 }
 
-function applyGestureTransform(element, scale, rotation) {
-  const safeScale = Math.max(0.45, Math.min(4, scale));
-  const safeRotation = ((rotation + 180) % 360) - 180;
-  element.dataset.gestureScale = String(safeScale);
-  element.dataset.gestureRotation = String(safeRotation);
-  element.style.transform = `translate(-50%, -50%) scale(${safeScale}) rotate(${safeRotation}deg)`;
+function getLastStory() {
+  try {
+    const story = JSON.parse(localStorage.getItem(LAST_STORY_KEY) || 'null');
+    return story && typeof story === 'object' ? story : null;
+  } catch { return null; }
 }
 
-function enhanceStoryGestures() {
-  const preview = app.querySelector('#story-preview');
-  const video = app.querySelector('#story-preview-video');
-  if (!preview || !video || preview.dataset.gestureZoomBound === '1') return;
-  preview.dataset.gestureZoomBound = '1';
-  preview.style.touchAction = 'none';
-  video.style.transformOrigin = 'center center';
+function getStoryShareUrl(story) {
+  const id = String(story?.id || story?.publicId || '').trim();
+  if (!id) return '';
+  return `${window.location.origin}${window.location.pathname}?story=${encodeURIComponent(id)}`;
+}
 
-  const pointers = new Map();
-  let gesture = null;
+async function shareStoryLink(story) {
+  const url = getStoryShareUrl(story);
+  if (!url) throw new Error('Story is not published yet.');
+  const title = String(story?.title || 'Indo story').trim() || 'Indo story';
+  if (navigator.share) {
+    await navigator.share({ title, text: 'Watch this story on Indo', url });
+    return;
+  }
+  await navigator.clipboard?.writeText(url);
+  window.alert(`Story link copied:\n${url}`);
+}
 
-  const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  const angle = (a, b) => Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
-  const getElementTarget = (node) => node instanceof Element ? node.closest('.story-element') : null;
+function showSharedStory(story) {
+  if (!story?.secureUrl) return;
+  document.querySelector('.indo-shared-story-viewer')?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'indo-shared-story-viewer';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.96);display:grid;place-items:center;padding:16px;';
+  overlay.innerHTML = `<div style="position:relative;width:min(100%,430px);height:min(90vh,760px);background:#000;border-radius:16px;overflow:hidden"><button type="button" data-shared-close style="position:absolute;left:12px;top:12px;z-index:3;width:36px;height:36px;border:0;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:24px">×</button><div style="position:absolute;left:58px;right:54px;top:18px;z-index:3;color:#fff;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@${String(story.username || story.name || 'Indo User').replace(/^@/, '')}</div><video src="${String(story.secureUrl).replace(/\"/g,'&quot;')}" autoplay playsinline style="width:100%;height:100%;object-fit:contain;background:#000"></video></div>`;
+  overlay.querySelector('[data-shared-close]')?.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (event) => { if (event.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  overlay.querySelector('video')?.play().catch(() => {});
+}
 
-  const startGesture = () => {
-    if (pointers.size !== 2 || gesture) return;
-    const points = [...pointers.values()];
-    const firstTarget = getElementTarget(points[0].target);
-    const secondTarget = getElementTarget(points[1].target);
-    let target = null;
-    if (firstTarget && firstTarget === secondTarget) target = firstTarget;
-    else if (!firstTarget && !secondTarget) target = video;
-    if (!target) return;
-
-    const currentScale = Number(target.dataset.gestureScale || '1') || 1;
-    const currentRotation = Number(target.dataset.gestureRotation || '0') || 0;
-    gesture = {
-      target,
-      startDistance: Math.max(1, distance(points[0], points[1])),
-      startAngle: angle(points[0], points[1]),
-      startScale: currentScale,
-      startRotation: currentRotation
-    };
-    preview.classList.add('story-multi-gesture');
-  };
-
-  const updateGesture = () => {
-    if (!gesture || pointers.size !== 2) return;
-    const points = [...pointers.values()];
-    const currentDistance = Math.max(1, distance(points[0], points[1]));
-    const currentAngle = angle(points[0], points[1]);
-    const scale = gesture.startScale * (currentDistance / gesture.startDistance);
-    const rotation = gesture.startRotation + (currentAngle - gesture.startAngle);
-    applyGestureTransform(gesture.target, scale, rotation);
-    if (gesture.target === video) {
-      video.style.transform = `scale(${Math.max(1, Math.min(4, scale))}) rotate(${rotation}deg)`;
+async function openSharedStoryFromUrl() {
+  const id = String(new URLSearchParams(window.location.search).get('story') || '').trim();
+  if (!id) return;
+  try {
+    const { auth } = await import('./features/auth/firebase-client.js');
+    if (!auth.currentUser) return;
+    const token = await auth.currentUser.getIdToken();
+    const apiBase = window.INDO_API_BASE || '';
+    const response = await fetch(`${apiBase}/api/stories`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await response.json().catch(() => ({}));
+    const stories = Array.isArray(data.stories) ? data.stories : [];
+    const story = stories.find((item) => String(item?.id || item?.publicId || '') === id);
+    if (story?.secureUrl || story?.videoUrl || story?.url || story?.mediaUrl) {
+      showSharedStory({ ...story, secureUrl: story.secureUrl || story.videoUrl || story.url || story.mediaUrl });
     }
-  };
+  } catch (error) { console.warn('Shared story open failed:', error); }
+}
 
-  const endGesture = () => {
-    if (pointers.size < 2) {
-      gesture = null;
-      preview.classList.remove('story-multi-gesture');
+function addStoryShareButton() {
+  if (document.getElementById('indo-story-share-button')) return;
+  const done = document.getElementById('story-publish-button');
+  const preview = document.getElementById('story-preview');
+  if (!done || !preview) return;
+  const button = document.createElement('button');
+  button.id = 'indo-story-share-button';
+  button.type = 'button';
+  button.textContent = '↗';
+  button.setAttribute('aria-label', 'Share story');
+  button.style.cssText = 'position:absolute;right:56px;bottom:12px;z-index:23;width:42px;height:44px;border:0;border-radius:10px;background:#20202a;color:#fff;font-size:20px;font-weight:900;cursor:pointer;';
+  button.addEventListener('click', async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      const current = getLastStory();
+      if (!current?.id && !current?.publicId) {
+        done.click();
+        button.disabled = true;
+        button.textContent = '…';
+        await new Promise((resolve) => setTimeout(resolve, 1100));
+        const published = getLastStory();
+        if (!published) throw new Error('Story could not be published.');
+        await shareStoryLink(published);
+        return;
+      }
+      await shareStoryLink(current);
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = '↗';
+      console.warn('Story sharing failed:', error);
     }
-  };
-
-  preview.addEventListener('pointerdown', (event) => {
-    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, target: event.target });
-    if (pointers.size === 2) {
-      startGesture();
-      if (gesture) event.preventDefault();
-    }
-  }, true);
-
-  preview.addEventListener('pointermove', (event) => {
-    if (!pointers.has(event.pointerId)) return;
-    const entry = pointers.get(event.pointerId);
-    entry.x = event.clientX;
-    entry.y = event.clientY;
-    if (gesture) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      updateGesture();
-    }
-  }, true);
-
-  preview.addEventListener('pointerup', (event) => {
-    pointers.delete(event.pointerId);
-    endGesture();
-  }, true);
-
-  preview.addEventListener('pointercancel', (event) => {
-    pointers.delete(event.pointerId);
-    endGesture();
-  }, true);
+  });
+  preview.appendChild(button);
 }
 
 function enhanceStoryCreateLayout() {
@@ -113,13 +110,15 @@ function enhanceStoryCreateLayout() {
   publish.classList.add('story-publish-on-preview');
   publish.style.cssText = 'position:absolute;left:auto;right:0;bottom:12px;width:20%;max-width:none;height:44px;z-index:22;margin:0;border:0;border-radius:10px;background:#7b3cff;color:#fff;font-weight:800;cursor:pointer;';
   addButton.style.bottom = '68px';
-  enhanceStoryGestures();
+  addStoryShareButton();
 }
 
 async function renderCurrentScreen() {
   const { render } = await import(`./router.js?v=${ROUTER_VERSION}`);
   await render(app);
   if (document.querySelector('#story-preview')) enhanceStoryCreateLayout();
+  if (document.querySelector('#story-preview')) addStoryShareButton();
+  if (!document.querySelector('#story-preview')) await openSharedStoryFromUrl();
 }
 
 async function navigate(screen) {
