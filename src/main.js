@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-55';
+const ROUTER_VERSION = '20260813-56';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
@@ -15,7 +15,7 @@ function enhanceStoryCreateLayout() {
   if (publish.parentElement !== preview) preview.appendChild(publish);
   publish.textContent = 'Done';
   publish.classList.add('story-publish-on-preview');
-  publish.style.cssText = 'position:absolute;left:0;right:auto;bottom:12px;width:20%;max-width:none;height:44px;z-index:22;margin:0;border:0;border-radius:10px;background:#7b3cff;color:#fff;font-weight:800;cursor:pointer;';
+  publish.style.cssText = 'position:absolute;left:auto;right:0;bottom:12px;width:20%;max-width:none;height:44px;z-index:22;margin:0;border:0;border-radius:10px;background:#7b3cff;color:#fff;font-weight:800;cursor:pointer;';
   addButton.style.bottom = '68px';
 }
 
