@@ -1,13 +1,15 @@
 const app = document.getElementById('root');
 
+const ROUTER_VERSION = '20260813-18';
+
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
 }
 
 async function renderCurrentScreen() {
-  const { render } = await import('./router.js?v=20260813-15');
-  render(app);
+  const { render } = await import(`./router.js?v=${ROUTER_VERSION}`);
+  await render(app);
 }
 
 async function navigate(screen) {
