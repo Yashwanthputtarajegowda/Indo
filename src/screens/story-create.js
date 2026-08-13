@@ -1,11 +1,10 @@
 import { publishStory } from '../features/upload/story-publish.js';
-import { nav } from '../components/nav.js';
 import { icons } from '../data.js';
 
 const DRAFT_FILE_KEY = '__indoStoryDraftFile';
 
 function escapeHtml(value = '') {
-  return String(value).replace(/[&<>\"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[char]));
+  return String(value).replace(/[&<>\"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' }[char]));
 }
 
 function compressSticker(file) {
@@ -30,12 +29,12 @@ function compressSticker(file) {
 }
 
 function ensureStyles() {
-  if (document.getElementById('indo-story-editor-v2')) return;
+  if (document.getElementById('indo-story-editor-v3')) return;
   const style = document.createElement('style');
-  style.id = 'indo-story-editor-v2';
+  style.id = 'indo-story-editor-v3';
   style.textContent = `
     .story-editor{padding:12px 12px 88px!important}
-    .story-preview-wrap{position:relative;width:100%;max-width:420px;margin:0 auto 14px;display:flex;justify-content:center}
+    .story-preview-wrap{position:relative;width:100%;max-width:420px;margin:0 auto 16px;display:flex;justify-content:center}
     .story-preview{position:relative;width:100%;max-width:390px;aspect-ratio:9/16;background:#000;border-radius:16px;overflow:hidden;border:1px solid #22232b;display:flex;align-items:center;justify-content:center;touch-action:none}
     .story-preview video{width:100%;height:100%;display:block;background:#000;object-position:center;object-fit:contain}
     .story-preview.crop-cover video{object-fit:cover}
@@ -46,18 +45,19 @@ function ensureStyles() {
     .story-title-element{max-width:86%;padding:6px 12px;border-radius:8px;background:rgba(0,0,0,.34);color:#fff;font-size:22px;font-weight:900;text-align:center;white-space:pre-wrap;overflow:hidden;text-shadow:0 2px 8px rgba(0,0,0,.6)}
     .story-photo-element{width:88px;height:88px;object-fit:contain;filter:drop-shadow(0 3px 10px rgba(0,0,0,.45))}
     .story-emoji-element{font-size:58px;line-height:1;filter:drop-shadow(0 3px 10px rgba(0,0,0,.45))}
-    .story-tools{display:grid;gap:10px;max-width:420px;margin:0 auto}
-    .story-tools label{font-size:12px;color:#aaa;display:grid;gap:6px}
-    .story-tools input,.story-tools select{height:42px;border:1px solid #2a2a32;border-radius:10px;background:#101016;color:#fff;padding:0 11px;outline:none}
-    .story-tools .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .story-tools .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-    .story-publish{height:44px;border:0;border-radius:10px;background:#7b3cff;color:#fff;font-weight:800}
-    .story-publish.secondary{background:#24242d}
+    .story-add-button{position:absolute;right:12px;bottom:12px;z-index:20;width:48px;height:48px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:rgba(20,20,27,.88);color:#fff;font-size:28px;font-weight:900;line-height:1;box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer}
+    .story-add-panel{position:absolute;right:12px;bottom:68px;z-index:19;width:min(300px,calc(100% - 24px));padding:10px;border:1px solid #2b2b35;border-radius:14px;background:rgba(12,12,18,.96);box-shadow:0 12px 34px rgba(0,0,0,.5);display:grid;gap:10px}
+    .story-add-panel[hidden]{display:none}
+    .story-add-panel label{font-size:12px;color:#aaa;display:grid;gap:6px}
+    .story-add-panel input,.story-add-panel select{height:40px;border:1px solid #2a2a32;border-radius:10px;background:#101016;color:#fff;padding:0 11px;outline:none}
+    .story-add-panel .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .story-add-panel button{height:40px;border:0;border-radius:10px;background:#24242d;color:#fff;font-weight:800;cursor:pointer}
+    .story-add-panel .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+    .story-add-panel .emoji-grid button{height:34px;padding:0;font-size:20px;border:1px solid #292932;background:#17171f}
+    .story-file-name{font-size:12px;color:#aaa;min-height:18px;margin:0 0 10px}
+    .story-publish{width:100%;height:44px;border:0;border-radius:10px;background:#7b3cff;color:#fff;font-weight:800}
     .story-publish:disabled{opacity:.55}
-    .story-file-name{font-size:12px;color:#aaa;min-height:18px}
     .story-message{font-size:12px;color:#aaa;min-height:18px}
-    .story-emoji-picker{display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1px solid #292932;border-radius:10px;background:#101016}
-    .story-emoji-picker button{width:42px;height:42px;border:1px solid #292932;border-radius:10px;background:#17171f;font-size:23px;cursor:pointer}
   `;
   document.head.appendChild(style);
 }
@@ -83,24 +83,28 @@ export function renderStoryCreate(app) {
       <main class="story-editor">
         <input id="story-create-file" type="file" accept="video/*" hidden>
         <input id="story-sticker-file" type="file" accept="image/*" hidden>
-        <div class="story-preview-wrap"><div id="story-preview" class="story-preview"><video id="story-preview-video" autoplay playsinline muted></video></div></div>
-        <div class="story-tools">
-          <div id="story-create-name" class="story-file-name">${draftFile ? escapeHtml(draftFile.name) : 'Choose a video to start.'}</div>
-          <label>Story title<input id="story-title" maxlength="80" placeholder="Add a title"></label>
-          <div class="row3">
-            <label>Crop<select id="story-crop"><option value="portrait">Portrait 9:16</option><option value="cover">Fill screen</option><option value="square">Square 1:1</option><option value="landscape">Landscape 16:9</option></select></label>
-            <button id="story-sticker-select" type="button" class="story-publish secondary">Add photo</button>
-            <button id="story-emoji-toggle" type="button" class="story-publish secondary">Add emoji</button>
+        <div class="story-preview-wrap">
+          <div id="story-preview" class="story-preview">
+            <video id="story-preview-video" autoplay playsinline muted></video>
+            <button id="story-add-button" class="story-add-button" type="button" aria-label="Add to story">+</button>
+            <div id="story-add-panel" class="story-add-panel" hidden>
+              <label>Story title<input id="story-title" maxlength="80" placeholder="Add a title"></label>
+              <label>Crop<select id="story-crop"><option value="portrait">Portrait 9:16</option><option value="cover">Fill screen</option><option value="square">Square 1:1</option><option value="landscape">Landscape 16:9</option></select></label>
+              <div class="row">
+                <button id="story-sticker-select" type="button">Add photo</button>
+                <button id="story-emoji-toggle" type="button">Add emoji</button>
+              </div>
+              <div id="story-emoji-picker" class="emoji-grid" hidden>
+                <button type="button" data-emoji="❤️">❤️</button><button type="button" data-emoji="😂">😂</button><button type="button" data-emoji="😍">😍</button><button type="button" data-emoji="🔥">🔥</button><button type="button" data-emoji="👏">👏</button><button type="button" data-emoji="✨">✨</button><button type="button" data-emoji="😎">😎</button><button type="button" data-emoji="🥳">🥳</button>
+              </div>
+            </div>
           </div>
-          <div id="story-emoji-picker" class="story-emoji-picker" hidden>
-            <button type="button" data-emoji="❤️">❤️</button><button type="button" data-emoji="😂">😂</button><button type="button" data-emoji="😍">😍</button><button type="button" data-emoji="🔥">🔥</button><button type="button" data-emoji="👏">👏</button><button type="button" data-emoji="✨">✨</button><button type="button" data-emoji="😎">😎</button><button type="button" data-emoji="🥳">🥳</button>
-          </div>
-          <button id="story-create-select" type="button" class="story-publish">Choose video</button>
-          <button id="story-publish-button" type="button" class="story-publish" disabled>Publish story</button>
-          <div id="story-create-message" class="story-message">Drag the title, photo, or emoji anywhere on the video.</div>
         </div>
+        <div class="story-file-name" id="story-create-name">${draftFile ? escapeHtml(draftFile.name) : 'Choose a video to start.'}</div>
+        <button id="story-create-select" type="button" class="story-publish" hidden>Choose video</button>
+        <button id="story-publish-button" type="button" class="story-publish" disabled>Publish story</button>
+        <div id="story-create-message" class="story-message">Tap + on the video to add title, photo, emoji or crop.</div>
       </main>
-      ${nav('home')}
     </div>
   `;
 
@@ -112,6 +116,8 @@ export function renderStoryCreate(app) {
   const message = app.querySelector('#story-create-message');
   const video = app.querySelector('#story-preview-video');
   const preview = app.querySelector('#story-preview');
+  const addButton = app.querySelector('#story-add-button');
+  const addPanel = app.querySelector('#story-add-panel');
   const titleInput = app.querySelector('#story-title');
   const cropInput = app.querySelector('#story-crop');
   const stickerButton = app.querySelector('#story-sticker-select');
@@ -131,9 +137,9 @@ export function renderStoryCreate(app) {
       if (!dragging) return;
       event.preventDefault();
       const point = positionToPercent(event.clientX, event.clientY, preview);
-      onMove(point);
       element.style.left = `${point.x}%`;
       element.style.top = `${point.y}%`;
+      onMove(point);
     };
     const up = () => {
       dragging = false;
@@ -142,14 +148,13 @@ export function renderStoryCreate(app) {
     };
     element.addEventListener('pointerdown', (event) => {
       dragging = true;
-      element.setPointerCapture?.(event.pointerId);
       event.preventDefault();
       window.addEventListener('pointermove', move, { passive: false });
       window.addEventListener('pointerup', up, { once: true });
     });
   };
 
-  const createTitleElement = () => {
+  const updateTitle = () => {
     const text = titleInput.value.trim();
     if (!text) {
       titleElement?.remove();
@@ -161,6 +166,8 @@ export function renderStoryCreate(app) {
       titleElement.className = 'story-element story-title-element';
       titleElement.style.left = '50%';
       titleElement.style.top = '14%';
+      titleElement.dataset.x = '50';
+      titleElement.dataset.y = '14';
       preview.appendChild(titleElement);
       makeDraggable(titleElement, (point) => {
         titleElement.dataset.x = String(point.x);
@@ -170,14 +177,12 @@ export function renderStoryCreate(app) {
     titleElement.textContent = text;
   };
 
-  titleInput.addEventListener('input', createTitleElement);
-
-  cropInput.addEventListener('change', () => {
+  const applyCrop = () => {
     preview.classList.remove('crop-cover', 'crop-square', 'crop-landscape');
     if (cropInput.value === 'cover') preview.classList.add('crop-cover');
     if (cropInput.value === 'square') preview.classList.add('crop-square');
     if (cropInput.value === 'landscape') preview.classList.add('crop-landscape');
-  });
+  };
 
   const addPhoto = async (file) => {
     if (!file) return;
@@ -189,24 +194,26 @@ export function renderStoryCreate(app) {
       image.className = 'story-element story-photo-element';
       image.style.left = '50%';
       image.style.top = '50%';
-      image.dataset.x = '50';
-      image.dataset.y = '50';
-      image.dataset.scale = '1';
-      preview.appendChild(image);
       const entry = { element: image, dataUrl, x: 50, y: 50, scale: 1 };
       photoElements.push(entry);
+      preview.appendChild(image);
       makeDraggable(image, (point) => { entry.x = point.x; entry.y = point.y; });
     } catch {
       message.textContent = 'Could not add that photo.';
     }
   };
 
+  addButton.addEventListener('click', () => {
+    addPanel.hidden = !addPanel.hidden;
+    if (addPanel.hidden) emojiPicker.hidden = true;
+  });
+  titleInput.addEventListener('input', updateTitle);
+  cropInput.addEventListener('change', applyCrop);
   stickerButton.addEventListener('click', () => stickerInput.click());
   stickerInput.addEventListener('change', async () => {
     await addPhoto(stickerInput.files?.[0]);
     stickerInput.value = '';
   });
-
   emojiToggle.addEventListener('click', () => { emojiPicker.hidden = !emojiPicker.hidden; });
   emojiPicker.addEventListener('click', (event) => {
     const button = event.target.closest('[data-emoji]');
@@ -217,9 +224,9 @@ export function renderStoryCreate(app) {
     node.textContent = emoji;
     node.style.left = '50%';
     node.style.top = '50%';
-    preview.appendChild(node);
     const entry = { element: node, emoji, x: 50, y: 50 };
     emojiElements.push(entry);
+    preview.appendChild(node);
     makeDraggable(node, (point) => { entry.x = point.x; entry.y = point.y; });
     emojiPicker.hidden = true;
   });
@@ -235,12 +242,10 @@ export function renderStoryCreate(app) {
     video.load();
     video.play().catch(() => {});
     publish.disabled = false;
-    message.textContent = 'Drag the title, photo, or emoji anywhere on the video.';
   };
 
   select.addEventListener('click', () => input.click());
   input.addEventListener('change', () => setFile(input.files?.[0]));
-
   cancel.addEventListener('click', () => {
     window[DRAFT_FILE_KEY] = null;
     if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -250,15 +255,11 @@ export function renderStoryCreate(app) {
   publish.addEventListener('click', async () => {
     if (!currentFile) return;
     publish.disabled = true;
-    select.disabled = true;
-    stickerButton.disabled = true;
-    emojiToggle.disabled = true;
+    addButton.disabled = true;
     message.textContent = 'Uploading story...';
     try {
-      const titleX = Number(titleElement?.dataset.x || 50);
-      const titleY = Number(titleElement?.dataset.y || 14);
       const elements = [
-        ...(titleElement ? [{ type: 'title', text: titleInput.value.trim(), x: titleX, y: titleY }] : []),
+        ...(titleElement ? [{ type: 'title', text: titleInput.value.trim(), x: Number(titleElement.dataset.x || 50), y: Number(titleElement.dataset.y || 14) }] : []),
         ...photoElements.map((item) => ({ type: 'photo', dataUrl: item.dataUrl, x: item.x, y: item.y, scale: item.scale })),
         ...emojiElements.map((item) => ({ type: 'emoji', emoji: item.emoji, x: item.x, y: item.y }))
       ];
@@ -277,13 +278,10 @@ export function renderStoryCreate(app) {
     } catch (error) {
       message.textContent = error?.message || 'Story upload failed. Please try again.';
       publish.disabled = false;
-      select.disabled = false;
-      stickerButton.disabled = false;
-      emojiToggle.disabled = false;
+      addButton.disabled = false;
     }
   });
 
   if (draftFile) setFile(draftFile);
-  createTitleElement();
-  cropInput.dispatchEvent(new Event('change'));
+  applyCrop();
 }
