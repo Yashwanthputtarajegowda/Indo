@@ -5,14 +5,14 @@ function esc(value = '') {
 }
 
 function installStyles() {
-  if (document.getElementById('indo-profile-direct-v1')) return;
+  if (document.getElementById('indo-profile-direct-v2')) return;
   const s = document.createElement('style');
-  s.id = 'indo-profile-direct-v1';
+  s.id = 'indo-profile-direct-v2';
   s.textContent = `
-    .profile-direct-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #17171c}
+    .profile-direct-head{width:100%;max-width:520px;margin:0 auto;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #17171c}
     .profile-direct-head button{border:0;background:none;color:#fff;font-size:24px;cursor:pointer}
     .profile-direct-head h2{font-size:16px;margin:0;font-weight:800}
-    .profile-direct-page{padding:18px 14px 90px}
+    .profile-direct-page{width:100%;max-width:520px;margin:0 auto;box-sizing:border-box;padding:18px 14px 78px}
     .profile-direct-row{display:flex;align-items:center;gap:14px;margin-bottom:18px}
     .profile-direct-avatar{width:88px;height:88px;min-width:88px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#743cff,#f83ab8);color:#fff;font-size:28px;font-weight:800}
     .profile-direct-info{flex:1;min-width:0}
@@ -27,8 +27,8 @@ function installStyles() {
     .profile-direct-item{aspect-ratio:1;border:0;padding:0;position:relative;overflow:hidden;background:#111}
     .profile-direct-item video{width:100%;height:100%;object-fit:cover;display:block}
     .profile-direct-empty{text-align:center;color:#999;padding:35px 10px;font-size:13px}
-    .profile-direct-nav{position:fixed;left:0;right:0;bottom:0;height:58px;background:#09090e;border-top:1px solid #17171c;display:flex;justify-content:space-around;align-items:center;z-index:20}
-    .profile-direct-nav button{border:0;background:none;color:#aaa;font-size:18px}.profile-direct-nav button span{display:block;font-size:8px;margin-top:2px}
+    .profile-direct-nav{position:fixed;left:50%;right:auto;bottom:0;width:min(100%,520px);height:58px;transform:translateX(-50%);box-sizing:border-box;background:#09090e;border-top:1px solid #17171c;display:flex;justify-content:space-around;align-items:center;z-index:20}
+    .profile-direct-nav button{flex:1;height:100%;border:0;background:none;color:#aaa;font-size:18px}.profile-direct-nav button span{display:block;font-size:8px;margin-top:2px}
   `;
   document.head.appendChild(s);
 }
@@ -57,8 +57,6 @@ export async function renderProfile(app, profile = null) {
 
   const currentUid = String(auth.currentUser?.uid || '').trim();
   const requestedUid = String(profile?.uid || profile?.userId || profile?.ownerUid || '').trim();
-  // A normal Profile button must always open the signed-in user's profile.
-  // A creator profile keeps using the explicit requested UID passed by main.js.
   const targetUid = requestedUid || currentUid;
   const own = !!currentUid && !!targetUid && currentUid === targetUid;
   const fallbackUsername = String(auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || currentUid.slice(0, 8) || 'user').replace(/^@/, '');
