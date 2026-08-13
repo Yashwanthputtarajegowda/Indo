@@ -65,19 +65,29 @@ function next(video, autoplay = true) {
   return activate(video, current + 1, autoplay);
 }
 
+function isCloudinaryVideo(target) {
+  const video = target instanceof HTMLVideoElement ? target : null;
+  if (!video) return null;
+  const raw = video.dataset.originalVideoSrc || video.dataset.videoSrc || video.currentSrc || video.src || '';
+  return raw.includes('res.cloudinary.com/') ? video : null;
+}
+
+function prepareVideo(video) {
+  if (!(video instanceof HTMLVideoElement)) return;
+  const raw = video.dataset.originalVideoSrc || video.dataset.videoSrc || video.currentSrc || video.src || video.querySelector('source')?.src || '';
+  if (!raw.includes('res.cloudinary.com/')) return;
+  if (!video.dataset.indoCloudinaryCandidates) {
+    video.dataset.indoCloudinaryCandidates = JSON.stringify(variants(raw));
+    video.dataset.indoCloudinaryIndex = '0';
+  }
+}
+
 function install() {
   if (globalThis[installed]) return;
   globalThis[installed] = true;
 
-  const isCloudinaryVideo = (event) => {
-    const video = event.target instanceof HTMLVideoElement ? event.target : null;
-    if (!video) return null;
-    const raw = video.dataset.originalVideoSrc || video.dataset.videoSrc || video.currentSrc || video.src || '';
-    return raw.includes('res.cloudinary.com/') ? video : null;
-  };
-
   document.addEventListener('error', (event) => {
-    const video = isCloudinaryVideo(event);
+    const video = isCloudinaryVideo(event.target);
     if (!video) return;
     const index = Number(video.dataset.indoCloudinaryIndex || 0);
     const list = getCandidates(video);
@@ -89,7 +99,7 @@ function install() {
   }, true);
 
   document.addEventListener('abort', (event) => {
-    const video = isCloudinaryVideo(event);
+    const video = isCloudinaryVideo(event.target);
     if (!video) return;
     const index = Number(video.dataset.indoCloudinaryIndex || 0);
     const list = getCandidates(video);
@@ -101,22 +111,25 @@ function install() {
   }, true);
 
   document.addEventListener('stalled', (event) => {
-    const video = isCloudinaryVideo(event);
+    const video = isCloudinaryVideo(event.target);
     if (!video) return;
+    if (video.dataset.indoCloudinaryStallTimer) return;
+    video.dataset.indoCloudinaryStallTimer = '1';
     window.setTimeout(() => {
-      if (video.readyState < 2 && !video.paused) next(video, true);
+      video.dataset.indoCloudinaryStallTimer = '';
+      if (video.isConnected && video.readyState < 2 && !video.paused) next(video, true);
     }, 2200);
   }, true);
 
   document.addEventListener('canplay', (event) => {
-    const video = isCloudinaryVideo(event);
+    const video = isCloudinaryVideo(event.target);
     if (!video) return;
     video.dataset.indoCloudinaryBusy = '0';
     if (window.__indoAudioUnlocked) makeAudible(video);
   }, true);
 
   document.addEventListener('playing', (event) => {
-    const video = isCloudinaryVideo(event);
+    const video = isCloudinaryVideo(event.target);
     if (!video) return;
     if (window.__indoAudioUnlocked) makeAudible(video);
   }, true);
@@ -124,12 +137,11 @@ function install() {
   const unlockAudio = () => {
     window.__indoAudioUnlocked = true;
     const videos = Array.from(document.querySelectorAll('#root video.post-video'));
-    const current = videos.find((video) => !video.paused) || videos[0];
-    if (current) {
-      videos.forEach((video) => { if (video !== current) video.pause(); });
-      makeAudible(current);
-      current.play().catch(() => {});
-    }
+    const current = videos.find((video) => !video.paused) || videos.find((video) => video.readyState >= 2);
+    if (!current) return;
+    videos.forEach((video) => { if (video !== current) video.pause(); });
+    makeAudible(current);
+    current.play().catch(() => {});
   };
 
   document.addEventListener('pointerup', unlockAudio, { capture: true, passive: true });
@@ -137,21 +149,27 @@ function install() {
   document.addEventListener('click', unlockAudio, { capture: true, passive: true });
   document.addEventListener('keydown', unlockAudio, { capture: true, passive: true });
 
-  const scan = () => {
-    document.querySelectorAll('#root video.post-video, #root video[data-video-src]').forEach((video) => {
-      if (!(video instanceof HTMLVideoElement)) return;
-      const raw = video.dataset.originalVideoSrc || video.dataset.videoSrc || video.currentSrc || video.src || '';
-      if (!raw.includes('res.cloudinary.com/')) return;
-      if (!video.dataset.indoCloudinaryCandidates) {
-        video.dataset.indoCloudinaryCandidates = JSON.stringify(variants(raw));
-        video.dataset.indoCloudinaryIndex = '0';
-      }
-    });
-  };
+  let queued = false;
+  function prepareAddedNodes(nodes) {
+    for (const node of nodes) {
+      if (!(node instanceof Element)) continue;
+      if (node.matches?.('video')) prepareVideo(node);
+      node.querySelectorAll?.('video').forEach(prepareVideo);
+    }
+  }
 
-  scan();
-  const observer = new MutationObserver(scan);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  document.querySelectorAll('#root video.post-video, #root video[data-video-src]').forEach(prepareVideo);
+  const root = document.getElementById('root');
+  if (!root) return;
+  const observer = new MutationObserver((records) => {
+    if (queued) return;
+    queued = true;
+    queueMicrotask(() => {
+      queued = false;
+      for (const record of records) prepareAddedNodes(record.addedNodes);
+    });
+  });
+  observer.observe(root, { childList: true, subtree: true });
 }
 
 install();
