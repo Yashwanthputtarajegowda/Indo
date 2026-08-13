@@ -1,7 +1,7 @@
 import { icons } from '../data.js';
 import { nav } from '../components/nav.js';
 import { state } from '../state.js';
-import { auth } from '../auth/firebase-client.js';
+import { auth } from '../features/auth/firebase-client.js';
 import { loadCurrentProfile } from '../features/profile/current-profile.js';
 import { loadHomeVideos, renderVideoCard, bindVideoCards } from '../features/feed/home-feed.js';
 import { loadNotifications } from '../features/notifications/notifications.js';
