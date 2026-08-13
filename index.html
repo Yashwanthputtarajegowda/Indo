@@ -7,14 +7,15 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-58" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-58" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-58" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-59" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-59" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-59" />
   <style>
     .story-file-name{display:none!important}
     #story-preview .story-done-positioned{position:absolute!important;left:auto!important;right:0!important;bottom:12px!important;width:20%!important;max-width:none!important;height:46px!important;z-index:21!important;margin:0!important}
     #story-preview .story-add-positioned{position:absolute!important;right:14px!important;bottom:68px!important;z-index:22!important}
     #story-preview video,#story-preview .story-element{transform-origin:center center!important;touch-action:none!important}
+    #story-preview #indo-story-share-button{display:none!important}
   </style>
   <title>Indo</title>
 </head>
@@ -26,7 +27,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-58"></script>
+  <script src="./config/runtime-config.js?v=20260813-59"></script>
   <script>
     window.__indoFixStoryEditor = function fixStoryEditorLayout() {
       const preview = document.getElementById('story-preview');
@@ -41,9 +42,42 @@
       if (panel) panel.style.bottom = '124px';
       const oldSelect = document.getElementById('story-create-select');
       if (oldSelect) oldSelect.style.display = 'none';
+      document.getElementById('indo-story-share-button')?.remove();
+
+      if (publish.dataset.storyActionGuarded !== '1') {
+        publish.dataset.storyActionGuarded = '1';
+        publish.addEventListener('pointerdown', (event) => { event.stopPropagation(); }, true);
+        publish.addEventListener('click', (event) => { event.stopPropagation(); }, true);
+      }
       bindStoryPinchGestures(preview);
+      bindStoryPreviewAudio(preview);
       return true;
     };
+
+    function bindStoryPreviewAudio(preview) {
+      if (!preview || preview.dataset.audioBound === '1') return;
+      const video = preview.querySelector('#story-preview-video');
+      if (!video) return;
+      preview.dataset.audioBound = '1';
+      const activateAudio = () => {
+        video.muted = false;
+        video.defaultMuted = false;
+        video.volume = 1;
+        video.play().catch(() => {});
+      };
+      preview.addEventListener('pointerdown', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) return;
+        if (target.closest('#story-add-button,#story-add-panel,#story-font-picker,#story-publish-button,.story-photo-element,.story-emoji-element,.story-title-element')) return;
+        activateAudio();
+      }, true);
+      preview.addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (target?.closest('#story-publish-button')) return;
+        if (target?.closest('#story-add-button,#story-add-panel,#story-font-picker,.story-photo-element,.story-emoji-element,.story-title-element')) return;
+        activateAudio();
+      }, true);
+    }
 
     function bindStoryPinchGestures(preview) {
       if (!preview || preview.dataset.pinchBound === '1') return;
@@ -117,8 +151,8 @@
       let attempts = 0;
       const timer = setInterval(() => {
         attempts += 1;
-        if (window.__indoFixStoryEditor?.()) { clearInterval(timer); return; }
-        if (attempts >= 80) clearInterval(timer);
+        window.__indoFixStoryEditor?.();
+        if (attempts >= 30) clearInterval(timer);
       }, 100);
     })();
 
@@ -127,11 +161,7 @@
       const isStoryAction = (target) => target instanceof Element && !!target.closest('#story-publish-button, #indo-story-share-button');
       document.addEventListener('pointerdown', (event) => {
         const target = event.target instanceof Element ? event.target : null;
-        if (isStoryAction(target)) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          return;
-        }
+        if (isStoryAction(target)) return;
         const preview = target?.closest('#story-preview');
         if (!preview) return;
         const panel = preview.querySelector('#story-add-panel');
@@ -141,6 +171,7 @@
           panel.hidden = true;
           preview.querySelector('#story-emoji-picker')?.setAttribute('hidden', '');
           video.muted = false;
+          video.defaultMuted = false;
           video.volume = 1;
           video.play().catch(() => {});
           swallowNextStoryVideoClick = true;
@@ -150,18 +181,14 @@
         }
         if (target === video) {
           video.muted = false;
+          video.defaultMuted = false;
           video.volume = 1;
           video.play().catch(() => {});
         }
       }, true);
       document.addEventListener('click', (event) => {
-        const target = event.target instanceof Element ? event.target : null;
-        if (isStoryAction(target)) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          return;
-        }
         if (!swallowNextStoryVideoClick) return;
+        const target = event.target instanceof Element ? event.target : null;
         if (!target?.closest('#story-preview-video')) return;
         swallowNextStoryVideoClick = false;
         event.preventDefault();
@@ -189,7 +216,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-58'),
+          import('./src/features/auth/firebase-client.js?v=20260813-59'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -218,6 +245,6 @@
       }
     }, true);
   </script>
-  <script type="module" src="./src/main.js?v=20260813-58"></script>
+  <script type="module" src="./src/main.js?v=20260813-59"></script>
 </body>
 </html>
