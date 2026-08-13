@@ -1,10 +1,10 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-49';
+const ROUTER_VERSION = '20260813-50';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
-  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
+  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
 }
 
 async function renderCurrentScreen() {
@@ -23,6 +23,31 @@ async function openHomeAfterLogin() {
   state.authenticated = true;
   state.screen = 'home';
   await renderCurrentScreen();
+}
+
+function bindNavigation() {
+  if (window.__indoNavigationBound) return;
+  window.__indoNavigationBound = true;
+  window.__indoNavigate = navigate;
+  document.addEventListener('click', async (event) => {
+    const element = event.target instanceof Element ? event.target : null;
+    const profileTarget = element?.closest('[data-profile-username]');
+    if (profileTarget && app.contains(profileTarget)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try { await openCreatorProfile(profileTarget.dataset.profileUsername || '', profileTarget.dataset.profileUid || ''); }
+      catch (error) { console.error('Creator profile navigation failed:', error); showStartupError(error); }
+      return;
+    }
+    const target = element?.closest('[data-screen]');
+    if (!target || !app.contains(target)) return;
+    const screen = target.dataset.screen;
+    if (!screen) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    try { await navigate(screen); }
+    catch (error) { console.error('Navigation failed:', error); showStartupError(error); }
+  }, true);
 }
 
 async function openCreatorProfile(username, uid = '') {
@@ -56,31 +81,6 @@ async function openCreatorProfile(username, uid = '') {
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 1800);
   }
-}
-
-function bindNavigation() {
-  if (window.__indoNavigationBound) return;
-  window.__indoNavigationBound = true;
-  window.__indoNavigate = navigate;
-  document.addEventListener('click', async (event) => {
-    const element = event.target instanceof Element ? event.target : null;
-    const profileTarget = element?.closest('[data-profile-username]');
-    if (profileTarget && app.contains(profileTarget)) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      try { await openCreatorProfile(profileTarget.dataset.profileUsername || '', profileTarget.dataset.profileUid || ''); }
-      catch (error) { console.error('Creator profile navigation failed:', error); showStartupError(error); }
-      return;
-    }
-    const target = element?.closest('[data-screen]');
-    if (!target || !app.contains(target)) return;
-    const screen = target.dataset.screen;
-    if (!screen) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    try { await navigate(screen); }
-    catch (error) { console.error('Navigation failed:', error); showStartupError(error); }
-  }, true);
 }
 
 async function waitForFirebaseSession() {
