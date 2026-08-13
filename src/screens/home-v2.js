@@ -22,21 +22,23 @@ function ensureStoryStyles() {
     .story-viewer-v2{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.96);display:grid;place-items:center;padding:18px}
     .story-viewer-v2-card{position:relative;width:min(100%,420px);height:min(90vh,760px);display:flex;align-items:center;justify-content:center;background:#000;border-radius:16px;overflow:hidden}
     .story-viewer-v2-card video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
-    .story-viewer-v2-close,.story-viewer-v2-menu{position:absolute;top:10px;z-index:4;width:34px;height:34px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;cursor:pointer}
+    .story-viewer-v2-close,.story-viewer-v2-share,.story-viewer-v2-menu{position:absolute;top:10px;z-index:4;width:34px;height:34px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;cursor:pointer}
     .story-viewer-v2-close{left:12px;font-size:24px}
+    .story-viewer-v2-share{right:52px;font-size:19px;line-height:26px}
     .story-viewer-v2-menu{right:12px;font-size:24px;line-height:26px}
-    .story-viewer-v2-title{position:absolute;left:54px;top:16px;z-index:3;color:#fff;font-size:13px;font-weight:800;max-width:calc(100% - 110px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .story-viewer-v2-title{position:absolute;left:54px;top:16px;z-index:3;color:#fff;font-size:13px;font-weight:800;max-width:calc(100% - 160px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .story-viewer-v2-actions{position:absolute;right:12px;top:52px;z-index:5;display:none;min-width:150px;padding:6px;border-radius:10px;background:#18181f;border:1px solid #2b2b33;box-shadow:0 10px 30px rgba(0,0,0,.45)}
     .story-viewer-v2-actions.open{display:block}
     .story-viewer-v2-actions button{display:block;width:100%;padding:10px 12px;border:0;background:none;color:#fff;text-align:left;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer}
     .story-viewer-v2-actions button:hover{background:#262630}
     .story-viewer-v2-actions .story-delete{color:#ff6b6b}
+    .story-editor #indo-story-share-button{display:none!important}
   `;
   document.head.appendChild(style);
 }
 
 function escapeHtml(value = '') {
-  return String(value).replace(/[&<>\"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[char]));
+  return String(value).replace(/[&<>\\\"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[char]));
 }
 
 function normalizeStory(story) {
@@ -61,6 +63,27 @@ function getCachedOwnStory(currentUid) {
   } catch {
     return null;
   }
+}
+
+function storyShareUrl(story) {
+  const id = String(story?.id || story?.publicId || '').trim();
+  if (!id) return '';
+  return `${window.location.origin}${window.location.pathname}?story=${encodeURIComponent(id)}`;
+}
+
+async function shareViewedStory(story) {
+  const url = storyShareUrl(story);
+  if (!url) throw new Error('Story link is not available.');
+  const title = String(story?.title || 'Indo story').trim() || 'Indo story';
+  if (navigator.share) {
+    await navigator.share({ title, text: 'Watch this story on Indo', url });
+    return;
+  }
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(url);
+    return;
+  }
+  window.prompt('Copy this story link:', url);
 }
 
 function storyItem(story, isOwn = false) {
@@ -104,10 +127,18 @@ function openStoryViewer(story, isOwn = false) {
   overlay.className = 'story-viewer-v2';
   const storyId = String(normalized.id || normalized.publicId || '');
   const safeName = escapeHtml(String(normalized.username || normalized.name || 'user').replace(/^@/, ''));
-  overlay.innerHTML = `<div class="story-viewer-v2-card"><button class="story-viewer-v2-close" type="button" aria-label="Close">×</button>${isOwn ? '<button class="story-viewer-v2-menu" type="button" aria-label="More">⋯</button><div class="story-viewer-v2-actions"><button class="story-delete" type="button">Delete story</button></div>' : ''}<div class="story-viewer-v2-title">@${safeName}</div><video src="${escapeHtml(normalized.secureUrl)}" autoplay playsinline></video></div>`;
+  overlay.innerHTML = `<div class="story-viewer-v2-card"><button class="story-viewer-v2-close" type="button" aria-label="Close">×</button><button class="story-viewer-v2-share" type="button" aria-label="Share story">↗</button>${isOwn ? '<button class="story-viewer-v2-menu" type="button" aria-label="More">⋯</button><div class="story-viewer-v2-actions"><button class="story-delete" type="button">Delete story</button></div>' : ''}<div class="story-viewer-v2-title">@${safeName}</div><video src="${escapeHtml(normalized.secureUrl)}" autoplay playsinline></video></div>`;
   const close = () => overlay.remove();
   overlay.querySelector('.story-viewer-v2-close').addEventListener('click', close);
   overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
+  overlay.querySelector('.story-viewer-v2-share').addEventListener('click', async (event) => {
+    event.stopPropagation();
+    try {
+      await shareViewedStory(normalized);
+    } catch (error) {
+      if (error?.name !== 'AbortError') console.warn('Story sharing failed:', error);
+    }
+  });
   const video = overlay.querySelector('video');
   video?.addEventListener('loadedmetadata', () => { video.play().catch(() => {}); }, { once: true });
   if (isOwn) {
