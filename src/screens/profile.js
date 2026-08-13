@@ -19,27 +19,23 @@ function renderMediaGrid(videos) {
 export function renderProfile(app, profile = null) {
   const username = escapeHtml(profile?.username || '');
   const bio = escapeHtml(profile?.bio || 'Welcome to Indo.');
-  const displayName = escapeHtml(profile?.name || profile?.username || 'Indo User');
   const initial = escapeHtml((profile?.name || profile?.username || 'I').replace(/^@/, '').charAt(0).toUpperCase() || 'I');
   const followers = Number(profile?.followersCount || 0);
   const following = Number(profile?.followingCount || 0);
 
   app.innerHTML = `<div class="app-shell">
-    <header class="page-head profile-head"><span></span><h2>${username || 'Profile'}</h2><button data-screen="settings" aria-label="Settings">${icons.settings}</button></header>
+    <header class="page-head profile-head"><button data-screen="home" aria-label="Back">‹</button><h2>${username || 'Profile'}</h2><button data-screen="settings" aria-label="Settings">${icons.settings}</button></header>
     <main class="profile-page">
-      <section class="profile-summary profile-summary-v2">
+      <section class="profile-identity-row">
         <div class="avatar profile-avatar">${initial}<span class="plus">+</span></div>
-        <div class="profile-main-info">
-          <div class="profile-name-row">
-            <h3 class="profile-inline-name">${displayName}</h3>
-            <span class="profile-inline-username">${username ? `@${username.replace(/^@/, '')}` : ''}</span>
-          </div>
-          <div class="stats">
-            <div><b data-post-count>0</b><span>Posts</span></div>
-            <div><b>${followers}</b><span>Followers</span></div>
-            <div><b>${following}</b><span>Following</span></div>
-          </div>
+        <div class="profile-userid-block">
+          <div class="profile-userid">${username ? `@${username.replace(/^@/, '')}` : '@user'}</div>
         </div>
+      </section>
+      <section class="stats profile-stats-row">
+        <div><b data-post-count>0</b><span>Posts</span></div>
+        <div><b>${followers}</b><span>Followers</span></div>
+        <div><b>${following}</b><span>Following</span></div>
       </section>
       <p class="bio">${bio}</p>
       <button class="edit-btn" data-edit-profile>Edit Profile</button>
@@ -55,15 +51,12 @@ export function renderProfile(app, profile = null) {
   loadProfileMedia().then(({ profile: latestProfile, videos }) => {
     postCount.textContent = String(videos.length);
     mediaGrid.innerHTML = renderMediaGrid(videos);
-    if (latestProfile) {
-      const latestUsername = escapeHtml(latestProfile.username || '');
-      const latestName = escapeHtml(latestProfile.name || latestProfile.username || 'Indo User');
-      const inlineName = app.querySelector('.profile-inline-name');
-      const inlineUsername = app.querySelector('.profile-inline-username');
+    if (latestProfile?.username) {
+      const latestUsername = escapeHtml(latestProfile.username.replace(/^@/, ''));
+      const userId = app.querySelector('.profile-userid');
       const header = app.querySelector('.profile-head h2');
-      if (inlineName) inlineName.textContent = latestName;
-      if (inlineUsername) inlineUsername.textContent = latestUsername ? `@${latestUsername.replace(/^@/, '')}` : '';
-      if (header && latestUsername) header.textContent = latestUsername;
+      if (userId) userId.textContent = `@${latestUsername}`;
+      if (header) header.textContent = latestUsername;
     }
   }).catch(() => {
     postCount.textContent = '0';
