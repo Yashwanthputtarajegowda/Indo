@@ -7,27 +7,14 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-125" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-125" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-125" />
-  <style>.story-file-name{display:none!important}#story-preview{overflow:hidden!important}#story-preview video,#story-preview .story-element{transform-origin:center center!important;touch-action:none!important}</style>
+  <link rel="stylesheet" href="./src/styles.css?v=20260814-130" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260814-130" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260814-130" />
   <title>Indo</title>
 </head>
 <body>
   <div id="root"><main class="splash-screen" aria-busy="true" aria-label="Loading Indo"><div class="splash-logo">I</div><div class="splash-name">Indo</div><div class="splash-spinner" aria-hidden="true"></div></main></div>
-  <script src="./config/runtime-config.js?v=125"></script>
-  <script type="module">
-    const root=document.getElementById('root');
-    const ROUTER_VERSION='20260813-125';
-    const escapeText=(value)=>String(value??'').replace(/[&<>\\"']/g,'');
-    function showError(error){root.innerHTML=`<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${escapeText(error?.message||error||'Unknown startup error.')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;}
-    async function renderScreen(){const {render}=await import(`./src/router.js?v=${ROUTER_VERSION}`);await render(root);const {bindAuthSwitches}=await import('./src/features/auth/auth-controller.js');bindAuthSwitches();}
-    async function navigate(screen){const {state}=await import('./src/state.js');state.screen=screen;if(screen==='profile')state.profile=null;await renderScreen();}
-    function bindNavigation(){if(window.__indoNavigationBoundV5)return;window.__indoNavigationBoundV5=true;window.__indoNavigate=navigate;document.addEventListener('click',async(event)=>{const element=event.target instanceof Element?event.target:null;const target=element?.closest('[data-screen]');if(!target||!root.contains(target))return;const screen=target.dataset.screen;if(!screen)return;event.preventDefault();event.stopImmediatePropagation();try{await navigate(screen);}catch(error){console.error('Navigation failed:',error);showError(error);}},true);}
-    async function waitForSession(){const [{auth},firebaseAuth]=await Promise.all([import('./src/features/auth/firebase-client.js'),import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js')]);return new Promise((resolve)=>{let settled=false;const unsubscribe=firebaseAuth.onAuthStateChanged(auth,(user)=>{if(settled)return;settled=true;unsubscribe();resolve(user||null);});});}
-    async function bindLoginForm(){const form=root.querySelector('#login-form');if(!form||form.dataset.inlineBootstrapBound==='1')return;form.dataset.inlineBootstrapBound='1';form.addEventListener('submit',async(event)=>{event.preventDefault();const button=form.querySelector('.auth-submit');const message=form.querySelector('#login-message');const email=form.querySelector('#login-email')?.value?.trim()||'';const password=form.querySelector('#login-password')?.value||'';if(!email||!password){if(message)message.textContent='Email ID and password are required.';return;}if(button)button.disabled=true;if(message)message.textContent='Logging in...';try{const {auth,signInWithEmailAndPassword}=await import('./src/features/auth/firebase-client.js');await signInWithEmailAndPassword(auth,email,password);const {state}=await import('./src/state.js');state.authenticated=true;state.screen='home';state.profile=null;await renderScreen();}catch(error){if(message)message.textContent=error?.message||'Login failed.';if(button)button.disabled=false;}});}
-    async function start(){try{bindNavigation();const user=await waitForSession();const {state}=await import('./src/state.js');state.authenticated=Boolean(user);state.profile=null;state.screen=user?'home':'auth-login';await renderScreen();if(!user)await bindLoginForm();}catch(error){console.error('Indo startup failed:',error);showError(error);}}
-    start();
-  </script>
+  <script src="./config/runtime-config.js?v=130"></script>
+  <script type="module" src="./src/main.js?v=20260814-130"></script>
 </body>
 </html>
