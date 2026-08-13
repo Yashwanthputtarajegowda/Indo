@@ -2,11 +2,11 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV20) return;
-  window.__indoStoryRuntimeV20 = true;
+  if (window.__indoStoryRuntimeV21) return;
+  window.__indoStoryRuntimeV21 = true;
 
   const mobileStyle = document.createElement('style');
-  mobileStyle.id = 'indo-mobile-runtime-v14';
+  mobileStyle.id = 'indo-mobile-runtime-v15';
   mobileStyle.textContent = `
     html,body{width:100%;min-height:100%;-webkit-text-size-adjust:100%}
     body{overflow-x:hidden;overflow-y:auto}
@@ -36,6 +36,79 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
   };
   if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', () => setTimeout(warmScreens, 0), { once:true });
   else setTimeout(warmScreens, 0);
+
+  async function hardDeleteFeedVideo(button) {
+    const card = button?.closest?.('[data-video-id]');
+    const videoId = String(card?.dataset?.videoId || '').trim();
+    if (!card || !videoId) return;
+    const { auth } = await import('../src/features/auth/firebase-client.js');
+    const user = auth.currentUser;
+    if (!user) throw new Error('Please login first.');
+    const token = await user.getIdToken(true);
+    const ownerUid = String(card.dataset.ownerUid || '');
+    if (ownerUid && ownerUid !== String(user.uid)) throw new Error('You can delete only your own video.');
+
+    const apiBase = window.INDO_API_BASE || '';
+    let backendError = '';
+    try {
+      const response = await fetch(`${apiBase}/api/media/videos/${encodeURIComponent(videoId)}/delete`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.ok !== false) return;
+      backendError = String(data.detail || data.error || `Backend delete failed (${response.status}).`);
+    } catch (error) {
+      backendError = error?.message || 'Backend delete request failed.';
+    }
+
+    // Fallback: use the Firebase RTDB REST API with the user's ID token.
+    // Firebase security rules remain the final authorization boundary.
+    const databaseUrl = 'https://indo-174f0-default-rtdb.firebaseio.com';
+    const probe = await fetch(`${databaseUrl}/videos/${encodeURIComponent(videoId)}.json?auth=${encodeURIComponent(token)}`);
+    const currentVideo = await probe.json().catch(() => null);
+    if (!probe.ok) throw new Error(backendError || `Could not verify video (${probe.status}).`);
+    if (!currentVideo) return;
+    if (String(currentVideo.ownerUid || '') !== String(user.uid)) throw new Error('You can delete only your own video.');
+    const removeResponse = await fetch(`${databaseUrl}/videos/${encodeURIComponent(videoId)}.json?auth=${encodeURIComponent(token)}`, { method: 'DELETE' });
+    if (!removeResponse.ok) throw new Error(backendError || `Database delete failed (${removeResponse.status}).`);
+  }
+
+  // Capture the Delete action before the legacy feed menu handler so old cached
+  // home-feed modules cannot keep the broken delete implementation alive.
+  document.addEventListener('click', async (event) => {
+    const target = event.target instanceof Element ? event.target.closest('[data-feed-action="delete"]') : null;
+    if (!target) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (target.dataset.indoDeleteBusy === '1') return;
+    target.dataset.indoDeleteBusy = '1';
+    const originalText = target.textContent || 'Delete video';
+    target.disabled = true;
+    target.textContent = 'Deleting...';
+    try {
+      await hardDeleteFeedVideo(target);
+      const card = target.closest('[data-video-id]');
+      const videoId = String(card?.dataset?.videoId || '').trim();
+      const uid = String((await import('../src/features/auth/firebase-client.js')).auth.currentUser?.uid || '');
+      if (uid && videoId) {
+        const key = `indo:feed-seen:${uid}`;
+        try {
+          const seen = JSON.parse(localStorage.getItem(key) || '{}');
+          delete seen[videoId];
+          localStorage.setItem(key, JSON.stringify(seen));
+        } catch {}
+      }
+      card?.querySelector('video')?.pause();
+      card?.remove();
+      target.closest('.indo-feed-menu')?.remove();
+    } catch (error) {
+      console.error('Indo hard video delete failed:', error);
+      target.disabled = false;
+      target.dataset.indoDeleteBusy = '0';
+      target.textContent = error?.message || originalText;
+    }
+  }, true);
 
   function ensureDone(preview,publish){
     let done=document.getElementById('indo-story-done-hit');
