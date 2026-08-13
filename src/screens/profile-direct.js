@@ -55,10 +55,14 @@ async function loadTargetVideos(targetUid) {
 export async function renderProfile(app, profile = null) {
   installStyles();
 
-  const currentUid = auth.currentUser?.uid || '';
-  const targetUid = String(profile?.uid || profile?.userId || profile?.ownerUid || '').trim();
+  const currentUid = String(auth.currentUser?.uid || '').trim();
+  const requestedUid = String(profile?.uid || profile?.userId || profile?.ownerUid || '').trim();
+  // A normal Profile button must always open the signed-in user's profile.
+  // A creator profile keeps using the explicit requested UID passed by main.js.
+  const targetUid = requestedUid || currentUid;
   const own = !!currentUid && !!targetUid && currentUid === targetUid;
-  const username = String(profile?.username || 'user').replace(/^@/, '');
+  const fallbackUsername = String(auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || currentUid.slice(0, 8) || 'user').replace(/^@/, '');
+  const username = String(profile?.username || (own ? fallbackUsername : 'user')).replace(/^@/, '');
   const initial = username.charAt(0).toUpperCase() || 'U';
   const followers = Number(profile?.followersCount || 0);
   const following = Number(profile?.followingCount || 0);
