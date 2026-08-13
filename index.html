@@ -8,9 +8,9 @@
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <meta name="mobile-web-app-capable" content="yes" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css" />
-  <link rel="stylesheet" href="./src/auth.css" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-14" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-14" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-14" />
   <title>Indo</title>
 </head>
 <body>
@@ -21,7 +21,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-6"></script>
+  <script src="./config/runtime-config.js?v=20260813-14"></script>
   <script>
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
@@ -29,19 +29,12 @@
       const root = document.getElementById('root');
       if (!root || !root.querySelector('.splash-screen')) return;
       const safe = `${message}${source}`.replace(/[&<>\"']/g, '');
-      root.innerHTML = `
-        <main class="splash-screen splash-error">
-          <div class="splash-logo">I</div>
-          <div class="splash-name">Indo</div>
-          <p>Indo could not start.</p>
-          <small>${safe}</small>
-          <button type="button" onclick="location.reload()">Reload</button>
-        </main>`;
+      root.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${safe}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
     });
     window.addEventListener('unhandledrejection', (event) => {
       window.dispatchEvent(new ErrorEvent('error', { error: event.reason, message: String(event.reason?.message || event.reason || 'Startup failed.') }));
     });
   </script>
-  <script type="module" src="./src/main.js?v=20260813-6"></script>
+  <script type="module" src="./src/main.js?v=20260813-14"></script>
 </body>
 </html>
