@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 
-const VERSION = '20260813-75';
+const VERSION = '20260813-76';
 
 const SCREEN_MODULES = [
   './screens/home-v2.js',
@@ -15,23 +15,19 @@ const SCREEN_MODULES = [
   './screens/activity.js',
   './screens/wallet.js',
   './screens/blocked-users.js',
-  './features/stories/story-stack-enhancer.js'
+  './features/stories/story-stack-enhancer.js',
+  './features/stories/stories.js',
+  './features/feed/home-feed.js',
+  './features/auth/firebase-client.js'
 ];
 
 let preloadPromise = null;
 
 export function preloadAppScreens() {
   if (preloadPromise) return preloadPromise;
-  const load = () => Promise.allSettled(
+  preloadPromise = Promise.allSettled(
     SCREEN_MODULES.map((modulePath) => import(`${modulePath}?v=${VERSION}`))
   ).then(() => undefined);
-  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-    preloadPromise = new Promise((resolve) => {
-      window.requestIdleCallback(() => load().then(resolve), { timeout: 1200 });
-    });
-  } else {
-    preloadPromise = new Promise((resolve) => setTimeout(() => load().then(resolve), 300));
-  }
   return preloadPromise;
 }
 
@@ -57,8 +53,9 @@ export async function render(app) {
   if (state.screen === 'auth-signup') return renderSignup(app);
   if (state.screen === 'home') {
     await renderLazy(app, './screens/home-v2.js', 'renderHome');
-    const enhancer = await import(`./features/stories/story-stack-enhancer.js?v=${VERSION}`);
-    await enhancer.enhanceStoryRow(app);
+    import(`./features/stories/story-stack-enhancer.js?v=${VERSION}`)
+      .then((enhancer) => enhancer.enhanceStoryRow(app))
+      .catch((error) => console.warn('Story enhancer preload failed:', error));
     return;
   }
   if (state.screen === 'reels') return renderLazy(app, './screens/reels.js', 'renderReels');
