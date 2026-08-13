@@ -6,7 +6,7 @@ function showStartupError(error) {
 }
 
 async function renderCurrentScreen() {
-  const { render } = await import('./router.js?v=20260813-14');
+  const { render } = await import('./router.js?v=20260813-15');
   render(app);
 }
 
@@ -46,9 +46,36 @@ function bindNavigation() {
   }, true);
 }
 
+async function waitForFirebaseSession() {
+  const [{ auth }, { onAuthStateChanged }] = await Promise.all([
+    import('./features/auth/firebase-client.js'),
+    import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js')
+  ]);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (settled) return;
+      settled = true;
+      unsubscribe();
+      const { state } = await import('./state.js');
+      state.authenticated = !!user;
+      state.screen = user ? 'home' : 'auth-login';
+      resolve(!!user);
+    });
+  });
+}
+
 async function start() {
   try {
     bindNavigation();
+
+    const authenticated = await waitForFirebaseSession();
+
+    if (authenticated) {
+      await renderCurrentScreen();
+      return;
+    }
 
     const { renderLogin } = await import('./screens/auth.js');
     renderLogin(app);
