@@ -2,16 +2,20 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV21) return;
-  window.__indoStoryRuntimeV21 = true;
+  if (window.__indoStoryRuntimeV22) return;
+  window.__indoStoryRuntimeV22 = true;
 
   const mobileStyle = document.createElement('style');
-  mobileStyle.id = 'indo-mobile-runtime-v15';
+  mobileStyle.id = 'indo-mobile-runtime-v16';
   mobileStyle.textContent = `
     html,body{width:100%;min-height:100%;-webkit-text-size-adjust:100%}
     body{overflow-x:hidden;overflow-y:auto}
     button,a,input,textarea,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .app-shell,.auth-shell{width:100%;max-width:520px;min-height:100dvh;min-height:100svh}
+    .top-actions{display:flex!important;align-items:center!important;gap:0!important}
+    .top-actions .indo-merged-alerts{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;min-width:62px!important;height:38px!important;padding:0 10px!important;border:0!important;background:transparent!important;color:#fff!important;font-size:21px!important;line-height:1!important;cursor:pointer!important}
+    .top-actions .indo-merged-alerts .merged-alert-heart{font-size:22px!important;line-height:1!important}
+    .top-actions .indo-merged-alerts .merged-alert-bell{font-size:20px!important;line-height:1!important}
     #story-preview{position:relative!important;overflow:hidden!important}
     #story-preview #story-publish-button,
     #story-preview .story-publish{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;max-width:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;outline:0!important}
@@ -22,6 +26,29 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     #story-preview #story-add-panel{right:14px!important;bottom:118px!important;left:auto!important;top:auto!important;z-index:120!important}
   `;
   document.head.appendChild(mobileStyle);
+
+  function mergeHeaderAlerts(){
+    const topActions=document.querySelector('.top-actions');
+    if(!topActions)return;
+    const activity=topActions.querySelector('[data-screen="activity"]');
+    const notifications=topActions.querySelector('[data-screen="notifications"]');
+    if(!activity&&!notifications)return;
+    let merged=topActions.querySelector('.indo-merged-alerts');
+    if(merged)return;
+    merged=document.createElement('button');
+    merged.type='button';
+    merged.className='indo-merged-alerts';
+    merged.setAttribute('aria-label','Activity and notifications');
+    merged.innerHTML='<span class="merged-alert-heart" aria-hidden="true">♡</span><span class="merged-alert-bell" aria-hidden="true">♧</span>';
+    merged.addEventListener('click',(event)=>{
+      event.preventDefault();
+      event.stopPropagation();
+      const target=document.querySelector('[data-screen="activity"]')||document.querySelector('[data-screen="notifications"]');
+      target?.click();
+    });
+    topActions.innerHTML='';
+    topActions.appendChild(merged);
+  }
 
   const warmScreens = () => {
     const version = '20260813-76';
@@ -34,8 +61,8 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     ];
     Promise.allSettled(modules.map((path) => import(`${path}?v=${version}`).catch(() => undefined))).catch(() => {});
   };
-  if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', () => setTimeout(warmScreens, 0), { once:true });
-  else setTimeout(warmScreens, 0);
+  if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', () => { setTimeout(warmScreens, 0); setTimeout(mergeHeaderAlerts, 0); }, { once:true });
+  else { setTimeout(warmScreens, 0); setTimeout(mergeHeaderAlerts, 0); }
 
   async function hardDeleteFeedVideo(button) {
     const card = button?.closest?.('[data-video-id]');
@@ -47,7 +74,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     const token = await user.getIdToken(true);
     const ownerUid = String(card.dataset.ownerUid || '');
     if (ownerUid && ownerUid !== String(user.uid)) throw new Error('You can delete only your own video.');
-
     const apiBase = window.INDO_API_BASE || '';
     let backendError = '';
     try {
@@ -61,9 +87,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     } catch (error) {
       backendError = error?.message || 'Backend delete request failed.';
     }
-
-    // Fallback: use the Firebase RTDB REST API with the user's ID token.
-    // Firebase security rules remain the final authorization boundary.
     const databaseUrl = 'https://indo-174f0-default-rtdb.firebaseio.com';
     const probe = await fetch(`${databaseUrl}/videos/${encodeURIComponent(videoId)}.json?auth=${encodeURIComponent(token)}`);
     const currentVideo = await probe.json().catch(() => null);
@@ -74,8 +97,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     if (!removeResponse.ok) throw new Error(backendError || `Database delete failed (${removeResponse.status}).`);
   }
 
-  // Capture the Delete action before the legacy feed menu handler so old cached
-  // home-feed modules cannot keep the broken delete implementation alive.
   document.addEventListener('click', async (event) => {
     const target = event.target instanceof Element ? event.target.closest('[data-feed-action="delete"]') : null;
     if (!target) return;
@@ -122,6 +143,7 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
   }
 
   function apply(){
+    mergeHeaderAlerts();
     const preview=document.getElementById('story-preview'),publish=document.getElementById('story-publish-button'),add=document.getElementById('story-add-button');
     if(!preview||!publish||!add)return false;
     preview.style.setProperty('position','relative','important');
