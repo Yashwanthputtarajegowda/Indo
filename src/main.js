@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-25';
+const ROUTER_VERSION = '20260813-27';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
@@ -46,8 +46,6 @@ async function openCreatorProfile(username, uid = '') {
       if (response.ok && data.profile) profile = data.profile;
     }
 
-    // The profile endpoint is not required to open a creator page.
-    // Video metadata already contains the creator username/owner UID.
     profile = {
       ...(profile || {}),
       username: profile?.username || cleanUsername,
