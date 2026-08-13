@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-28';
+const ROUTER_VERSION = '20260813-29';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
@@ -29,7 +29,6 @@ async function openCreatorProfile(username, uid = '') {
   const cleanUsername = String(username || '').replace(/^@/, '').trim();
   const cleanUid = String(uid || '').trim();
   if (!cleanUsername && !cleanUid) return;
-
   const { state } = await import('./state.js');
   const apiBase = window.INDO_API_BASE || '';
   const headers = {};
@@ -37,7 +36,6 @@ async function openCreatorProfile(username, uid = '') {
     const { auth } = await import('./features/auth/firebase-client.js');
     if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
   } catch {}
-
   try {
     let profile = null;
     if (cleanUsername) {
@@ -45,16 +43,13 @@ async function openCreatorProfile(username, uid = '') {
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.profile) profile = data.profile;
     }
-
     profile = {
       ...(profile || {}),
       username: profile?.username || cleanUsername,
       uid: profile?.uid || profile?.userId || cleanUid,
       ownerUid: profile?.ownerUid || cleanUid
     };
-
     if (!profile.username && !profile.uid && !profile.ownerUid) throw new Error('Creator information is missing.');
-
     state.profile = profile;
     state.screen = 'profile';
     await renderCurrentScreen();
@@ -71,7 +66,6 @@ async function openCreatorProfile(username, uid = '') {
 function bindNavigation() {
   if (window.__indoNavigationBound) return;
   window.__indoNavigationBound = true;
-
   document.addEventListener('click', async (event) => {
     const element = event.target instanceof Element ? event.target : null;
     const profileTarget = element?.closest('[data-profile-username]');
@@ -86,16 +80,12 @@ function bindNavigation() {
       }
       return;
     }
-
     const target = element?.closest('[data-screen]');
     if (!target || !app.contains(target)) return;
-
     const screen = target.dataset.screen;
     if (!screen) return;
-
     event.preventDefault();
     event.stopImmediatePropagation();
-
     try {
       await navigate(screen);
     } catch (error) {
@@ -110,7 +100,6 @@ async function waitForFirebaseSession() {
     import('./features/auth/firebase-client.js'),
     import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js')
   ]);
-
   return new Promise((resolve) => {
     let settled = false;
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -128,40 +117,26 @@ async function waitForFirebaseSession() {
 async function start() {
   try {
     bindNavigation();
-
     const authenticated = await waitForFirebaseSession();
-
     if (authenticated) {
       await renderCurrentScreen();
       return;
     }
-
     const { renderLogin } = await import('./screens/auth.js');
     renderLogin(app);
-
     const form = app.querySelector('#login-form');
     const resetButton = app.querySelector('[data-password-reset]');
     if (!form) throw new Error('Login form could not be created.');
-
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const button = form.querySelector('.auth-submit');
       const message = form.querySelector('#login-message');
       const email = form.querySelector('#login-email')?.value?.trim() || '';
       const password = form.querySelector('#login-password')?.value || '';
-
-      if (!email) {
-        if (message) message.textContent = 'Email ID is required.';
-        return;
-      }
-      if (!password) {
-        if (message) message.textContent = 'Password is required.';
-        return;
-      }
-
+      if (!email) { if (message) message.textContent = 'Email ID is required.'; return; }
+      if (!password) { if (message) message.textContent = 'Password is required.'; return; }
       if (button) button.disabled = true;
       if (message) message.textContent = 'Logging in...';
-
       try {
         const { auth, signInWithEmailAndPassword } = await import('./features/auth/firebase-client.js');
         await signInWithEmailAndPassword(auth, email, password);
@@ -173,20 +148,13 @@ async function start() {
         if (button) button.disabled = false;
       }
     });
-
     resetButton?.addEventListener('click', async () => {
       const message = form.querySelector('#login-message');
       const emailInput = form.querySelector('#login-email');
       const email = emailInput?.value?.trim() || '';
-      if (!email) {
-        if (message) message.textContent = 'Enter your Email ID first.';
-        emailInput?.focus();
-        return;
-      }
-
+      if (!email) { if (message) message.textContent = 'Enter your Email ID first.'; emailInput?.focus(); return; }
       resetButton.disabled = true;
       if (message) message.textContent = 'Sending password reset email...';
-
       try {
         const { auth, sendPasswordResetEmail } = await import('./features/auth/firebase-client.js');
         await sendPasswordResetEmail(auth, email);
@@ -194,13 +162,7 @@ async function start() {
       } catch (error) {
         console.error('Password reset failed:', error);
         const code = error?.code || '';
-        const text = code === 'auth/user-not-found'
-          ? 'No account was found for this email ID.'
-          : code === 'auth/invalid-email'
-            ? 'Enter a valid email ID.'
-            : code === 'auth/too-many-requests'
-              ? 'Too many requests. Please wait and try again.'
-              : (error?.message || 'Could not send password reset email.');
+        const text = code === 'auth/user-not-found' ? 'No account was found for this email ID.' : code === 'auth/invalid-email' ? 'Enter a valid email ID.' : code === 'auth/too-many-requests' ? 'Too many requests. Please wait and try again.' : (error?.message || 'Could not send password reset email.');
         if (message) message.textContent = text;
       } finally {
         resetButton.disabled = false;
