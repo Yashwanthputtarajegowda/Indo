@@ -1,5 +1,5 @@
 const appIcons = {
-  home: '⌂', search: '⌕', reel: '▶', create: '+', profile: '●', heart: '♡', bell: '♧'
+  home: '⌂', search: '⌕', reel: '▶', create: '+', profile: '●', bell: '♧'
 };
 
 const LAST_STORY_KEY = 'indo:last-story';
@@ -279,6 +279,6 @@ async function loadNotifications(app) {
 
 export function renderHome(app) {
   ensureStoryStyles();
-  app.innerHTML = `<div class="app-shell"><header class="topbar"><div class="brand"><span>♥</span>Indo</div><div class="top-actions"><button data-screen="activity" aria-label="Activity">${appIcons.heart}</button><button class="notification-button" data-screen="notifications" aria-label="Notifications">${appIcons.bell}</button></div></header><div class="stories-v2" data-stories-v2></div><main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>${renderNav()}</div>`;
+  app.innerHTML = `<div class="app-shell"><header class="topbar"><div class="brand"><span>♥</span>Indo</div><div class="top-actions"><button class="notification-button" data-screen="notifications" aria-label="Notifications">${appIcons.bell}</button></div></header><div class="stories-v2" data-stories-v2></div><main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>${renderNav()}</div>`;
   loadStories(app); loadFeed(app); loadNotifications(app);
 }
