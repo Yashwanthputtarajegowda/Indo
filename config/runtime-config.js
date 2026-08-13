@@ -3,8 +3,26 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV5) return;
-  window.__indoStoryRuntimeV5 = true;
+  if (window.__indoStoryRuntimeV6) return;
+  window.__indoStoryRuntimeV6 = true;
+
+  const mobileStyle = document.createElement('style');
+  mobileStyle.id = 'indo-mobile-runtime-v1';
+  mobileStyle.textContent = `
+    html, body { width:100%; min-height:100%; -webkit-text-size-adjust:100%; }
+    body { overflow-x:hidden; overflow-y:auto; overscroll-behavior-y:auto; }
+    button, a, input, textarea, select { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    .app-shell, .auth-shell { width:100%; max-width:520px; min-height:100dvh; min-height:100svh; }
+    .feed, .stories, .reels-list, .create-page, .settings-page, .search-page, .notifications, .profile-page, .story-editor { -webkit-overflow-scrolling:touch; }
+    .bottom-nav { padding-bottom:env(safe-area-inset-bottom); height:calc(70px + env(safe-area-inset-bottom)); }
+    .app-shell { padding-bottom:calc(78px + env(safe-area-inset-bottom)); }
+    .reel-view { height:calc(100dvh - 70px - env(safe-area-inset-bottom)); min-height:100svh; }
+    .reel-video, .post-video, .post-image { max-width:100%; }
+    input, textarea, select { font-size:16px; }
+    .stories { overscroll-behavior-x:contain; }
+    .story-preview, .story-preview video { max-width:100%; }
+  `;
+  document.head.appendChild(mobileStyle);
 
   let publishing = false;
 
@@ -65,7 +83,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
 
     preview.style.position = 'relative';
     if (publish.parentElement !== preview) preview.appendChild(publish);
-
     publish.textContent = publishing ? 'Posting...' : 'Done';
     publish.style.setProperty('position', 'absolute', 'important');
     publish.style.setProperty('right', '0', 'important');
@@ -82,17 +99,14 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     publish.style.setProperty('display', 'block', 'important');
     publish.style.setProperty('visibility', 'visible', 'important');
     publish.style.setProperty('opacity', '1', 'important');
-
     add.style.setProperty('position', 'absolute', 'important');
     add.style.setProperty('right', '14px', 'important');
     add.style.setProperty('bottom', '62px', 'important');
     add.style.setProperty('z-index', '101', 'important');
-
     const panel = document.getElementById('story-add-panel');
     if (panel) panel.style.bottom = '118px';
     document.getElementById('story-create-select')?.style.setProperty('display', 'none', 'important');
     document.getElementById('indo-story-share-button')?.remove();
-
     let hit = document.getElementById('indo-story-done-hit');
     if (!hit || hit.parentElement !== preview) {
       hit?.remove();
@@ -114,7 +128,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
       hit.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); }, true);
       preview.appendChild(hit);
     }
-
     return true;
   }
 
@@ -126,10 +139,7 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     }, 100);
     apply();
   }
-
   start();
   window.addEventListener('hashchange', start);
-  document.addEventListener('click', () => {
-    if (document.getElementById('story-preview')) window.setTimeout(apply, 0);
-  }, true);
+  document.addEventListener('click', () => { if (document.getElementById('story-preview')) window.setTimeout(apply, 0); }, true);
 })();
