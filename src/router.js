@@ -7,7 +7,7 @@ import './features/ui/profile-video-native-controls.js';
 import './features/ui/feed-follow-button.js';
 import { install as installProfileFollowersList } from './features/ui/profile-followers-list.js';
 
-const VERSION = '20260813-106';
+const VERSION = '20260813-107';
 
 installCloudinaryVideoCompatibility();
 installProfileFollowersList();
