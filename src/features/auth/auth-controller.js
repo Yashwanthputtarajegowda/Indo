@@ -4,31 +4,51 @@ import { submitSignup } from './signup-form.js';
 function getRoot() { return document.getElementById('root'); }
 
 function installBottomNavigation() {
-  if (globalThis.__indoBottomNavV3) return;
-  globalThis.__indoBottomNavV3 = true;
+  if (globalThis.__indoBottomNavV4) return;
+  globalThis.__indoBottomNavV4 = true;
 
   const patchNav = () => {
     document.querySelectorAll('.bottom-nav').forEach((nav) => {
-      if (nav.dataset.bottomNavV3 === '1') return;
-      nav.dataset.bottomNavV3 = '1';
       const active = nav.querySelector('button.active')?.dataset.screen || 'home';
+      nav.dataset.bottomNavV4 = '1';
       nav.innerHTML = `
         <button type="button" data-screen="home" class="${active === 'home' ? 'active' : ''}">⌂<span>Home</span></button>
-        <button type="button" data-screen="search" class="${active === 'search' ? 'active' : ''}">⌕<span>Search</span></button>
+        <button type="button" data-message-section aria-label="Message">⌕<span>Message</span></button>
         <button type="button" data-screen="reels" class="${active === 'reels' ? 'active' : ''}">▶<span>Reels</span></button>
         <button type="button" data-video-section aria-label="Video">▣<span>Video</span></button>
-        <button type="button" data-screen="notifications" class="${active === 'notifications' ? 'active' : ''}">♧<span>Notification</span></button>
         <button type="button" data-screen="profile" class="${active === 'profile' ? 'active' : ''}">●<span>Profile</span></button>
       `;
     });
   };
 
-  patchNav();
-  const observer = new MutationObserver(patchNav);
+  const patchHomeTopActions = () => {
+    document.querySelectorAll('.top-actions').forEach((actions) => {
+      if (actions.querySelector('[data-home-search]')) return;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'search-button';
+      button.dataset.screen = 'search';
+      button.dataset.homeSearch = '1';
+      button.setAttribute('aria-label', 'Search');
+      button.textContent = '⌕';
+      actions.appendChild(button);
+    });
+  };
+
+  const patchAll = () => {
+    patchNav();
+    patchHomeTopActions();
+  };
+
+  patchAll();
+  const observer = new MutationObserver(patchAll);
   observer.observe(document.body, { childList: true, subtree: true });
+
   document.addEventListener('click', (event) => {
-    const videoButton = event.target instanceof Element ? event.target.closest('[data-video-section]') : null;
-    if (!videoButton) return;
+    const element = event.target instanceof Element ? event.target : null;
+    const videoButton = element?.closest('[data-video-section]');
+    const messageButton = element?.closest('[data-message-section]');
+    if (!videoButton && !messageButton) return;
     event.preventDefault();
     event.stopImmediatePropagation();
   }, true);
