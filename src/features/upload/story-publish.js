@@ -1,5 +1,7 @@
 import { auth } from '../auth/firebase-client.js';
 
+const LAST_STORY_KEY = 'indo:last-story';
+
 async function getStorySignature() {
   const user = auth.currentUser;
   if (!user) throw new Error('Please login first.');
@@ -32,7 +34,7 @@ export async function publishStory(file, onProgress = () => {}) {
   if (!(file instanceof File) || !file.type.startsWith('video/')) throw new Error('Please select a video story.');
   onProgress(10, 'Preparing story upload...');
   const config = await getStorySignature();
-  onProgress(20, 'Uploading story to Cloudinary...');
+  onProgress(20, 'Uploading story...');
   const uploaded = await uploadToCloudinary(file, config);
   onProgress(80, 'Publishing story...');
   const apiBase = window.INDO_API_BASE || '';
@@ -43,6 +45,21 @@ export async function publishStory(file, onProgress = () => {}) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Could not publish story.');
+
+  const user = auth.currentUser;
+  if (user) {
+    const returned = data.story && typeof data.story === 'object' ? data.story : {};
+    const cachedStory = {
+      ...returned,
+      id: returned.id || uploaded.public_id,
+      ownerUid: returned.ownerUid || returned.uid || returned.userId || user.uid,
+      username: returned.username || user.displayName || user.email?.split('@')[0] || 'User',
+      secureUrl: returned.secureUrl || returned.videoUrl || returned.url || uploaded.secure_url,
+      createdAt: returned.createdAt || Date.now()
+    };
+    localStorage.setItem(LAST_STORY_KEY, JSON.stringify(cachedStory));
+  }
+
   onProgress(100, 'Story published.');
   return data.story;
 }
