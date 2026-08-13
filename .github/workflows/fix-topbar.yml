@@ -1,0 +1,46 @@
+name: Remove unused topbar icon
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'remove unused topbar icon') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove unused activity icon and bump cache
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          home = Path('src/screens/home-v2.js')
+          text = home.read_text()
+          text = text.replace("const appIcons = {\n  home: '⌂', search: '⌕', reel: '▶', create: '+', profile: '●', heart: '♡', bell: '♧'\n};", "const appIcons = {\n  home: '⌂', search: '⌕', reel: '▶', create: '+', profile: '●', bell: '♧'\n};")
+          text = text.replace("<button data-screen=\"activity\" aria-label=\"Activity\">${appIcons.heart}</button>", "")
+          home.write_text(text)
+
+          router = Path('src/router.js')
+          r = router.read_text()
+          r = r.replace("const VERSION = '20260813-79';", "const VERSION = '20260813-80';")
+          router.write_text(r)
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/screens/home-v2.js src/router.js
+          git diff --cached --quiet && exit 0
+          git commit -m "remove unused topbar icon"
+          git push
+      - name: Remove workflow after fix
+        if: success()
+        run: |
+          git rm .github/workflows/fix-topbar.yml
+          git commit -m "remove temporary topbar fix workflow"
+          git push
