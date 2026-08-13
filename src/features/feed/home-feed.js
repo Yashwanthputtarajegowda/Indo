@@ -35,6 +35,20 @@ export async function recordVideoView(videoId) {
   await fetch(`${apiBase}/api/media/videos/${encodeURIComponent(videoId)}/view`, { method: 'POST', headers });
 }
 
+export async function deleteVideo(videoId) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Please login first.');
+  const token = await user.getIdToken();
+  const apiBase = window.INDO_API_BASE || '';
+  const response = await fetch(`${apiBase}/api/media/videos/${encodeURIComponent(videoId)}/delete`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Could not delete video.');
+  return data;
+}
+
 function maybeRecordVideoView(videoId) {
   const uid = auth.currentUser?.uid;
   if (!uid || !videoId) return;
@@ -98,26 +112,51 @@ function closeAllFeedMenus(except = null) {
   });
 }
 
+async function handleFeedDelete(button, card, menu) {
+  const videoId = String(card?.dataset.videoId || '').trim();
+  if (!videoId) return;
+  const user = auth.currentUser;
+  if (!user || String(card.dataset.ownerUid || '') !== String(user.uid || '')) {
+    menu.remove();
+    return;
+  }
+  const confirmed = window.confirm('Delete this video permanently?');
+  if (!confirmed) return;
+  button.disabled = true;
+  button.textContent = 'Deleting...';
+  try {
+    await deleteVideo(videoId);
+    menu.remove();
+    card.remove();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = error?.message || 'Delete video';
+  }
+}
+
 function openFeedMoreMenu(button, card) {
   closeAllFeedMenus();
   const menu = document.createElement('div');
   menu.className = 'indo-feed-menu';
+  const isOwner = Boolean(auth.currentUser?.uid && String(card.dataset.ownerUid || '') === String(auth.currentUser.uid));
   menu.innerHTML = `
+    ${isOwner ? '<button type="button" data-feed-action="delete" style="color:#ff6b6b">Delete video</button>' : ''}
     <button type="button" data-feed-action="save">Save</button>
     <button type="button" data-feed-action="share">Share</button>
     <button type="button" data-feed-action="report">Report</button>
     <button type="button" data-feed-action="close">Cancel</button>
   `;
-  menu.style.cssText = 'position:absolute;right:8px;top:42px;z-index:1000;min-width:150px;padding:6px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#15151c;box-shadow:0 12px 32px rgba(0,0,0,.55);';
+  menu.style.cssText = 'position:absolute;right:8px;top:42px;z-index:1000;min-width:160px;padding:6px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#15151c;box-shadow:0 12px 32px rgba(0,0,0,.55);';
   menu.querySelectorAll('button').forEach((item) => {
-    item.style.cssText = 'display:block;width:100%;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:#fff;text-align:left;font:600 13px/1.2 system-ui,sans-serif;cursor:pointer;';
+    item.style.cssText = `${item.style.cssText};display:block;width:100%;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:${item.dataset.feedAction === 'delete' ? '#ff6b6b' : '#fff'};text-align:left;font:600 13px/1.2 system-ui,sans-serif;cursor:pointer;`;
     item.addEventListener('mouseenter', () => { item.style.background = '#24242d'; });
     item.addEventListener('mouseleave', () => { item.style.background = 'transparent'; });
-    item.addEventListener('click', (event) => {
+    item.addEventListener('click', async (event) => {
       event.preventDefault();
       event.stopPropagation();
       const action = item.dataset.feedAction;
       if (action === 'close') { menu.remove(); return; }
+      if (action === 'delete') { await handleFeedDelete(item, card, menu); return; }
       if (action === 'save') button.dataset.menuSaved = 'true';
       if (action === 'share') navigator.clipboard?.writeText(window.location.href.split('#')[0]).catch(() => {});
       if (action === 'report') button.dataset.menuReported = 'true';
