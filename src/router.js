@@ -1,11 +1,11 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 
-const VERSION = '20260813-125';
-const NAV_STYLE_ID = 'indo-global-nav-v125';
+const VERSION = '20260814-130';
+const NAV_STYLE_ID = 'indo-global-nav-v130';
 
 function renderRouteError(app, error) {
-  const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\\"']/g, '');
+  const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\"']/g, '');
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not open this screen.</p><small>${message}</small><button type="button" data-screen="home">Back to Home</button></main>`;
 }
 
