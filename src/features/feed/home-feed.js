@@ -37,26 +37,33 @@ function markFeedSeen(videos) {
   localStorage.setItem(getFeedSeenKey(), JSON.stringify(Object.fromEntries(entries)));
 }
 
+function shuffleVideos(items) {
+  const result = Array.isArray(items) ? [...items] : [];
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 function filterAndTakeOnce(videos, limit) {
-  const all = Array.isArray(videos) ? videos : [];
+  const all = shuffleVideos(videos);
   if (!auth.currentUser) return all.slice(0, limit);
   const seen = readFeedSeen();
-  const fresh = [];
-  for (const video of all) {
+  const fresh = all.filter((video) => {
     const id = String(video?.id || '').trim();
-    if (!id || !seen[id]) fresh.push(video);
-    if (fresh.length >= limit) break;
+    return !id || !seen[id];
+  });
+
+  // Show unseen items once. When the unseen pool is exhausted, recycle the whole
+  // pool in a fresh random order so Home never becomes empty.
+  if (fresh.length) {
+    const selected = fresh.slice(0, limit);
+    markFeedSeen(selected);
+    return selected;
   }
 
-  // One-time delivery until the current pool is exhausted. When there is nothing
-  // unseen left, recycle the existing pool so the Home feed never becomes empty.
-  if (fresh.length) {
-    markFeedSeen(fresh);
-    return fresh;
-  }
-  const recycled = all.slice(0, limit);
-  markFeedSeen(recycled);
-  return recycled;
+  return shuffleVideos(all).slice(0, limit);
 }
 
 async function fetchVideos(apiBase, headers, query) {
@@ -139,6 +146,16 @@ function stopOtherVideos(current) {
   });
 }
 
+function enableAudioFromInteraction(current) {
+  if (!(current instanceof HTMLVideoElement)) return;
+  stopOtherVideos(current);
+  current.muted = false;
+  current.defaultMuted = false;
+  current.volume = 1;
+  current.play().catch(() => {});
+  window.__indoAudioUnlocked = true;
+}
+
 function enforceSingleVideoPlayback() {
   if (window.__indoSingleVideoPlaybackBound) return;
   window.__indoSingleVideoPlaybackBound = true;
@@ -175,7 +192,7 @@ export function renderVideoCard(video) {
     ? `<img class="avatar small post-avatar-image" src="${creatorAvatar}" alt="${creator}" loading="lazy" style="width:38px;height:38px;min-width:38px;max-width:38px;flex:0 0 38px;margin:0;display:block;border-radius:50%;object-fit:cover;">`
     : `<div class="avatar small" style="width:38px;height:38px;min-width:38px;max-width:38px;flex:0 0 38px;margin:0;display:grid;place-items:center;border-radius:50%;">${initial}</div>`;
   const source = mediaUrl
-    ? `<video class="post-video" muted playsinline preload="metadata" data-video-src="${escapeHtml(mediaUrl)}"${poster}></video>`
+    ? `<video class="post-video" playsinline preload="metadata" data-video-src="${escapeHtml(mediaUrl)}"${poster}></video>`
     : '<div class="post-video video-unavailable">Video unavailable</div>';
   return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}" data-owner-uid="${ownerUid}">
     <div class="post-head">
@@ -295,13 +312,16 @@ function bindLazyVideo(video, videoId) {
   const playIfVisible = () => {
     if (!loadVideoSource(video)) return;
     stopOtherVideos(video);
-    video.muted = true;
+    if (window.__indoAudioUnlocked) video.muted = false;
+    else video.muted = true;
     video.play().catch(() => {});
   };
   const pause = () => { if (!video.paused) video.pause(); };
   video.addEventListener('error', hideBrokenCard, { once: true });
   video.addEventListener('abort', hideBrokenCard, { once: true });
   video.addEventListener('play', () => maybeRecordVideoView(videoId), { passive: true });
+  video.addEventListener('pointerdown', () => enableAudioFromInteraction(video), { passive: true });
+  video.addEventListener('click', () => enableAudioFromInteraction(video), { passive: true });
   if ('IntersectionObserver' in window) {
     observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
@@ -313,19 +333,6 @@ function bindLazyVideo(video, videoId) {
   } else {
     playIfVisible();
   }
-  video.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!loadVideoSource(video)) return;
-    if (video.paused) {
-      stopOtherVideos(video);
-      video.muted = false;
-      video.play().catch(() => {});
-    } else {
-      video.muted = false;
-      video.pause();
-    }
-  });
   bindWatchProgress(video, videoId);
 }
 
