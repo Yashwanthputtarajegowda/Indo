@@ -1,7 +1,6 @@
 import { icons } from '../data.js';
 import { nav } from '../components/nav.js';
 import { state } from '../state.js';
-import { render } from '../router.js';
 import { auth } from '../auth/firebase-client.js';
 import { loadCurrentProfile } from '../features/profile/current-profile.js';
 import { loadHomeVideos, renderVideoCard, bindVideoCards } from '../features/feed/home-feed.js';
@@ -94,6 +93,7 @@ async function openCreatorProfile(app, username) {
     if (!response.ok || !data.profile) throw new Error('Profile could not be opened.');
     state.profile = data.profile;
     state.screen = 'profile';
+    const { render } = await import('../router.js');
     render(app);
   } catch (error) {
     showToast(app, error.message || 'Profile could not be opened.');
