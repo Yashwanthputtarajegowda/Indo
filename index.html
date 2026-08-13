@@ -7,13 +7,14 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-57" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-57" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-57" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-58" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-58" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-58" />
   <style>
     .story-file-name{display:none!important}
     #story-preview .story-done-positioned{position:absolute!important;left:auto!important;right:0!important;bottom:12px!important;width:20%!important;max-width:none!important;height:46px!important;z-index:21!important;margin:0!important}
     #story-preview .story-add-positioned{position:absolute!important;right:14px!important;bottom:68px!important;z-index:22!important}
+    #story-preview video,#story-preview .story-element{transform-origin:center center!important;touch-action:none!important}
   </style>
   <title>Indo</title>
 </head>
@@ -25,7 +26,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-57"></script>
+  <script src="./config/runtime-config.js?v=20260813-58"></script>
   <script>
     window.__indoFixStoryEditor = function fixStoryEditorLayout() {
       const preview = document.getElementById('story-preview');
@@ -40,24 +41,96 @@
       if (panel) panel.style.bottom = '124px';
       const oldSelect = document.getElementById('story-create-select');
       if (oldSelect) oldSelect.style.display = 'none';
+      bindStoryPinchGestures(preview);
       return true;
     };
+
+    function bindStoryPinchGestures(preview) {
+      if (!preview || preview.dataset.pinchBound === '1') return;
+      preview.dataset.pinchBound = '1';
+      const pointers = new Map();
+      const states = new WeakMap();
+      let gesture = null;
+      let suppressClick = false;
+
+      const getTarget = (event) => {
+        const element = event.target instanceof Element ? event.target : null;
+        if (!element) return null;
+        if (element.matches('#story-preview-video')) return element;
+        return element.closest('.story-photo-element, .story-emoji-element, .story-title-element');
+      };
+
+      const getState = (target) => {
+        if (!states.has(target)) states.set(target, { scale: 1, rotation: 0 });
+        return states.get(target);
+      };
+
+      const applyState = (target, state) => {
+        if (target.matches('#story-preview-video')) target.style.transform = `scale(${state.scale}) rotate(${state.rotation}deg)`;
+        else target.style.transform = `translate(-50%,-50%) scale(${state.scale}) rotate(${state.rotation}deg)`;
+        target.dataset.gestureScale = String(state.scale);
+        target.dataset.gestureRotation = String(state.rotation);
+      };
+
+      const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+      const angle = (a, b) => Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+
+      preview.addEventListener('pointerdown', (event) => {
+        const target = getTarget(event);
+        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, target });
+        if (pointers.size !== 2) return;
+        const entries = [...pointers.values()];
+        const first = entries[0];
+        const second = entries[1];
+        const gestureTarget = first.target || second.target;
+        if (!gestureTarget) return;
+        const firstPointerId = [...pointers.keys()][0];
+        window.dispatchEvent(new PointerEvent('pointerup', { pointerId:firstPointerId, pointerType:event.pointerType, clientX:first.x, clientY:first.y, bubbles:true }));
+        const state = getState(gestureTarget);
+        gesture = { target:gestureTarget, startDistance:Math.max(1,distance(first,second)), startAngle:angle(first,second), startScale:state.scale, startRotation:state.rotation };
+        suppressClick = true;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+
+      preview.addEventListener('pointermove', (event) => {
+        if (!pointers.has(event.pointerId)) return;
+        pointers.set(event.pointerId, { ...pointers.get(event.pointerId), x:event.clientX, y:event.clientY });
+        if (!gesture || pointers.size < 2) return;
+        const entries = [...pointers.values()];
+        const first = entries[0], second = entries[1];
+        const state = getState(gesture.target);
+        state.scale = Math.max(0.5, Math.min(4, gesture.startScale * (distance(first,second) / gesture.startDistance)));
+        state.rotation = gesture.startRotation + (angle(first,second) - gesture.startAngle);
+        applyState(gesture.target,state);
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+
+      const endPointer = (event) => {
+        pointers.delete(event.pointerId);
+        if (gesture && pointers.size < 2) gesture = null;
+        if (pointers.size === 0 && suppressClick) suppressClick = true;
+      };
+      preview.addEventListener('pointerup', endPointer, true);
+      preview.addEventListener('pointercancel', endPointer, true);
+      preview.addEventListener('click', (event) => {
+        if (!suppressClick) return;
+        suppressClick = false;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+    }
 
     (function startStoryEditorFixPoll() {
       let attempts = 0;
       const timer = setInterval(() => {
         attempts += 1;
-        if (window.__indoFixStoryEditor?.()) {
-          clearInterval(timer);
-          return;
-        }
+        if (window.__indoFixStoryEditor?.()) { clearInterval(timer); return; }
         if (attempts >= 80) clearInterval(timer);
       }, 100);
     })();
 
-    // Story editor interaction fix:
-    // When the + panel is open, clicking anywhere on the video closes the panel only.
-    // When it is closed, clicking the video behaves normally and opens title input.
     (function bindStoryVideoInteractionFix() {
       let swallowNextStoryVideoClick = false;
       document.addEventListener('pointerdown', (event) => {
@@ -115,7 +188,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-57'),
+          import('./src/features/auth/firebase-client.js?v=20260813-58'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -144,6 +217,6 @@
       }
     }, true);
   </script>
-  <script type="module" src="./src/main.js?v=20260813-57"></script>
+  <script type="module" src="./src/main.js?v=20260813-58"></script>
 </body>
 </html>
