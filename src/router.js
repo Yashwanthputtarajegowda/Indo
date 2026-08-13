@@ -15,8 +15,7 @@ const SCREEN_MODULES = [
   './screens/activity.js',
   './screens/wallet.js',
   './screens/blocked-users.js',
-  './features/stories/story-stack-enhancer.js',
-  './features/feed/home-feed.js'
+  './features/stories/story-stack-enhancer.js'
 ];
 
 let preloadPromise = null;
