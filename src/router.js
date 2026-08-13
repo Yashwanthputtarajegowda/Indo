@@ -5,10 +5,12 @@ import { installCloudinaryVideoCompatibility } from './features/feed/cloudinary-
 import './features/ui/cleanup-topbar.js';
 import './features/ui/profile-video-native-controls.js';
 import './features/ui/feed-follow-button.js';
+import { install as installProfileFollowersList } from './features/ui/profile-followers-list.js';
 
-const VERSION = '20260813-101';
+const VERSION = '20260813-102';
 
 installCloudinaryVideoCompatibility();
+installProfileFollowersList();
 
 let preloadStarted = false;
 const PRELOAD_BATCH = [
