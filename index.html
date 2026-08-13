@@ -7,14 +7,15 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-58" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-58" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-58" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-59" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-59" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-59" />
   <style>
     .story-file-name{display:none!important}
     #story-preview .story-done-positioned{position:absolute!important;left:auto!important;right:0!important;bottom:12px!important;width:20%!important;max-width:none!important;height:46px!important;z-index:21!important;margin:0!important}
     #story-preview .story-add-positioned{position:absolute!important;right:14px!important;bottom:68px!important;z-index:22!important}
     #story-preview video,#story-preview .story-element{transform-origin:center center!important;touch-action:none!important}
+    #story-preview #indo-story-share-button{display:grid!important;place-items:center!important;position:absolute!important;left:auto!important;right:calc(20% + 8px)!important;bottom:12px!important;width:38px!important;height:44px!important;z-index:999!important;margin:0!important;padding:0!important;border:0!important;border-radius:10px!important;background:#20202a!important;color:#fff!important;font-size:20px!important;font-weight:900!important;cursor:pointer!important;visibility:visible!important;opacity:1!important}
   </style>
   <title>Indo</title>
 </head>
@@ -26,7 +27,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-58"></script>
+  <script src="./config/runtime-config.js?v=20260813-59"></script>
   <script>
     window.__indoFixStoryEditor = function fixStoryEditorLayout() {
       const preview = document.getElementById('story-preview');
@@ -41,9 +42,57 @@
       if (panel) panel.style.bottom = '124px';
       const oldSelect = document.getElementById('story-create-select');
       if (oldSelect) oldSelect.style.display = 'none';
+      ensureStoryShareButton(preview, publish);
       bindStoryPinchGestures(preview);
       return true;
     };
+
+    function ensureStoryShareButton(preview, done) {
+      let button = document.getElementById('indo-story-share-button');
+      if (!button) {
+        button = document.createElement('button');
+        button.id = 'indo-story-share-button';
+        button.type = 'button';
+        button.textContent = '↗';
+        button.setAttribute('aria-label', 'Share story');
+        preview.appendChild(button);
+        button.addEventListener('click', async (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          try {
+            let story = null;
+            try { story = JSON.parse(localStorage.getItem('indo:last-story') || 'null'); } catch {}
+            if (!story?.id && !story?.publicId) {
+              done.click();
+              button.disabled = true;
+              button.textContent = '…';
+              await new Promise((resolve) => setTimeout(resolve, 1200));
+              try { story = JSON.parse(localStorage.getItem('indo:last-story') || 'null'); } catch {}
+              button.disabled = false;
+              button.textContent = '↗';
+            }
+            const id = String(story?.id || story?.publicId || '').trim();
+            if (!id) throw new Error('Story is not published yet.');
+            const url = `${window.location.origin}${window.location.pathname}?story=${encodeURIComponent(id)}`;
+            const title = String(story?.title || 'Indo story').trim() || 'Indo story';
+            if (navigator.share) {
+              await navigator.share({title, text:'Watch this story on Indo', url});
+            } else if (navigator.clipboard?.writeText) {
+              await navigator.clipboard.writeText(url);
+              window.alert(`Story link copied:\n${url}`);
+            } else {
+              window.prompt('Copy this story link:', url);
+            }
+          } catch (error) {
+            button.disabled = false;
+            button.textContent = '↗';
+            console.warn('Story sharing failed:', error);
+          }
+        });
+      }
+      button.style.cssText = 'display:grid!important;place-items:center!important;position:absolute!important;left:auto!important;right:calc(20% + 8px)!important;bottom:12px!important;width:38px!important;height:44px!important;z-index:999!important;margin:0!important;padding:0!important;border:0!important;border-radius:10px!important;background:#20202a!important;color:#fff!important;font-size:20px!important;font-weight:900!important;cursor:pointer!important;visibility:visible!important;opacity:1!important;';
+      if (button.parentElement !== preview) preview.appendChild(button);
+    }
 
     function bindStoryPinchGestures(preview) {
       if (!preview || preview.dataset.pinchBound === '1') return;
@@ -84,8 +133,6 @@
         const second = entries[1];
         const gestureTarget = first.target || second.target;
         if (!gestureTarget) return;
-        const firstPointerId = [...pointers.keys()][0];
-        window.dispatchEvent(new PointerEvent('pointerup', { pointerId:firstPointerId, pointerType:event.pointerType, clientX:first.x, clientY:first.y, bubbles:true }));
         const state = getState(gestureTarget);
         gesture = { target:gestureTarget, startDistance:Math.max(1,distance(first,second)), startAngle:angle(first,second), startScale:state.scale, startRotation:state.rotation };
         suppressClick = true;
@@ -110,7 +157,6 @@
       const endPointer = (event) => {
         pointers.delete(event.pointerId);
         if (gesture && pointers.size < 2) gesture = null;
-        if (pointers.size === 0 && suppressClick) suppressClick = true;
       };
       preview.addEventListener('pointerup', endPointer, true);
       preview.addEventListener('pointercancel', endPointer, true);
@@ -188,7 +234,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-58'),
+          import('./src/features/auth/firebase-client.js?v=20260813-59'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -217,6 +263,6 @@
       }
     }, true);
   </script>
-  <script type="module" src="./src/main.js?v=20260813-58"></script>
+  <script type="module" src="./src/main.js?v=20260813-59"></script>
 </body>
 </html>
