@@ -1,6 +1,7 @@
 import { state } from './state.js';
-import { renderHome } from './screens/home.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
+
+const VERSION = '20260813-17';
 
 function renderRouteError(app, error) {
   const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\"']/g, '');
@@ -9,7 +10,7 @@ function renderRouteError(app, error) {
 
 async function renderLazy(app, modulePath, exportName, args = []) {
   try {
-    const module = await import(`${modulePath}?v=20260813-16`);
+    const module = await import(`${modulePath}?v=${VERSION}`);
     const renderer = module[exportName];
     if (typeof renderer !== 'function') throw new Error(`Missing screen renderer: ${exportName}`);
     renderer(app, ...args);
@@ -19,10 +20,13 @@ async function renderLazy(app, modulePath, exportName, args = []) {
   }
 }
 
-export function render(app) {
+export async function render(app) {
   if (state.screen === 'auth-login') return renderLogin(app);
   if (state.screen === 'auth-signup') return renderSignup(app);
-  if (state.screen === 'home') return renderHome(app);
+
+  if (state.screen === 'home') {
+    return renderLazy(app, './screens/home.js', 'renderHome');
+  }
   if (state.screen === 'reels') return renderLazy(app, './screens/reels.js', 'renderReels');
   if (state.screen === 'create') return renderLazy(app, './screens/create.js', 'renderCreate');
   if (state.screen === 'profile') return renderLazy(app, './screens/profile.js', 'renderProfile', [state.profile]);
@@ -32,5 +36,6 @@ export function render(app) {
   if (state.screen === 'activity') return renderLazy(app, './screens/activity.js', 'renderActivity');
   if (state.screen === 'wallet') return renderLazy(app, './screens/wallet.js', 'renderWallet');
   if (state.screen === 'blocked-users') return renderLazy(app, './screens/blocked-users.js', 'renderBlockedUsers');
-  return renderHome(app);
+
+  return renderLazy(app, './screens/home.js', 'renderHome');
 }
