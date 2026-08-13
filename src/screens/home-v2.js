@@ -1,60 +1,22 @@
-const appIcons = {
-  home: '⌂', search: '⌕', reel: '▶', create: '+', profile: '●', bell: '♧'
-};
-
 const LAST_STORY_KEY = 'indo:last-story';
 
-function renderNav() {
-  return `<nav class="bottom-nav"><button data-screen="home" class="active">${appIcons.home}<span>Home</span></button><button data-screen="search">${appIcons.search}<span>Search</span></button><button data-screen="reels">${appIcons.reel}<span>Reels</span></button><button data-screen="create">${appIcons.create}<span>Create</span></button><button data-screen="profile">${appIcons.profile}<span>Profile</span></button></nav>`;
-}
-
-function ensureStoryStyles() {
-  if (document.getElementById('indo-story-inline-v7')) return;
-  const style = document.createElement('style');
-  style.id = 'indo-story-inline-v7';
-  style.textContent = `
-    .stories-v2{display:flex!important;align-items:flex-start!important;gap:14px!important;padding:10px 10px 12px!important;overflow-x:auto!important;border-bottom:1px solid #17171c!important;scrollbar-width:none!important;min-height:86px!important}
-    .stories-v2::-webkit-scrollbar{display:none!important}
-    .story-v2{position:relative!important;display:flex!important;flex:0 0 66px!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;width:66px!important;min-width:66px!important;height:72px!important;padding:0!important;margin:0!important;gap:6px!important;color:#d8d8df!important;text-align:center!important;border:0!important;background:none!important;cursor:pointer!important}
-    .story-v2-avatar{position:relative!important;display:grid!important;place-items:center!important;width:56px!important;height:56px!important;border-radius:50%!important;background:linear-gradient(135deg,#743cff,#f83ab8)!important;color:#fff!important;font-size:15px!important;font-weight:800!important;margin:0 auto!important;overflow:visible!important}
-    .story-v2-name{display:block!important;width:100%!important;margin:0!important;padding:0!important;color:#d8d8df!important;font-size:10px!important;font-weight:600!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-    .story-v2-add{position:absolute!important;right:-2px!important;bottom:-2px!important;width:20px!important;height:20px!important;border-radius:50%!important;border:2px solid #09090e!important;background:#7b3cff!important;color:#fff!important;font-size:13px!important;font-weight:900!important;padding:0!important;display:grid!important;place-items:center!important;z-index:3!important;cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important}
-    .story-viewer-v2{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.96);display:grid;place-items:center;padding:18px}
-    .story-viewer-v2-card{position:relative;width:min(100%,420px);height:min(90vh,760px);display:flex;align-items:center;justify-content:center;background:#000;border-radius:16px;overflow:hidden}
-    .story-viewer-v2-card video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
-    .story-viewer-v2-close,.story-viewer-v2-share,.story-viewer-v2-menu{position:absolute;top:10px;z-index:4;width:34px;height:34px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;cursor:pointer}
-    .story-viewer-v2-close{left:12px;font-size:24px}
-    .story-viewer-v2-share{right:52px;font-size:19px;line-height:26px}
-    .story-viewer-v2-menu{right:12px;font-size:24px;line-height:26px}
-    .story-viewer-v2-title{position:absolute;left:54px;top:16px;z-index:3;color:#fff;font-size:13px;font-weight:800;max-width:calc(100% - 160px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .story-viewer-v2-actions{position:absolute;right:12px;top:52px;z-index:5;display:none;min-width:150px;padding:6px;border-radius:10px;background:#18181f;border:1px solid #2b2b33;box-shadow:0 10px 30px rgba(0,0,0,.45)}
-    .story-viewer-v2-actions.open{display:block}
-    .story-viewer-v2-actions button{display:block;width:100%;padding:10px 12px;border:0;background:none;color:#fff;text-align:left;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer}
-    .story-viewer-v2-actions button:hover{background:#262630}
-    .story-viewer-v2-actions .story-delete{color:#ff6b6b}
-    .story-editor #indo-story-share-button{display:none!important}
-  `;
-  document.head.appendChild(style);
-}
-
-function escapeHtml(value = '') {
-  return String(value).replace(/[&<>\\\"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[char]));
+function esc(value = '') {
+  return String(value).replace(/[&<>\"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[c]));
 }
 
 function normalizeStory(story) {
   if (!story || typeof story !== 'object') return null;
-  const url = String(story.secureUrl || story.videoUrl || story.url || story.mediaUrl || '').trim();
-  if (!url) return null;
-  return { ...story, secureUrl: url };
+  const secureUrl = String(story.secureUrl || story.videoUrl || story.url || story.mediaUrl || '').trim();
+  return secureUrl ? { ...story, secureUrl } : null;
 }
 
-function getCachedOwnStory(currentUid) {
+function readCachedOwnStory(uid) {
   try {
     const story = normalizeStory(JSON.parse(localStorage.getItem(LAST_STORY_KEY) || 'null'));
     if (!story) return null;
     const ownerUid = String(story.ownerUid || story.uid || story.userId || story.creatorUid || '').trim();
     const expiresAt = Number(story.expiresAt || 0);
-    if (ownerUid !== String(currentUid || '').trim()) return null;
+    if (ownerUid !== String(uid || '').trim()) return null;
     if (expiresAt && expiresAt <= Date.now()) {
       localStorage.removeItem(LAST_STORY_KEY);
       return null;
@@ -65,220 +27,192 @@ function getCachedOwnStory(currentUid) {
   }
 }
 
-function storyShareUrl(story) {
-  const id = String(story?.id || story?.publicId || '').trim();
-  if (!id) return '';
-  return `${window.location.origin}${window.location.pathname}?story=${encodeURIComponent(id)}`;
+function renderNav() {
+  return `
+    <nav class="bottom-nav">
+      <button type="button" data-screen="home" class="active">⌂<span>Home</span></button>
+      <button type="button" data-message-section aria-label="Message">⌕<span>Message</span></button>
+      <button type="button" data-screen="reels">▶<span>Reels</span></button>
+      <button type="button" data-video-section aria-label="Video">▣<span>Video</span></button>
+      <button type="button" data-screen="profile">●<span>Profile</span></button>
+    </nav>`;
 }
 
-async function shareViewedStory(story) {
-  const url = storyShareUrl(story);
-  if (!url) throw new Error('Story link is not available.');
-  const title = String(story?.title || 'Indo story').trim() || 'Indo story';
-  if (navigator.share) {
-    await navigator.share({ title, text: 'Watch this story on Indo', url });
-    return;
-  }
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(url);
-    return;
-  }
-  window.prompt('Copy this story link:', url);
+function renderTopbar() {
+  return `
+    <header class="topbar">
+      <div class="brand"><span>♥</span>Indo</div>
+      <div class="top-actions">
+        <button class="notification-button" data-screen="notifications" aria-label="Notifications">♧</button>
+        <button class="search-button" data-screen="search" aria-label="Search">⌕</button>
+      </div>
+    </header>`;
 }
 
-function storyItem(story, isOwn = false) {
-  const username = String(story.username || story.userName || story.handle || story.displayName || 'User').replace(/^@/, '');
-  const initial = username.charAt(0).toUpperCase() || 'U';
-  const storyUrl = String(story.secureUrl || story.videoUrl || story.url || story.mediaUrl || '');
-  const storyId = String(story.id || story.publicId || '');
-  const ownerUid = String(story.ownerUid || story.uid || story.userId || story.creatorUid || '');
-  return `<div class="story-v2" data-story-open data-story-id="${escapeHtml(storyId)}" data-story-owner="${escapeHtml(ownerUid)}" data-story-url="${escapeHtml(storyUrl)}" data-story-name="${escapeHtml(username)}"><span class="story-v2-avatar">${initial}${isOwn ? '<button class="story-v2-add" type="button" data-story-add aria-label="Add another story">+</button>' : ''}</span><span class="story-v2-name">@${escapeHtml(username)}</span></div>`;
+function ensureStoryStyles() {
+  if (document.getElementById('indo-home-v8-style')) return;
+  const style = document.createElement('style');
+  style.id = 'indo-home-v8-style';
+  style.textContent = `
+    .indo-story-row{display:flex;align-items:flex-start;gap:14px;padding:10px;overflow-x:auto;border-bottom:1px solid #17171c;scrollbar-width:none;min-height:86px}
+    .indo-story-row::-webkit-scrollbar{display:none}
+    .indo-story-item{position:relative;display:flex;flex:0 0 66px;flex-direction:column;align-items:center;width:66px;gap:6px;border:0;background:none;color:#d8d8df;cursor:pointer;padding:0}
+    .indo-story-avatar{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#743cff,#f83ab8);color:#fff;font-weight:800}
+    .indo-story-name{display:block;width:100%;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+    .indo-story-add{position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;border-radius:50%;border:2px solid #09090e;background:#7b3cff;color:#fff;font-weight:900}
+    .indo-story-viewer{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.96);display:grid;place-items:center;padding:18px}
+    .indo-story-card{position:relative;width:min(100%,420px);height:min(90vh,760px);background:#000;border-radius:16px;overflow:hidden}
+    .indo-story-card video{width:100%;height:100%;object-fit:contain;background:#000}
+    .indo-story-close,.indo-story-share,.indo-story-more{position:absolute;top:10px;z-index:3;width:34px;height:34px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff}
+    .indo-story-close{left:12px;font-size:24px}.indo-story-share{right:52px}.indo-story-more{right:12px}
+    .indo-story-title{position:absolute;left:54px;right:90px;top:17px;z-index:2;color:#fff;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .indo-story-menu{position:absolute;right:12px;top:52px;z-index:4;display:none;min-width:150px;padding:6px;border-radius:10px;background:#18181f;border:1px solid #2b2b33}
+    .indo-story-menu.open{display:block}.indo-story-menu button{display:block;width:100%;padding:10px 12px;border:0;background:none;color:#fff;text-align:left;font-weight:700}.indo-story-menu .delete{color:#ff6b6b}
+  `;
+  document.head.appendChild(style);
 }
 
-function addStoryItem() {
-  return `<button class="story-v2" type="button" data-story-add aria-label="Add your story"><span class="story-v2-avatar">+</span><span class="story-v2-name">Your story</span></button>`;
-}
+function getApiBase() { return window.INDO_API_BASE || ''; }
 
-async function deleteOwnStory(storyId, overlay) {
-  const id = String(storyId || '').trim();
-  if (!id) throw new Error('Story ID is missing.');
-  const userModule = await import('../features/auth/firebase-client.js');
-  const user = userModule.auth.currentUser;
-  if (!user) throw new Error('Please login first.');
-  const token = await user.getIdToken();
-  const apiBase = window.INDO_API_BASE || '';
-  const response = await fetch(`${apiBase}/api/stories/${encodeURIComponent(id)}/delete`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Could not delete story.');
-  localStorage.removeItem(LAST_STORY_KEY);
-  overlay.remove();
-  const root = document.getElementById('root');
-  if (root) await loadStories(root);
-}
-
-function openStoryViewer(story, isOwn = false) {
-  const normalized = normalizeStory(story);
-  if (!normalized?.secureUrl) return;
-  document.querySelector('.story-viewer-v2')?.remove();
+async function openStoryViewer(story, isOwn = false) {
+  document.querySelector('.indo-story-viewer')?.remove();
   const overlay = document.createElement('div');
-  overlay.className = 'story-viewer-v2';
-  const storyId = String(normalized.id || normalized.publicId || '');
-  const safeName = escapeHtml(String(normalized.username || normalized.name || 'user').replace(/^@/, ''));
-  overlay.innerHTML = `<div class="story-viewer-v2-card"><button class="story-viewer-v2-close" type="button" aria-label="Close">×</button><button class="story-viewer-v2-share" type="button" aria-label="Share story">↗</button>${isOwn ? '<button class="story-viewer-v2-menu" type="button" aria-label="More">⋯</button><div class="story-viewer-v2-actions"><button class="story-delete" type="button">Delete story</button></div>' : ''}<div class="story-viewer-v2-title">@${safeName}</div><video src="${escapeHtml(normalized.secureUrl)}" autoplay playsinline></video></div>`;
+  overlay.className = 'indo-story-viewer';
+  const id = String(story.id || story.publicId || '');
+  const username = String(story.username || story.name || 'user').replace(/^@/, '');
+  overlay.innerHTML = `<div class="indo-story-card">
+    <button class="indo-story-close" type="button">×</button>
+    <button class="indo-story-share" type="button">↗</button>
+    ${isOwn ? '<button class="indo-story-more" type="button">⋯</button><div class="indo-story-menu"><button class="delete" type="button">Delete story</button></div>' : ''}
+    <div class="indo-story-title">@${esc(username)}</div>
+    <video src="${esc(story.secureUrl)}" autoplay playsinline></video>
+  </div>`;
   const close = () => overlay.remove();
-  overlay.querySelector('.story-viewer-v2-close').addEventListener('click', close);
+  overlay.querySelector('.indo-story-close')?.addEventListener('click', close);
   overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
-  overlay.querySelector('.story-viewer-v2-share').addEventListener('click', async (event) => {
-    event.stopPropagation();
+  overlay.querySelector('.indo-story-share')?.addEventListener('click', async () => {
+    const url = `${window.location.origin}${window.location.pathname}?story=${encodeURIComponent(id)}`;
     try {
-      await shareViewedStory(normalized);
-    } catch (error) {
-      if (error?.name !== 'AbortError') console.warn('Story sharing failed:', error);
-    }
+      if (navigator.share) await navigator.share({ title: 'Indo story', text: 'Watch this story on Indo', url });
+      else if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url);
+      else window.prompt('Copy story link:', url);
+    } catch (error) { if (error?.name !== 'AbortError') console.warn('Story sharing failed:', error); }
   });
-  const video = overlay.querySelector('video');
-  video?.addEventListener('loadedmetadata', () => { video.play().catch(() => {}); }, { once: true });
   if (isOwn) {
-    const menuButton = overlay.querySelector('.story-viewer-v2-menu');
-    const actions = overlay.querySelector('.story-viewer-v2-actions');
-    const deleteButton = overlay.querySelector('.story-delete');
-    menuButton.addEventListener('click', (event) => { event.stopPropagation(); actions.classList.toggle('open'); });
-    deleteButton.addEventListener('click', async (event) => {
-      event.stopPropagation();
-      deleteButton.disabled = true;
-      deleteButton.textContent = 'Deleting...';
-      try {
-        await deleteOwnStory(storyId, overlay);
-      } catch (error) {
-        deleteButton.disabled = false;
-        deleteButton.textContent = error?.message || 'Delete story';
-      }
+    const more = overlay.querySelector('.indo-story-more');
+    const menu = overlay.querySelector('.indo-story-menu');
+    more?.addEventListener('click', (event) => { event.stopPropagation(); menu?.classList.toggle('open'); });
+    overlay.querySelector('.delete')?.addEventListener('click', async () => {
+      const user = (await import('../features/auth/firebase-client.js')).auth.currentUser;
+      if (!user) return;
+      const token = await user.getIdToken();
+      const response = await fetch(`${getApiBase()}/api/stories/${encodeURIComponent(id)}/delete`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) { menu.textContent = data.error || 'Could not delete story.'; return; }
+      localStorage.removeItem(LAST_STORY_KEY);
+      close();
+      loadStories(document.getElementById('root')).catch(() => {});
     });
-    document.addEventListener('click', (event) => {
-      if (overlay.contains(event.target) && !actions.contains(event.target) && event.target !== menuButton) actions.classList.remove('open');
-    }, { once: false });
   }
   document.body.appendChild(overlay);
+  overlay.querySelector('video')?.play().catch(() => {});
 }
 
-function openStoryCreateFromPicker(event) {
+function storyItem(story, own = false) {
+  const username = String(story.username || story.userName || story.handle || story.name || 'User').replace(/^@/, '');
+  const ownerUid = String(story.ownerUid || story.uid || story.userId || story.creatorUid || '');
+  const id = String(story.id || story.publicId || story.secureUrl || '');
+  return `<button class="indo-story-item" type="button" data-story-id="${esc(id)}" data-story-owner="${esc(ownerUid)}" data-story-url="${esc(story.secureUrl)}" data-story-name="${esc(username)}"><span class="indo-story-avatar">${esc(username.charAt(0).toUpperCase() || 'U')}${own ? '<button class="indo-story-add" type="button" data-story-add aria-label="Add another story">+</button>' : ''}</span><span class="indo-story-name">@${esc(username)}</span></button>`;
+}
+
+async function openStoryPicker(event) {
   event.preventDefault();
   event.stopPropagation();
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'video/*';
-  input.style.position = 'fixed';
-  input.style.left = '-9999px';
-  input.style.width = '1px';
-  input.style.height = '1px';
+  input.style.position = 'fixed'; input.style.left = '-9999px'; input.style.width = '1px'; input.style.height = '1px';
   document.body.appendChild(input);
   input.addEventListener('change', async () => {
     const file = input.files?.[0];
     input.remove();
     if (!file || !file.type.startsWith('video/')) return;
     window.__indoStoryDraftFile = file;
-    try {
-      await window.__indoNavigate?.('story-create');
-    } catch (error) {
-      console.error('Story create navigation failed:', error);
-    }
+    await window.__indoNavigate?.('story-create');
   }, { once: true });
-  try {
-    if (typeof input.showPicker === 'function') input.showPicker();
-    else input.click();
-  } catch {
-    input.click();
-  }
+  input.click();
 }
 
-function bindStoryInteractions(app) {
-  app.querySelectorAll('[data-story-add]').forEach((button) => {
-    button.addEventListener('pointerdown', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (button.dataset.pickerOpen === '1') return;
-      button.dataset.pickerOpen = '1';
-      openStoryCreateFromPicker(event);
-      window.setTimeout(() => { button.dataset.pickerOpen = '0'; }, 1000);
-    }, { capture: true });
-    button.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    }, { capture: true });
-  });
-  app.querySelectorAll('[data-story-open]').forEach((item) => {
-    item.addEventListener('click', (event) => {
-      if (event.target instanceof Element && event.target.closest('[data-story-add]')) return;
-      const ownerUid = String(item.dataset.storyOwner || '');
-      import('../features/auth/firebase-client.js').then(({ auth }) => {
-        const isOwn = Boolean(auth.currentUser?.uid && ownerUid === auth.currentUser.uid);
-        openStoryViewer({ id: item.dataset.storyId, secureUrl: item.dataset.storyUrl, username: item.dataset.storyName, ownerUid }, isOwn);
-      });
-    });
-  });
+function bindStories(app) {
+  app.querySelectorAll('[data-story-add]').forEach((button) => button.addEventListener('click', openStoryPicker));
+  app.querySelectorAll('[data-story-id]').forEach((item) => item.addEventListener('click', async (event) => {
+    if (event.target instanceof Element && event.target.closest('[data-story-add]')) return;
+    const story = { id: item.dataset.storyId, ownerUid: item.dataset.storyOwner, secureUrl: item.dataset.storyUrl, username: item.dataset.storyName };
+    const { auth } = await import('../features/auth/firebase-client.js');
+    await openStoryViewer(story, Boolean(auth.currentUser?.uid && auth.currentUser.uid === story.ownerUid));
+  }));
+}
+
+async function loadStories(app) {
+  const row = app?.querySelector('[data-stories]');
+  if (!row) return;
+  try {
+    const [{ loadStories: fetchStories }, { auth }] = await Promise.all([
+      import('../features/stories/stories.js?v=20260813-120'),
+      import('../features/auth/firebase-client.js'),
+    ]);
+    const currentUid = auth.currentUser?.uid || '';
+    const stories = (await fetchStories()).map(normalizeStory).filter(Boolean);
+    const own = stories.find((item) => String(item.ownerUid || item.uid || item.userId || item.creatorUid || '') === currentUid) || readCachedOwnStory(currentUid);
+    const others = stories.filter((item) => String(item.ownerUid || item.uid || item.userId || item.creatorUid || '') !== currentUid);
+    row.innerHTML = (own ? storyItem(own, true) : `<button class="indo-story-item" type="button" data-story-add><span class="indo-story-avatar">+</span><span class="indo-story-name">Your story</span></button>`) + others.map((item) => storyItem(item, false)).join('');
+    bindStories(app);
+  } catch (error) {
+    console.warn('Stories unavailable:', error);
+    const cached = readCachedOwnStory('');
+    row.innerHTML = cached ? storyItem(cached, true) : `<button class="indo-story-item" type="button" data-story-add><span class="indo-story-avatar">+</span><span class="indo-story-name">Your story</span></button>`;
+    bindStories(app);
+  }
 }
 
 async function loadFeed(app) {
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-37');
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-120');
     const videos = await loadHomeVideos();
     if (!videos.length) { status.textContent = 'No videos yet. Upload your first video.'; return; }
-    status.remove(); feed.innerHTML = videos.map(renderVideoCard).join(''); bindVideoCards(feed);
-  } catch (error) { console.error('Home feed failed:', error); status.textContent = 'Could not load videos right now.'; }
-}
-
-async function loadStories(app) {
-  const row = app.querySelector('[data-stories-v2]');
-  let currentUid = '';
-  try {
-    const [{ loadStories }, { auth }] = await Promise.all([
-      import('../features/stories/stories.js?v=20260813-36'),
-      import('../features/auth/firebase-client.js')
-    ]);
-    currentUid = auth.currentUser?.uid || '';
-    const stories = (await loadStories()).map(normalizeStory).filter(Boolean);
-    const cachedOwn = getCachedOwnStory(currentUid);
-    const merged = [...(cachedOwn ? [cachedOwn] : []), ...stories];
-    const ownStories = [];
-    const otherStories = [];
-    const seen = new Set();
-    for (const story of merged) {
-      const ownerUid = String(story.ownerUid || story.uid || story.userId || story.creatorUid || '').trim();
-      const storyId = String(story.id || story.publicId || story.secureUrl || '');
-      if (seen.has(storyId)) continue;
-      seen.add(storyId);
-      if (ownerUid && ownerUid === currentUid) ownStories.push(story);
-      else if (ownerUid) otherStories.push(story);
-    }
-    row.innerHTML = ownStories.length
-      ? storyItem(ownStories[0], true) + otherStories.map((story) => storyItem(story, false)).join('')
-      : addStoryItem() + otherStories.map((story) => storyItem(story, false)).join('');
-    bindStoryInteractions(app);
+    status.remove();
+    feed.innerHTML = videos.map(renderVideoCard).join('');
+    bindVideoCards(feed);
   } catch (error) {
-    const cachedOwn = getCachedOwnStory(currentUid);
-    row.innerHTML = cachedOwn ? storyItem(cachedOwn, true) : addStoryItem();
-    bindStoryInteractions(app);
-    console.warn('Stories unavailable:', error);
+    console.error('Home feed failed:', error);
+    status.textContent = 'Could not load videos right now.';
   }
 }
 
 async function loadNotifications(app) {
   try {
-    const button = app.querySelector('[data-screen=\"notifications\"]'); if (!button) return;
-    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-36');
-    const items = await loadNotifications(); const unread = items.filter((item) => !item.read).length;
-    button.querySelector('.notification-badge')?.remove(); if (unread <= 0) return;
-    const badge = document.createElement('span'); badge.className = 'notification-badge'; badge.textContent = unread > 99 ? '99+' : String(unread); button.style.position = 'relative'; button.appendChild(badge);
-  } catch (error) { console.warn('Notifications unavailable:', error); }
+    const button = app.querySelector('.notification-button');
+    if (!button) return;
+    const { loadNotifications: fetchNotifications } = await import('../features/notifications/notifications.js?v=20260813-120');
+    const items = await fetchNotifications();
+    const unread = items.filter((item) => !item.read).length;
+    if (!unread) return;
+    const badge = document.createElement('span');
+    badge.className = 'notification-badge';
+    badge.textContent = unread > 99 ? '99+' : String(unread);
+    button.style.position = 'relative';
+    button.appendChild(badge);
+  } catch (error) {
+    console.warn('Notifications unavailable:', error);
+  }
 }
 
 export function renderHome(app) {
   ensureStoryStyles();
-  app.innerHTML = `<div class=\"app-shell\"><header class=\"topbar\"><div class=\"brand\"><span>♥</span>Indo</div><div class=\"top-actions\"><button class=\"notification-button\" data-screen=\"notifications\" aria-label=\"Notifications\">${appIcons.bell}</button></div></header><div class=\"stories-v2\" data-stories-v2></div><main class=\"feed\"><div class=\"feed-status\" data-feed-status>Loading videos...</div><div data-home-feed></div></main>${renderNav()}</div>`;
-  loadStories(app); loadFeed(app); loadNotifications(app);
+  app.innerHTML = `<div class="app-shell">${renderTopbar()}<div class="indo-story-row" data-stories></div><main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>${renderNav()}</div>`;
+  loadStories(app);
+  loadFeed(app);
+  loadNotifications(app);
 }
