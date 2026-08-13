@@ -9,6 +9,7 @@ function installBottomNavigation() {
 
   const patchNav = () => {
     document.querySelectorAll('.bottom-nav').forEach((nav) => {
+      if (nav.dataset.bottomNavV4 === '1') return;
       const active = nav.querySelector('button.active')?.dataset.screen || 'home';
       nav.dataset.bottomNavV4 = '1';
       nav.innerHTML = `
