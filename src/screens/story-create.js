@@ -29,9 +29,9 @@ function compressSticker(file) {
 }
 
 function ensureStyles() {
-  if (document.getElementById('indo-story-editor-v3')) return;
+  if (document.getElementById('indo-story-editor-v4')) return;
   const style = document.createElement('style');
-  style.id = 'indo-story-editor-v3';
+  style.id = 'indo-story-editor-v4';
   style.textContent = `
     .story-editor{padding:12px 12px 88px!important}
     .story-preview-wrap{position:relative;width:100%;max-width:420px;margin:0 auto 16px;display:flex;justify-content:center}
@@ -45,6 +45,9 @@ function ensureStyles() {
     .story-title-element{max-width:86%;padding:6px 12px;border-radius:8px;background:rgba(0,0,0,.34);color:#fff;font-size:22px;font-weight:900;text-align:center;white-space:pre-wrap;overflow:hidden;text-shadow:0 2px 8px rgba(0,0,0,.6)}
     .story-photo-element{width:88px;height:88px;object-fit:contain;filter:drop-shadow(0 3px 10px rgba(0,0,0,.45))}
     .story-emoji-element{font-size:58px;line-height:1;filter:drop-shadow(0 3px 10px rgba(0,0,0,.45))}
+    .story-trash-zone{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:30;display:none;align-items:center;justify-content:center;gap:7px;min-width:150px;height:44px;padding:0 14px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(24,24,31,.94);color:#fff;font-size:13px;font-weight:800;box-shadow:0 10px 28px rgba(0,0,0,.55);pointer-events:none}
+    .story-preview.is-dragging .story-trash-zone{display:flex}
+    .story-preview.is-over-trash .story-trash-zone{background:#d83434;border-color:rgba(255,255,255,.45);transform:translateX(-50%) scale(1.04)}
     .story-add-button{position:absolute;right:12px;bottom:12px;z-index:20;width:48px;height:48px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:rgba(20,20,27,.88);color:#fff;font-size:28px;font-weight:900;line-height:1;box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer}
     .story-add-panel{position:absolute;right:12px;bottom:68px;z-index:19;width:min(300px,calc(100% - 24px));padding:10px;border:1px solid #2b2b35;border-radius:14px;background:rgba(12,12,18,.96);box-shadow:0 12px 34px rgba(0,0,0,.5);display:grid;gap:10px}
     .story-add-panel[hidden]{display:none}
@@ -86,6 +89,7 @@ export function renderStoryCreate(app) {
         <div class="story-preview-wrap">
           <div id="story-preview" class="story-preview">
             <video id="story-preview-video" autoplay playsinline muted></video>
+            <div id="story-trash-zone" class="story-trash-zone" aria-hidden="true">🗑️ Drag here to delete</div>
             <button id="story-add-button" class="story-add-button" type="button" aria-label="Add to story">+</button>
             <div id="story-add-panel" class="story-add-panel" hidden>
               <label>Story title<input id="story-title" maxlength="80" placeholder="Add a title"></label>
@@ -116,6 +120,7 @@ export function renderStoryCreate(app) {
   const message = app.querySelector('#story-create-message');
   const video = app.querySelector('#story-preview-video');
   const preview = app.querySelector('#story-preview');
+  const trashZone = app.querySelector('#story-trash-zone');
   const addButton = app.querySelector('#story-add-button');
   const addPanel = app.querySelector('#story-add-panel');
   const titleInput = app.querySelector('#story-title');
@@ -131,6 +136,31 @@ export function renderStoryCreate(app) {
   const photoElements = [];
   const emojiElements = [];
 
+  const removeElement = (element) => {
+    if (element === titleElement) {
+      element.remove();
+      titleElement = null;
+      titleInput.value = '';
+      return;
+    }
+    const photoIndex = photoElements.findIndex((item) => item.element === element);
+    if (photoIndex >= 0) {
+      photoElements[photoIndex].element.remove();
+      photoElements.splice(photoIndex, 1);
+      return;
+    }
+    const emojiIndex = emojiElements.findIndex((item) => item.element === element);
+    if (emojiIndex >= 0) {
+      emojiElements[emojiIndex].element.remove();
+      emojiElements.splice(emojiIndex, 1);
+    }
+  };
+
+  const isOverTrash = (clientX, clientY) => {
+    const rect = trashZone.getBoundingClientRect();
+    return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+  };
+
   const makeDraggable = (element, onMove) => {
     let dragging = false;
     const move = (event) => {
@@ -140,14 +170,24 @@ export function renderStoryCreate(app) {
       element.style.left = `${point.x}%`;
       element.style.top = `${point.y}%`;
       onMove(point);
+      preview.classList.toggle('is-over-trash', isOverTrash(event.clientX, event.clientY));
     };
-    const up = () => {
+    const up = (event) => {
+      if (!dragging) return;
+      const deleteIt = isOverTrash(event.clientX, event.clientY);
       dragging = false;
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      preview.classList.remove('is-dragging', 'is-over-trash');
+      if (deleteIt) {
+        removeElement(element);
+        message.textContent = 'Element removed.';
+      }
     };
     element.addEventListener('pointerdown', (event) => {
       dragging = true;
+      preview.classList.add('is-dragging');
+      preview.classList.remove('is-over-trash');
       event.preventDefault();
       window.addEventListener('pointermove', move, { passive: false });
       window.addEventListener('pointerup', up, { once: true });
@@ -157,8 +197,7 @@ export function renderStoryCreate(app) {
   const updateTitle = () => {
     const text = titleInput.value.trim();
     if (!text) {
-      titleElement?.remove();
-      titleElement = null;
+      if (titleElement) removeElement(titleElement);
       return;
     }
     if (!titleElement) {
