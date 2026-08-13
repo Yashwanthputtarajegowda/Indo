@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 
-const VERSION = '20260813-73';
+const VERSION = '20260813-74';
 
 function renderRouteError(app, error) {
   const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\\\"']/g, '');
@@ -23,7 +23,12 @@ async function renderLazy(app, modulePath, exportName, args = []) {
 export async function render(app) {
   if (state.screen === 'auth-login') return renderLogin(app);
   if (state.screen === 'auth-signup') return renderSignup(app);
-  if (state.screen === 'home') return renderLazy(app, './screens/home-v2.js', 'renderHome');
+  if (state.screen === 'home') {
+    await renderLazy(app, './screens/home-v2.js', 'renderHome');
+    const enhancer = await import(`./features/stories/story-stack-enhancer.js?v=${VERSION}`);
+    await enhancer.enhanceStoryRow(app);
+    return;
+  }
   if (state.screen === 'reels') return renderLazy(app, './screens/reels.js', 'renderReels');
   if (state.screen === 'create') return renderLazy(app, './screens/create.js', 'renderCreate');
   if (state.screen === 'story-create') return renderLazy(app, './screens/story-create.js', 'renderStoryCreate', [window.__indoStoryDraftFile instanceof File ? window.__indoStoryDraftFile : null]);
