@@ -3,9 +3,52 @@ import { recordWatchProgress } from '../earning/earning.js';
 
 const VIEW_COOLDOWN_MS = 30 * 60 * 1000;
 const DEFAULT_FEED_LIMIT = 10;
+const FEED_ONCE_KEY_PREFIX = 'indo:feed-seen:';
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
+}
+
+function getFeedSeenKey() {
+  const uid = String(auth.currentUser?.uid || 'guest');
+  return `${FEED_ONCE_KEY_PREFIX}${uid}`;
+}
+
+function readFeedSeen() {
+  try {
+    const value = JSON.parse(localStorage.getItem(getFeedSeenKey()) || '{}');
+    return value && typeof value === 'object' ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function markFeedSeen(videos) {
+  if (!auth.currentUser || !Array.isArray(videos) || !videos.length) return;
+  const seen = readFeedSeen();
+  const now = Date.now();
+  for (const video of videos) {
+    const id = String(video?.id || '').trim();
+    if (id) seen[id] = now;
+  }
+  const entries = Object.entries(seen)
+    .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
+    .slice(0, 5000);
+  localStorage.setItem(getFeedSeenKey(), JSON.stringify(Object.fromEntries(entries)));
+}
+
+function filterAndTakeOnce(videos, limit) {
+  const all = Array.isArray(videos) ? videos : [];
+  if (!auth.currentUser) return all.slice(0, limit);
+  const seen = readFeedSeen();
+  const fresh = [];
+  for (const video of all) {
+    const id = String(video?.id || '').trim();
+    if (!id || !seen[id]) fresh.push(video);
+    if (fresh.length >= limit) break;
+  }
+  markFeedSeen(fresh);
+  return fresh;
 }
 
 async function fetchVideos(apiBase, headers, query) {
@@ -19,13 +62,16 @@ export async function loadHomeVideos(limit = DEFAULT_FEED_LIMIT) {
   const apiBase = window.INDO_API_BASE || '';
   const headers = {};
   if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
-  const typed = await fetchVideos(apiBase, headers, `?type=video&limit=${Math.max(1, Math.min(20, Number(limit) || DEFAULT_FEED_LIMIT))}`);
-  if (typed.length) return typed;
-  const fallback = await fetchVideos(apiBase, headers, `?limit=${Math.max(1, Math.min(20, Number(limit) || DEFAULT_FEED_LIMIT))}`);
-  return fallback.filter((item) => {
+  const requested = Math.max(1, Math.min(50, Number(limit) || DEFAULT_FEED_LIMIT));
+  const fetchLimit = Math.max(requested * 5, 50);
+  const typed = await fetchVideos(apiBase, headers, `?type=video&limit=${fetchLimit}`);
+  if (typed.length) return filterAndTakeOnce(typed, requested);
+  const fallback = await fetchVideos(apiBase, headers, `?limit=${fetchLimit}`);
+  const videos = fallback.filter((item) => {
     const type = String(item.mediaType || item.resourceType || 'video').toLowerCase();
-    return type === 'video' || type === 'mp4';
+    return type === 'video' || type === 'mp4' || type === 'reel';
   });
+  return filterAndTakeOnce(videos, requested);
 }
 
 export async function recordVideoView(videoId) {
@@ -88,21 +134,18 @@ function stopOtherVideos(current) {
 function enforceSingleVideoPlayback() {
   if (window.__indoSingleVideoPlaybackBound) return;
   window.__indoSingleVideoPlaybackBound = true;
-
   document.addEventListener('play', (event) => {
     const current = event.target instanceof HTMLVideoElement ? event.target : null;
     if (!current) return;
     stopOtherVideos(current);
     window.__indoActiveVideo = current;
   }, true);
-
   document.addEventListener('playing', (event) => {
     const current = event.target instanceof HTMLVideoElement ? event.target : null;
     if (!current) return;
     stopOtherVideos(current);
     window.__indoActiveVideo = current;
   }, true);
-
   document.addEventListener('pause', (event) => {
     if (event.target === window.__indoActiveVideo) window.__indoActiveVideo = null;
   }, true);
@@ -159,6 +202,9 @@ async function handleFeedDelete(button, card, menu) {
   button.textContent = 'Deleting...';
   try {
     await deleteVideo(videoId);
+    const seen = readFeedSeen();
+    delete seen[videoId];
+    localStorage.setItem(getFeedSeenKey(), JSON.stringify(seen));
     menu.remove();
     card.remove();
   } catch (error) {
