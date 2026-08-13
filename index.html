@@ -7,13 +7,15 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-123" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-123" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-123" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-124" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-124" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-124" />
   <style>
     .story-file-name{display:none!important}
     #story-preview{overflow:hidden!important}
     #story-preview video,#story-preview .story-element{transform-origin:center center!important;touch-action:none!important}
+    .top-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:20px!important;padding-left:6px!important}
+    .top-actions > button{width:30px!important;height:34px!important;display:grid!important;place-items:center!important;padding:0!important;flex:0 0 30px!important}
   </style>
   <title>Indo</title>
 </head>
@@ -26,7 +28,7 @@
     </main>
   </div>
 
-  <script src="./config/runtime-config.js?v=123"></script>
+  <script src="./config/runtime-config.js?v=124"></script>
   <script type="module">
     const root = document.getElementById('root');
     const ROUTER_VERSION = '20260813-123';
@@ -51,8 +53,8 @@
     }
 
     function bindNavigation() {
-      if (window.__indoNavigationBoundV3) return;
-      window.__indoNavigationBoundV3 = true;
+      if (window.__indoNavigationBoundV4) return;
+      window.__indoNavigationBoundV4 = true;
       window.__indoNavigate = navigate;
       document.addEventListener('click', async (event) => {
         const element = event.target instanceof Element ? event.target : null;
