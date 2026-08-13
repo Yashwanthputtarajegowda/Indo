@@ -2,6 +2,7 @@ import { auth } from '../auth/firebase-client.js';
 import { recordWatchProgress } from '../earning/earning.js';
 
 const VIEW_COOLDOWN_MS = 30 * 60 * 1000;
+const DEFAULT_FEED_LIMIT = 10;
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
@@ -14,13 +15,13 @@ async function fetchVideos(apiBase, headers, query) {
   return Array.isArray(data.videos) ? data.videos : [];
 }
 
-export async function loadHomeVideos(limit = 20) {
+export async function loadHomeVideos(limit = DEFAULT_FEED_LIMIT) {
   const apiBase = window.INDO_API_BASE || '';
   const headers = {};
   if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
-  const typed = await fetchVideos(apiBase, headers, `?type=video&limit=${limit}`);
+  const typed = await fetchVideos(apiBase, headers, `?type=video&limit=${Math.max(1, Math.min(20, Number(limit) || DEFAULT_FEED_LIMIT))}`);
   if (typed.length) return typed;
-  const fallback = await fetchVideos(apiBase, headers, `?limit=${limit}`);
+  const fallback = await fetchVideos(apiBase, headers, `?limit=${Math.max(1, Math.min(20, Number(limit) || DEFAULT_FEED_LIMIT))}`);
   return fallback.filter((item) => {
     const type = String(item.mediaType || item.resourceType || 'video').toLowerCase();
     return type === 'video' || type === 'mp4';
@@ -76,7 +77,7 @@ export function renderVideoCard(video) {
     ? `<img class="avatar small post-avatar-image" src="${creatorAvatar}" alt="${creator}" loading="lazy" style="width:38px;height:38px;min-width:38px;max-width:38px;flex:0 0 38px;margin:0;display:block;border-radius:50%;object-fit:cover;">`
     : `<div class="avatar small" style="width:38px;height:38px;min-width:38px;max-width:38px;flex:0 0 38px;margin:0;display:grid;place-items:center;border-radius:50%;">${initial}</div>`;
   const source = mediaUrl
-    ? `<video class="post-video" autoplay playsinline preload="metadata"${poster} src="${escapeHtml(mediaUrl)}"></video>`
+    ? `<video class="post-video" muted playsinline preload="none" data-video-src="${escapeHtml(mediaUrl)}"${poster}></video>`
     : '<div class="post-video video-unavailable">Video unavailable</div>';
   return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}" data-owner-uid="${ownerUid}">
     <div class="post-head">
@@ -99,7 +100,6 @@ function closeAllFeedMenus(except = null) {
 
 function openFeedMoreMenu(button, card) {
   closeAllFeedMenus();
-
   const menu = document.createElement('div');
   menu.className = 'indo-feed-menu';
   menu.innerHTML = `
@@ -117,24 +117,13 @@ function openFeedMoreMenu(button, card) {
       event.preventDefault();
       event.stopPropagation();
       const action = item.dataset.feedAction;
-      if (action === 'close') {
-        menu.remove();
-        return;
-      }
-      if (action === 'save') {
-        button.dataset.menuSaved = 'true';
-      }
-      if (action === 'share') {
-        const url = window.location.href.split('#')[0];
-        navigator.clipboard?.writeText(url).catch(() => {});
-      }
-      if (action === 'report') {
-        button.dataset.menuReported = 'true';
-      }
+      if (action === 'close') { menu.remove(); return; }
+      if (action === 'save') button.dataset.menuSaved = 'true';
+      if (action === 'share') navigator.clipboard?.writeText(window.location.href.split('#')[0]).catch(() => {});
+      if (action === 'report') button.dataset.menuReported = 'true';
       menu.remove();
     });
   });
-
   const head = card.querySelector('.post-head');
   if (!head) return;
   head.style.position = 'relative';
@@ -153,64 +142,69 @@ function bindFeedMoreMenus(root) {
       else openFeedMoreMenu(button, card);
     });
   });
-
   if (!window.__indoFeedMenuGlobalBound) {
     window.__indoFeedMenuGlobalBound = true;
     document.addEventListener('click', () => closeAllFeedMenus());
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') closeAllFeedMenus();
-    });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeAllFeedMenus(); });
   }
 }
 
+function loadVideoSource(video) {
+  if (video.dataset.loaded === '1') return true;
+  const source = video.dataset.videoSrc;
+  if (!source) return false;
+  video.src = source;
+  video.dataset.loaded = '1';
+  return true;
+}
+
+function bindLazyVideo(video, videoId) {
+  let observer = null;
+  const playIfVisible = () => {
+    if (!loadVideoSource(video)) return;
+    video.muted = true;
+    video.play().catch(() => {});
+  };
+  const pause = () => { if (!video.paused) video.pause(); };
+  video.addEventListener('error', () => {
+    const fallback = document.createElement('div');
+    fallback.className = 'post-video video-unavailable';
+    fallback.textContent = 'Video unavailable. Please try again later.';
+    observer?.disconnect();
+    video.replaceWith(fallback);
+  }, { once: true });
+  video.addEventListener('play', () => maybeRecordVideoView(videoId), { passive: true });
+  if ('IntersectionObserver' in window) {
+    observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.35) playIfVisible();
+        else pause();
+      }
+    }, { threshold: [0, 0.35, 0.7], rootMargin: '300px 0px' });
+    observer.observe(video);
+  } else {
+    playIfVisible();
+  }
+  video.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!loadVideoSource(video)) return;
+    if (video.paused) {
+      video.muted = false;
+      video.play().catch(() => {});
+    } else {
+      video.muted = false;
+      video.pause();
+    }
+  });
+  bindWatchProgress(video, videoId);
+}
+
 export function bindVideoCards(root) {
-  root.querySelectorAll('[data-video-id] .post-video').forEach((video) => {
+  root.querySelectorAll('[data-video-id] .post-video[data-video-src]').forEach((video) => {
     const card = video.closest('[data-video-id]');
     if (!card) return;
-    const videoId = card.dataset.videoId;
-    video.muted = false;
-    video.removeAttribute('muted');
-    video.setAttribute('autoplay', '');
-    video.setAttribute('playsinline', '');
-    video.addEventListener('error', () => {
-      const fallback = document.createElement('div');
-      fallback.className = 'post-video video-unavailable';
-      fallback.textContent = 'Video unavailable. Please try again later.';
-      video.replaceWith(fallback);
-    }, { once: true });
-    const autoplayWithSound = () => {
-      video.muted = false;
-      video.removeAttribute('muted');
-      video.play().catch(() => {});
-    };
-    const pauseWhenHidden = () => {
-      if (!video.paused) video.pause();
-    };
-    video.addEventListener('play', () => maybeRecordVideoView(videoId), { passive: true });
-    video.addEventListener('canplay', autoplayWithSound, { once: true });
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) autoplayWithSound();
-          else pauseWhenHidden();
-        }
-      }, { threshold: [0, 0.5, 1] });
-      observer.observe(video);
-    } else {
-      autoplayWithSound();
-    }
-    video.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (video.paused) {
-        video.muted = false;
-        video.removeAttribute('muted');
-        video.play().catch(() => {});
-      } else {
-        video.pause();
-      }
-    });
-    bindWatchProgress(video, videoId);
+    bindLazyVideo(video, card.dataset.videoId);
   });
   bindFeedMoreMenus(root);
 }
