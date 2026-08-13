@@ -1,104 +1,16 @@
 import { auth } from '../auth/firebase-client.js';
 
-const KEY = Symbol.for('indo.profileFollowersList');
+const KEY = Symbol.for('indo.profileFollowersListV2');
 
-function styleOnce() {
-  if (document.getElementById('indo-profile-followers-list-style')) return;
-  const style = document.createElement('style');
-  style.id = 'indo-profile-followers-list-style';
-  style.textContent = `
-    .indo-profile-stat-click{cursor:pointer;border:0;background:transparent;color:inherit;font:inherit;padding:0;}
-    .indo-rel-modal{position:fixed;inset:0;z-index:35000;background:rgba(0,0,0,.72);display:grid;place-items:center;padding:20px;}
-    .indo-rel-card{width:min(100%,420px);max-height:min(78vh,620px);overflow:auto;background:#101016;border:1px solid #282830;border-radius:16px;box-shadow:0 18px 60px rgba(0,0,0,.65);}
-    .indo-rel-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#101016;border-bottom:1px solid #24242b;z-index:1;}
-    .indo-rel-head strong{font-size:15px;color:#fff;}
-    .indo-rel-close{width:34px;height:34px;border:0;border-radius:50%;background:#1b1b22;color:#fff;font-size:22px;cursor:pointer;}
-    .indo-rel-list{display:flex;flex-direction:column;}
-    .indo-rel-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1c1c23;color:#fff;}
-    .indo-rel-avatar{width:38px;height:38px;min-width:38px;border-radius:50%;display:grid;place-items:center;background:#2a2a31;font-weight:800;}
-    .indo-rel-name{font-size:13px;font-weight:700;line-height:1.2;}
-    .indo-rel-id{font-size:11px;color:#92929d;margin-top:2px;}
-    .indo-rel-empty{padding:28px 16px;text-align:center;color:#8d8d98;font-size:13px;}
-  `;
-  document.head.appendChild(style);
-}
-
-async function request(path) {
-  const user = auth.currentUser;
-  if (!user) throw new Error('Please login first.');
-  const token = await user.getIdToken();
-  const apiBase = window.INDO_API_BASE || '';
-  const response = await fetch(`${apiBase}${path}`, { headers: { Authorization: `Bearer ${token}` } });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Could not load list.');
-  return data;
-}
-
-function currentUsername(root) {
-  return String(root.querySelector('.profile-direct-head h2')?.textContent || '').trim().replace(/^@/, '');
-}
-
-async function resolveUid(root) {
-  const username = currentUsername(root);
-  if (!username) throw new Error('Profile username is missing.');
-  const apiBase = window.INDO_API_BASE || '';
-  const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(username)}`);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data.profile?.uid) throw new Error(data.error || 'Profile not found.');
-  return String(data.profile.uid);
-}
-
-function closeModal() {
-  document.querySelector('.indo-rel-modal')?.remove();
-}
-
-async function openList(root, relation) {
-  styleOnce();
-  closeModal();
-  const modal = document.createElement('div');
-  modal.className = 'indo-rel-modal';
-  modal.innerHTML = `<section class="indo-rel-card"><header class="indo-rel-head"><strong>${relation === 'followers' ? 'Followers' : 'Following'}</strong><button class="indo-rel-close" type="button" aria-label="Close">×</button></header><div class="indo-rel-list"><div class="indo-rel-empty">Loading...</div></div></section>`;
-  document.body.appendChild(modal);
-  modal.querySelector('.indo-rel-close')?.addEventListener('click', closeModal);
-  modal.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
-
-  try {
-    const uid = await resolveUid(root);
-    const data = await request(`/api/social/${relation}/${encodeURIComponent(uid)}`);
-    const list = Array.isArray(data.items) ? data.items : [];
-    const container = modal.querySelector('.indo-rel-list');
-    container.innerHTML = list.length ? list.map((item) => {
-      const id = String(item.userId || '').replace(/^@/, '');
-      const name = String(item.name || 'Indo User');
-      const initial = (name.trim().charAt(0) || id.charAt(0) || 'U').toUpperCase();
-      return `<div class="indo-rel-row"><div class="indo-rel-avatar">${initial}</div><div><div class="indo-rel-name">${name}</div><div class="indo-rel-id">@${id}</div></div></div>`;
-    }).join('') : '<div class="indo-rel-empty">No users yet.</div>';
-
-    const stat = relation === 'followers' ? root.querySelector('.profile-direct-stats > div:nth-child(2) b') : root.querySelector('.profile-direct-stats > div:nth-child(3) b');
-    if (stat) stat.textContent = String(list.length);
-  } catch (error) {
-    modal.querySelector('.indo-rel-list').innerHTML = `<div class="indo-rel-empty">${String(error?.message || 'Could not load list.')}</div>`;
-  }
-}
-
-function install(root = document) {
-  if (globalThis[KEY]) return;
-  globalThis[KEY] = true;
-  styleOnce();
-  const bind = (container) => {
-    const stats = container.querySelector?.('.profile-direct-stats');
-    if (!stats || stats.dataset.followersBound === '1') return;
-    stats.dataset.followersBound = '1';
-    const followerStat = stats.querySelector(':scope > div:nth-child(2)');
-    const followingStat = stats.querySelector(':scope > div:nth-child(3)');
-    [followerStat, followingStat].forEach((item) => item?.classList.add('indo-profile-stat-click'));
-    followerStat?.addEventListener('click', () => openList(container, 'followers'));
-    followingStat?.addEventListener('click', () => openList(container, 'following'));
-  };
-  bind(root);
-  const observer = new MutationObserver(() => bind(root));
-  observer.observe(document.getElementById('root') || document.body, { childList:true, subtree:true });
-}
-
-install();
-export { install };
+function esc(value=''){return String(value).replace(/[&<>\"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));}
+function styleOnce(){if(document.getElementById('indo-profile-followers-list-style-v2'))return;const style=document.createElement('style');style.id='indo-profile-followers-list-style-v2';style.textContent=`.indo-rel-modal{position:fixed;inset:0;z-index:35000;background:rgba(0,0,0,.78);display:grid;place-items:center;padding:14px}.indo-rel-card{width:min(100%,520px);height:min(80vh,640px);background:#101016;border:1px solid #282830;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 60px rgba(0,0,0,.65)}.indo-rel-head{height:56px;flex:0 0 56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #24242b;background:#101016;color:#fff}.indo-rel-head strong{font-size:15px}.indo-rel-close{width:34px;height:34px;border:0;border-radius:50%;background:#1b1b22;color:#fff;font-size:22px;cursor:pointer}.indo-rel-list{flex:1;overflow:auto;padding:8px}.indo-rel-row{width:100%;display:flex;align-items:center;gap:12px;padding:11px 10px;min-height:60px;border:0;border-radius:10px;background:transparent;color:#fff;text-align:left;cursor:pointer}.indo-rel-row:hover{background:#1a1a21}.indo-rel-avatar{width:40px;height:40px;min-width:40px;border-radius:50%;display:grid;place-items:center;background:#2a2a31;font-weight:800}.indo-rel-name{font-size:13px;font-weight:700;line-height:1.2}.indo-rel-id{font-size:11px;color:#92929d;margin-top:2px}.indo-rel-empty{padding:36px 16px;text-align:center;color:#8d8d98;font-size:13px}`;document.head.appendChild(style);}
+function closeModal(){document.querySelector('.indo-rel-modal')?.remove();}
+async function token(){const user=auth.currentUser;if(!user)throw new Error('Please login first.');return user.getIdToken();}
+async function currentProfile(root){const username=String(root.querySelector('.profile-direct-head h2')?.textContent||'').trim().replace(/^@/,'');if(!username)throw new Error('Profile username is missing.');const apiBase=window.INDO_API_BASE||'';const idToken=await token();const response=await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(username)}`,{headers:{Authorization:`Bearer ${idToken}`}});const data=await response.json().catch(()=>({}));if(!response.ok||!data.profile)throw new Error(data.error||'Profile not found.');return{username,profile:data.profile};}
+async function loadRelation(root,relation){const {username,profile}=await currentProfile(root);const targetUid=String(profile.uid||profile.ownerUid||'').trim();const apiBase=window.INDO_API_BASE||'';const idToken=await token();let items=[];if(targetUid){try{const direct=await fetch(`${apiBase}/api/social/${relation}/${encodeURIComponent(targetUid)}`,{headers:{Authorization:`Bearer ${idToken}`}});const data=await direct.json().catch(()=>({}));if(direct.ok&&Array.isArray(data.items))items=data.items;}catch{}}
+  if(!items.length){const value=profile?.[relation]||{};items=Object.values(value).filter((item)=>item&&item.uid);}
+  return{username,items:items.map((item)=>({uid:String(item.uid||''),userId:String(item.userId||item.username||''),name:String(item.name||'Indo User')}))};}
+function openList(root,relation){styleOnce();closeModal();const modal=document.createElement('div');modal.className='indo-rel-modal';modal.innerHTML=`<section class="indo-rel-card"><header class="indo-rel-head"><strong>${relation==='followers'?'Followers':'Following'}</strong><button class="indo-rel-close" type="button" aria-label="Close">×</button></header><div class="indo-rel-list"><div class="indo-rel-empty">Loading...</div></div></section>`;document.body.appendChild(modal);modal.querySelector('.indo-rel-close')?.addEventListener('click',closeModal);modal.addEventListener('click',(event)=>{if(event.target===modal)closeModal();});const list=modal.querySelector('.indo-rel-list');
+  loadRelation(root,relation).then(({items})=>{if(!items.length){list.innerHTML='<div class="indo-rel-empty">No users yet.</div>';return;}list.innerHTML=items.map((item)=>{const id=String(item.userId||'').replace(/^@/,'');const name=String(item.name||'Indo User');const initial=(name.trim().charAt(0)||id.charAt(0)||'U').toUpperCase();return `<button class="indo-rel-row" type="button" data-rel-uid="${esc(item.uid)}" data-rel-user="${esc(id)}"><div class="indo-rel-avatar">${esc(initial)}</div><div><div class="indo-rel-name">${esc(name)}</div><div class="indo-rel-id">@${esc(id||'user')}</div></div></button>`;}).join('');list.querySelectorAll('[data-rel-uid]').forEach((button)=>button.addEventListener('click',async()=>{const uid=button.dataset.relUid||'';const userId=button.dataset.relUser||'';closeModal();const {state}=await import('../../state.js');state.profile={uid,ownerUid:uid,username:userId};state.screen='profile';if(window.__indoNavigate)await window.__indoNavigate('profile');}));}).catch((error)=>{list.innerHTML=`<div class="indo-rel-empty">${esc(error?.message||'Could not load list.')}</div>`;});}
+function install(root=document){if(globalThis[KEY])return;globalThis[KEY]=true;styleOnce();document.addEventListener('click',(event)=>{const element=event.target instanceof Element?event.target.closest('.profile-direct-stats'):null;if(!element||!root.contains(element))return;const target=event.target instanceof Element?event.target.closest(':scope > div'):null;if(!target)return;const children=Array.from(element.children);const index=children.indexOf(target);if(index===1)openList(root,'followers');else if(index===2)openList(root,'following');if(index===1||index===2){event.preventDefault();event.stopImmediatePropagation();}},true);}
+install();export{install};
