@@ -5,11 +5,12 @@ function esc(value = '') {
 }
 
 function installStyles() {
-  if (document.getElementById('indo-profile-direct-v5')) return;
+  if (document.getElementById('indo-profile-direct-v6')) return;
   const s = document.createElement('style');
-  s.id = 'indo-profile-direct-v5';
+  s.id = 'indo-profile-direct-v6';
   s.textContent = `
-    .profile-direct-page{width:100%;max-width:520px;min-height:calc(100vh - 64px);padding:20px 15px 96px;margin:0 auto;box-sizing:border-box}
+    .profile-direct-shell{width:100%;max-width:520px;min-height:100vh;margin:0 auto;background:#07070a;position:relative;padding-bottom:78px;overflow-x:hidden}
+    .profile-direct-page{width:100%;max-width:520px;min-height:calc(100vh - 64px);padding:20px 15px 20px;margin:0 auto;box-sizing:border-box}
     .profile-direct-head{width:100%;max-width:520px;height:64px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 18px;margin:0 auto;border-bottom:1px solid #18181e;background:rgba(7,7,10,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(16px)}
     .profile-direct-head button{width:40px;height:40px;border:0;background:none;color:#fff;font-size:30px;line-height:1;display:grid;place-items:center;padding:0;cursor:pointer}
     .profile-direct-head h2{font-size:17px;line-height:1;margin:0;font-weight:800;color:#fff}
@@ -21,7 +22,7 @@ function installStyles() {
     .profile-direct-follow{width:100%;height:38px;border:1px solid #303039;border-radius:7px;background:#17171d;color:#fff;font-weight:700;cursor:pointer}
     .profile-direct-follow.following{background:#2a2a31}
     .profile-direct-follow:disabled{opacity:.65}
-    .profile-direct-stats{display:flex;justify-content:space-between;flex:1;gap:14px;margin:0 0 20px;text-align:center}
+    .profile-direct-stats{display:flex;justify-content:space-between;gap:14px;margin:0 0 20px;text-align:center}
     .profile-direct-stats>div{display:flex;flex-direction:column;text-align:center;gap:4px;flex:1}
     .profile-direct-stats b{display:block;font-size:16px;line-height:1.1}.profile-direct-stats span{display:block;font-size:10px;color:#8e8e98;margin:0}
     .profile-direct-edit{width:100%;height:38px;border:1px solid #292931;border-radius:7px;background:#17171d;color:#fff;font-weight:700;margin:0 0 18px}
@@ -65,7 +66,9 @@ export async function renderProfile(app, profile = null) {
   const followers = Number(profile?.followersCount || 0);
   const following = Number(profile?.followingCount || 0);
 
-  app.innerHTML = `<div class="app-shell">
+  // The navigation is a direct sibling of the page shell, exactly like Home,
+  // so it is not affected by the profile content's scrolling container.
+  app.innerHTML = `<div class="profile-direct-shell">
     <header class="profile-direct-head"><button type="button" data-screen="home" aria-label="Back">‹</button><h2>${esc(username)}</h2><span>${own ? '⚙' : ''}</span></header>
     <main class="profile-direct-page">
       <section class="profile-direct-row">
@@ -79,8 +82,8 @@ export async function renderProfile(app, profile = null) {
       ${own ? '<button class="profile-direct-edit" type="button" data-screen="settings">Edit Profile</button>' : ''}
       <div class="profile-direct-grid" data-grid><div class="profile-direct-empty">Loading posts...</div></div>
     </main>
-    <nav class="bottom-nav"><button data-screen="home">⌂<span>Home</span></button><button data-screen="search">⌕<span>Search</span></button><button data-screen="reels">▶<span>Reels</span></button><button data-screen="create">＋<span>Create</span></button><button data-screen="profile" class="active">●<span>Profile</span></button></nav>
-  </div>`;
+  </div>
+  <nav class="bottom-nav" aria-label="Primary navigation"><button data-screen="home">⌂<span>Home</span></button><button data-screen="search">⌕<span>Search</span></button><button data-screen="reels">▶<span>Reels</span></button><button data-screen="create">＋<span>Create</span></button><button data-screen="profile" class="active">●<span>Profile</span></button></nav>`;
 
   const followButton = app.querySelector('[data-follow]');
   if (followButton && targetUid) {
