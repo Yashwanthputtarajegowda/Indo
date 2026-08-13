@@ -2,8 +2,9 @@ import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 import { installCloudinaryVideoCompatibility } from './features/feed/cloudinary-video-fix.js';
 import { hideUnusedTopAction } from './features/ui/hide-unused-top-action.js';
+import './features/ui/cleanup-topbar.js';
 
-const VERSION = '20260813-80';
+const VERSION = '20260813-81';
 
 installCloudinaryVideoCompatibility();
 hideUnusedTopAction();
@@ -13,7 +14,8 @@ const SCREEN_MODULES = [
   './screens/profile-direct.js','./screens/settings.js','./screens/search.js','./screens/notifications.js',
   './screens/activity.js','./screens/wallet.js','./screens/blocked-users.js','./features/stories/story-stack-enhancer.js',
   './features/stories/stories.js','./features/feed/home-feed.js','./features/feed/cloudinary-video-fix.js',
-  './features/feed/cloudinary-cleanup.js','./features/auth/firebase-client.js','./features/ui/hide-unused-top-action.js'
+  './features/feed/cloudinary-cleanup.js','./features/auth/firebase-client.js','./features/ui/hide-unused-top-action.js',
+  './features/ui/cleanup-topbar.js'
 ];
 
 let preloadPromise = null;
