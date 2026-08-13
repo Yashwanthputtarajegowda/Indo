@@ -1,3 +1,5 @@
+import './features/auth/auth-controller.js';
+
 const app = document.getElementById('root');
 
 const ROUTER_VERSION = '20260813-114';
