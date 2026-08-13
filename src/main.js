@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-53';
+const ROUTER_VERSION = '20260813-54';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
@@ -19,10 +19,10 @@ function enhanceStoryCreateLayout() {
   publish.classList.add('story-publish-on-preview');
   publish.style.cssText = [
     'position:absolute',
-    'left:20%',
-    'right:0',
+    'left:0',
+    'right:auto',
     'bottom:12px',
-    'width:80%',
+    'width:20%',
     'max-width:none',
     'height:44px',
     'z-index:22',
