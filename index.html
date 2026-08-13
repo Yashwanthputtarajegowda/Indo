@@ -7,9 +7,9 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-56" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-56" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-56" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-57" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-57" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-57" />
   <style>
     .story-file-name{display:none!important}
     #story-preview .story-done-positioned{position:absolute!important;left:auto!important;right:0!important;bottom:12px!important;width:20%!important;max-width:none!important;height:46px!important;z-index:21!important;margin:0!important}
@@ -25,7 +25,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-56"></script>
+  <script src="./config/runtime-config.js?v=20260813-57"></script>
   <script>
     window.__indoFixStoryEditor = function fixStoryEditorLayout() {
       const preview = document.getElementById('story-preview');
@@ -55,6 +55,45 @@
       }, 100);
     })();
 
+    // Story editor interaction fix:
+    // When the + panel is open, clicking anywhere on the video closes the panel only.
+    // When it is closed, clicking the video behaves normally and opens title input.
+    (function bindStoryVideoInteractionFix() {
+      let swallowNextStoryVideoClick = false;
+      document.addEventListener('pointerdown', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const preview = target?.closest('#story-preview');
+        if (!preview) return;
+        const panel = preview.querySelector('#story-add-panel');
+        const video = preview.querySelector('#story-preview-video');
+        if (!panel || !video) return;
+        if (!panel.hidden && target === video) {
+          panel.hidden = true;
+          preview.querySelector('#story-emoji-picker')?.setAttribute('hidden', '');
+          video.muted = false;
+          video.volume = 1;
+          video.play().catch(() => {});
+          swallowNextStoryVideoClick = true;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
+        if (target === video) {
+          video.muted = false;
+          video.volume = 1;
+          video.play().catch(() => {});
+        }
+      }, true);
+      document.addEventListener('click', (event) => {
+        if (!swallowNextStoryVideoClick) return;
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target?.closest('#story-preview-video')) return;
+        swallowNextStoryVideoClick = false;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+    })();
+
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
       const source = event.filename ? ` ${event.filename}${event.lineno ? `:${event.lineno}` : ''}${event.colno ? `:${event.colno}` : ''}` : '';
@@ -76,7 +115,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-56'),
+          import('./src/features/auth/firebase-client.js?v=20260813-57'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -105,6 +144,6 @@
       }
     }, true);
   </script>
-  <script type="module" src="./src/main.js?v=20260813-56"></script>
+  <script type="module" src="./src/main.js?v=20260813-57"></script>
 </body>
 </html>
