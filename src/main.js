@@ -1,10 +1,10 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-50';
+const ROUTER_VERSION = '20260813-51';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
-  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
+  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
 }
 
 async function renderCurrentScreen() {
