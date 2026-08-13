@@ -8,12 +8,6 @@ const appIcons = {
   bell: '♧'
 };
 
-function escapeHtml(value = '') {
-  return String(value).replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-  }[char]));
-}
-
 function renderNav() {
   return `<nav class="bottom-nav">
     <button data-screen="home" class="active">${appIcons.home}<span>Home</span></button>
@@ -51,11 +45,17 @@ function bindNavigation(app) {
   });
 }
 
+function storyItem(story) {
+  const username = story.username || story.userName || story.handle || story.displayName || 'User';
+  const initial = username.replace(/^@/, '').charAt(0).toUpperCase() || 'U';
+  return `<button class="story" type="button" data-story-id="${story.id || ''}"><div class="avatar story-avatar">${initial}</div><span>@${username.replace(/^@/, '')}</span></button>`;
+}
+
 async function loadFeed(app) {
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-11');
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-12');
     const videos = await loadHomeVideos();
     if (!videos.length) {
       status.textContent = 'No videos yet. Upload your first video.';
@@ -71,13 +71,12 @@ async function loadFeed(app) {
 }
 
 async function loadStoriesSafely(app) {
+  const row = app.querySelector('[data-stories]');
   try {
-    const row = app.querySelector('[data-stories]');
-    const { loadStories, renderStoriesRow, bindStoryButtons } = await import('../features/stories/stories.js?v=20260813-11');
+    const { loadStories } = await import('../features/stories/stories.js?v=20260813-12');
     const stories = await loadStories();
     if (!stories.length) return;
-    row.innerHTML = '<div class="story add-story"><div class="avatar gradient">+</div><span>Your story</span></div>' + renderStoriesRow(stories);
-    bindStoryButtons(row);
+    row.innerHTML = `<button class="story add-story" type="button"><div class="avatar story-avatar gradient">+</div><span>Your story</span></button>${stories.map(storyItem).join('')}`;
   } catch (error) {
     console.warn('Stories unavailable:', error);
   }
@@ -87,14 +86,13 @@ async function loadNotificationsSafely(app) {
   try {
     const button = app.querySelector('[data-screen="notifications"]');
     if (!button) return;
-    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-11');
+    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-12');
     const items = await loadNotifications();
     const unread = items.filter((item) => !item.read).length;
     if (!unread) return;
     const badge = document.createElement('span');
     badge.className = 'notification-badge';
-    badge.style.cssText = 'position:absolute;top:-5px;right:-8px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#ff3b81;color:#fff;font-size:9px;font-weight:800;line-height:17px;text-align:center;';
-    badge.textContent = unread > 99 ? '99+' : String(unread);
+    badge.textContent = unread > 99 ? '99+' : unread;
     button.style.position = 'relative';
     button.appendChild(badge);
   } catch (error) {
@@ -111,7 +109,7 @@ export function renderHome(app) {
         <button class="notification-button" data-screen="notifications" aria-label="Notifications">${appIcons.bell}</button>
       </div>
     </header>
-    <div class="stories" data-stories><div class="story add-story"><div class="avatar gradient">+</div><span>Your story</span></div></div>
+    <div class="stories" data-stories><button class="story add-story" type="button"><div class="avatar story-avatar gradient">+</div><span>Your story</span></button></div>
     <main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>
     ${renderNav()}
   </div>`;
