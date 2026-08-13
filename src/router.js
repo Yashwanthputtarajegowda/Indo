@@ -4,8 +4,9 @@ import './features/feed/cloudinary-playback-hardener.js';
 import { installCloudinaryVideoCompatibility } from './features/feed/cloudinary-video-fix.js';
 import './features/ui/cleanup-topbar.js';
 import './features/ui/profile-video-native-controls.js';
+import { enhanceHomePostFollowButtons } from './features/ui/home-post-follow.js';
 
-const VERSION = '20260813-99';
+const VERSION = '20260813-100';
 
 installCloudinaryVideoCompatibility();
 
@@ -55,6 +56,7 @@ export async function render(app) {
   if (state.screen === 'auth-signup') return renderSignup(app);
   if (state.screen === 'home') {
     await renderLazy(app, './screens/home-v2.js', 'renderHome');
+    enhanceHomePostFollowButtons(app);
     importOne('./features/stories/story-stack-enhancer.js').then((enhancer) => enhancer?.enhanceStoryRow?.(app)).catch((error) => console.warn('Story enhancer preload failed:', error));
     return;
   }
