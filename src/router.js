@@ -5,12 +5,12 @@ import { installCloudinaryVideoCompatibility } from './features/feed/cloudinary-
 import './features/ui/cleanup-topbar.js';
 import './features/ui/profile-video-native-controls.js';
 import './features/ui/feed-follow-button.js';
-import { install as installProfileFollowersList } from './features/ui/profile-followers-list.js';
+import { install as installProfileRelations } from './features/ui/profile-relations-v6.js';
 
-const VERSION = '20260813-107';
+const VERSION = '20260813-108';
 
 installCloudinaryVideoCompatibility();
-installProfileFollowersList();
+installProfileRelations();
 
 let preloadStarted = false;
 const PRELOAD_BATCH = ['./screens/reels.js','./features/stories/story-stack-enhancer.js','./features/feed/home-feed.js','./screens/search.js'];
