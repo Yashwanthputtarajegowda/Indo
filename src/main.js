@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-23';
+const ROUTER_VERSION = '20260813-24';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
@@ -25,12 +25,55 @@ async function openHomeAfterLogin() {
   await renderCurrentScreen();
 }
 
+async function openCreatorProfile(username) {
+  const cleanUsername = String(username || '').replace(/^@/, '').trim();
+  if (!cleanUsername) return;
+
+  const { state } = await import('./state.js');
+  const apiBase = window.INDO_API_BASE || '';
+  const headers = {};
+  try {
+    const { auth } = await import('./features/auth/firebase-client.js');
+    if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
+  } catch {}
+
+  try {
+    const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(cleanUsername)}`, { headers });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.profile) throw new Error(data.message || 'Profile could not be opened.');
+    state.profile = data.profile;
+    state.screen = 'profile';
+    await renderCurrentScreen();
+  } catch (error) {
+    console.error('Creator profile failed:', error);
+    const toast = document.createElement('div');
+    toast.textContent = error?.message || 'Profile could not be opened.';
+    toast.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:9999;padding:10px 14px;border-radius:12px;background:#18181f;color:#fff;font-size:13px;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,.45);';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 1800);
+  }
+}
+
 function bindNavigation() {
   if (window.__indoNavigationBound) return;
   window.__indoNavigationBound = true;
 
   document.addEventListener('click', async (event) => {
-    const target = event.target instanceof Element ? event.target.closest('[data-screen]') : null;
+    const element = event.target instanceof Element ? event.target : null;
+    const profileTarget = element?.closest('[data-profile-username]');
+    if (profileTarget && app.contains(profileTarget)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try {
+        await openCreatorProfile(profileTarget.dataset.profileUsername || '');
+      } catch (error) {
+        console.error('Creator profile navigation failed:', error);
+        showStartupError(error);
+      }
+      return;
+    }
+
+    const target = element?.closest('[data-screen]');
     if (!target || !app.contains(target)) return;
 
     const screen = target.dataset.screen;
