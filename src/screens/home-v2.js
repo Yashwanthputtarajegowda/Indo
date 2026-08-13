@@ -133,24 +133,29 @@ function openStoryViewer(story, isOwn = false) {
   document.body.appendChild(overlay);
 }
 
-async function openStoryCreate() {
-  const navigate = window.__indoNavigate;
-  if (typeof navigate === 'function') {
-    await navigate('story-create');
-    return;
-  }
-  const { state } = await import('../state.js');
-  const { render } = await import('../router.js?v=20260813-36');
-  state.screen = 'story-create';
-  await render(document.getElementById('root'));
+async function openStoryCreateFromPicker(event) {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'video/*';
+  input.style.display = 'none';
+  document.body.appendChild(input);
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    input.remove();
+    if (!file || !file.type.startsWith('video/')) return;
+    window.__indoStoryDraftFile = file;
+    try { await window.__indoNavigate?.('story-create'); }
+    catch (error) { console.error('Story create navigation failed:', error); }
+  }, { once: true });
+  input.click();
 }
 
 function bindStoryInteractions(app) {
   app.querySelectorAll('[data-story-add]').forEach((button) => {
     button.addEventListener('click', async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      try { await openStoryCreate(); } catch (error) { console.error('Story create navigation failed:', error); }
+      try { await openStoryCreateFromPicker(event); } catch (error) { console.error('Story create navigation failed:', error); }
     });
   });
   app.querySelectorAll('[data-story-open]').forEach((item) => {
