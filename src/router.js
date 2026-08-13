@@ -4,11 +4,11 @@ import './features/feed/cloudinary-playback-hardener.js';
 import { installCloudinaryVideoCompatibility } from './features/feed/cloudinary-video-fix.js';
 import './features/ui/cleanup-topbar.js';
 import './features/ui/profile-video-native-controls.js';
-import './features/feed/feed-follow-button.js';
-import './features/ui/profile-relations-v6.js?v=20260813-113';
-import './features/ui/profile-follow-auth-hardener.js?v=20260813-113';
+import './features/ui/feed-follow-button.js';
+import './features/ui/profile-relations-v6.js?v=20260813-114';
+import './features/ui/profile-follow-auth-hardener.js?v=20260813-114';
 
-const VERSION = '20260813-113';
+const VERSION = '20260813-114';
 
 installCloudinaryVideoCompatibility();
 
