@@ -8,10 +8,6 @@ const appIcons = {
   bell: '♧'
 };
 
-const storyButtonStyle = 'display:flex;align-items:center;gap:10px;width:max-content;min-width:120px;height:52px;padding:0 6px;text-align:left;flex-direction:row;';
-const storyAvatarStyle = 'width:40px;height:40px;min-width:40px;margin:0;display:grid;place-items:center;border-radius:50%;';
-const storyNameStyle = 'display:block;margin:0;white-space:nowrap;font-size:12px;font-weight:600;color:#d8d8df;';
-
 function renderNav() {
   return `<nav class="bottom-nav">
     <button data-screen="home" class="active">${appIcons.home}<span>Home</span></button>
@@ -51,8 +47,12 @@ function bindNavigation(app) {
 
 function storyItem(story) {
   const username = story.username || story.userName || story.handle || story.displayName || 'User';
-  const initial = username.replace(/^@/, '').charAt(0).toUpperCase() || 'U';
-  return `<button class="story" style="${storyButtonStyle}" type="button" data-story-id="${story.id || ''}"><div class="avatar story-avatar" style="${storyAvatarStyle}">${initial}</div><span style="${storyNameStyle}">@${username.replace(/^@/, '')}</span></button>`;
+  const clean = username.replace(/^@/, '');
+  const initial = clean.charAt(0).toUpperCase() || 'U';
+  return `<button class="story" type="button" data-story-id="${story.id || ''}" style="display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:9px!important;height:52px!important;min-width:max-content!important;width:auto!important;padding:0 8px!important;margin:0!important;text-align:left!important;white-space:nowrap!important;">
+    <div class="avatar story-avatar" style="width:40px!important;height:40px!important;min-width:40px!important;max-width:40px!important;margin:0!important;flex:0 0 40px!important;display:grid!important;place-items:center!important;border-radius:50%!important;">${initial}</div>
+    <span style="display:block!important;margin:0!important;white-space:nowrap!important;font-size:12px!important;font-weight:600!important;line-height:1!important;">@${clean}</span>
+  </button>`;
 }
 
 async function loadFeed(app) {
@@ -80,7 +80,7 @@ async function loadStoriesSafely(app) {
     const { loadStories } = await import('../features/stories/stories.js?v=20260813-13');
     const stories = await loadStories();
     if (!stories.length) return;
-    row.innerHTML = `<button class="story add-story" style="${storyButtonStyle}" type="button"><div class="avatar story-avatar gradient" style="${storyAvatarStyle}">+</div><span style="${storyNameStyle}">Your story</span></button>${stories.map(storyItem).join('')}`;
+    row.innerHTML = `<button class="story add-story" type="button" style="display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:9px!important;height:52px!important;min-width:max-content!important;width:auto!important;padding:0 8px!important;margin:0!important;text-align:left!important;white-space:nowrap!important;"><div class="avatar story-avatar gradient" style="width:40px!important;height:40px!important;min-width:40px!important;max-width:40px!important;margin:0!important;flex:0 0 40px!important;display:grid!important;place-items:center!important;border-radius:50%!important;">+</div><span style="display:block!important;margin:0!important;white-space:nowrap!important;font-size:12px!important;font-weight:600!important;line-height:1!important;">Your story</span></button>${stories.map(storyItem).join('')}`;
   } catch (error) {
     console.warn('Stories unavailable:', error);
   }
@@ -113,7 +113,9 @@ export function renderHome(app) {
         <button class="notification-button" data-screen="notifications" aria-label="Notifications">${appIcons.bell}</button>
       </div>
     </header>
-    <div class="stories" data-stories><button class="story add-story" style="${storyButtonStyle}" type="button"><div class="avatar story-avatar gradient" style="${storyAvatarStyle}">+</div><span style="${storyNameStyle}">Your story</span></button></div>
+    <div class="stories" data-stories style="display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;padding:8px 6px!important;overflow-x:auto!important;overflow-y:hidden!important;">
+      <button class="story add-story" type="button" style="display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:9px!important;height:52px!important;min-width:max-content!important;width:auto!important;padding:0 8px!important;margin:0!important;text-align:left!important;white-space:nowrap!important;"><div class="avatar story-avatar gradient" style="width:40px!important;height:40px!important;min-width:40px!important;max-width:40px!important;margin:0!important;flex:0 0 40px!important;display:grid!important;place-items:center!important;border-radius:50%!important;">+</div><span style="display:block!important;margin:0!important;white-space:nowrap!important;font-size:12px!important;font-weight:600!important;line-height:1!important;">Your story</span></button>
+    </div>
     <main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>
     ${renderNav()}
   </div>`;
