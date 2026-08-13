@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 
-const VERSION = '20260813-17';
+const VERSION = '20260813-19';
 
 function renderRouteError(app, error) {
   const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\"']/g, '');
@@ -13,7 +13,7 @@ async function renderLazy(app, modulePath, exportName, args = []) {
     const module = await import(`${modulePath}?v=${VERSION}`);
     const renderer = module[exportName];
     if (typeof renderer !== 'function') throw new Error(`Missing screen renderer: ${exportName}`);
-    renderer(app, ...args);
+    await renderer(app, ...args);
   } catch (error) {
     console.error(`Failed to load ${modulePath}:`, error);
     renderRouteError(app, error);
@@ -23,10 +23,7 @@ async function renderLazy(app, modulePath, exportName, args = []) {
 export async function render(app) {
   if (state.screen === 'auth-login') return renderLogin(app);
   if (state.screen === 'auth-signup') return renderSignup(app);
-
-  if (state.screen === 'home') {
-    return renderLazy(app, './screens/home.js', 'renderHome');
-  }
+  if (state.screen === 'home') return renderLazy(app, './screens/home-v2.js', 'renderHome');
   if (state.screen === 'reels') return renderLazy(app, './screens/reels.js', 'renderReels');
   if (state.screen === 'create') return renderLazy(app, './screens/create.js', 'renderCreate');
   if (state.screen === 'profile') return renderLazy(app, './screens/profile.js', 'renderProfile', [state.profile]);
@@ -36,6 +33,5 @@ export async function render(app) {
   if (state.screen === 'activity') return renderLazy(app, './screens/activity.js', 'renderActivity');
   if (state.screen === 'wallet') return renderLazy(app, './screens/wallet.js', 'renderWallet');
   if (state.screen === 'blocked-users') return renderLazy(app, './screens/blocked-users.js', 'renderBlockedUsers');
-
-  return renderLazy(app, './screens/home.js', 'renderHome');
+  return renderLazy(app, './screens/home-v2.js', 'renderHome');
 }
