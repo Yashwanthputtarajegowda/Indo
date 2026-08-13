@@ -30,9 +30,9 @@ function compressSticker(file) {
 }
 
 function ensureStyles() {
-  if (document.getElementById('indo-story-editor-v1')) return;
+  if (document.getElementById('indo-story-editor-v2')) return;
   const style = document.createElement('style');
-  style.id = 'indo-story-editor-v1';
+  style.id = 'indo-story-editor-v2';
   style.textContent = `
     .story-editor{padding:12px 12px 88px!important}
     .story-preview-wrap{position:relative;width:100%;max-width:420px;margin:0 auto 14px;display:flex;justify-content:center}
@@ -68,7 +68,7 @@ export function renderStoryCreate(app) {
       <main class="story-editor">
         <input id="story-create-file" type="file" accept="video/*" hidden>
         <input id="story-sticker-file" type="file" accept="image/*" hidden>
-        <div class="story-preview-wrap"><div id="story-preview" class="story-preview"><video id="story-preview-video" playsinline muted controls></video><div id="story-title-overlay" class="story-title-overlay" hidden></div><img id="story-sticker-overlay" class="story-sticker-overlay" alt="" hidden></div></div>
+        <div class="story-preview-wrap"><div id="story-preview" class="story-preview"><video id="story-preview-video" playsinline muted autoplay></video><div id="story-title-overlay" class="story-title-overlay" hidden></div><img id="story-sticker-overlay" class="story-sticker-overlay" alt="" hidden></div></div>
         <div class="story-tools">
           <div id="story-create-name" class="story-file-name">${draftFile ? escapeHtml(draftFile.name) : 'Choose a video to start.'}</div>
           <label>Story title<input id="story-title" maxlength="80" placeholder="Add a title"></label>
@@ -122,6 +122,7 @@ export function renderStoryCreate(app) {
     objectUrl = URL.createObjectURL(file);
     video.src = objectUrl;
     video.load();
+    video.play().catch(() => {});
     publish.disabled = false;
     message.textContent = '';
   };
