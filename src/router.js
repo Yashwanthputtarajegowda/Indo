@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 import { installCloudinaryVideoCompatibility } from './features/feed/cloudinary-video-fix.js';
 
-const VERSION = '20260813-77';
+const VERSION = '20260813-78';
 
 installCloudinaryVideoCompatibility();
 
@@ -22,6 +22,7 @@ const SCREEN_MODULES = [
   './features/stories/stories.js',
   './features/feed/home-feed.js',
   './features/feed/cloudinary-video-fix.js',
+  './features/feed/cloudinary-cleanup.js',
   './features/auth/firebase-client.js'
 ];
 
