@@ -3,6 +3,37 @@ import { submitSignup } from './signup-form.js';
 
 function getRoot() { return document.getElementById('root'); }
 
+function installBottomNavigation() {
+  if (globalThis.__indoBottomNavV3) return;
+  globalThis.__indoBottomNavV3 = true;
+
+  const patchNav = () => {
+    document.querySelectorAll('.bottom-nav').forEach((nav) => {
+      if (nav.dataset.bottomNavV3 === '1') return;
+      nav.dataset.bottomNavV3 = '1';
+      const active = nav.querySelector('button.active')?.dataset.screen || 'home';
+      nav.innerHTML = `
+        <button type="button" data-screen="home" class="${active === 'home' ? 'active' : ''}">⌂<span>Home</span></button>
+        <button type="button" data-screen="search" class="${active === 'search' ? 'active' : ''}">⌕<span>Search</span></button>
+        <button type="button" data-screen="reels" class="${active === 'reels' ? 'active' : ''}">▶<span>Reels</span></button>
+        <button type="button" data-video-section aria-label="Video">▣<span>Video</span></button>
+        <button type="button" data-screen="notifications" class="${active === 'notifications' ? 'active' : ''}">♧<span>Notification</span></button>
+        <button type="button" data-screen="profile" class="${active === 'profile' ? 'active' : ''}">●<span>Profile</span></button>
+      `;
+    });
+  };
+
+  patchNav();
+  const observer = new MutationObserver(patchNav);
+  observer.observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('click', (event) => {
+    const videoButton = event.target instanceof Element ? event.target.closest('[data-video-section]') : null;
+    if (!videoButton) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+}
+
 async function goTo(screen) {
   if (typeof window.__indoNavigate === 'function') {
     await window.__indoNavigate(screen);
@@ -67,6 +98,7 @@ function bindAuthSwitches() {
 const observer = new MutationObserver(() => bindAuthSwitches());
 observer.observe(document.body, { childList: true, subtree: true });
 
+installBottomNavigation();
 bindAuthSwitches();
 
-export { bindAuthSwitches, bindSignupForm };
+export { bindAuthSwitches, bindSignupForm, installBottomNavigation };
