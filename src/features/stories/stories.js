@@ -2,6 +2,7 @@ import { auth } from '../auth/firebase-client.js';
 
 const LAST_STORY_KEY = 'indo:last-story';
 const STORY_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+let activeStoriesRequest = null;
 
 function normalizeStory(story, currentUid = '') {
   if (!story || typeof story !== 'object') return null;
@@ -29,24 +30,32 @@ function readLocalStory(currentUid) {
 }
 
 export async function loadStories() {
-  const user = auth.currentUser;
-  if (!user) return [];
-  const token = await user.getIdToken();
-  const apiBase = window.INDO_API_BASE || '';
-  const response = await fetch(`${apiBase}/api/stories`, { headers: { Authorization: `Bearer ${token}` } });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Could not load stories.');
+  if (activeStoriesRequest) return activeStoriesRequest;
+  activeStoriesRequest = (async () => {
+    const user = auth.currentUser;
+    if (!user) return [];
+    const token = await user.getIdToken();
+    const apiBase = window.INDO_API_BASE || '';
+    const response = await fetch(`${apiBase}/api/stories`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not load stories.');
 
-  const stories = Array.isArray(data.stories)
-    ? data.stories.map((story) => normalizeStory(story, user.uid)).filter(Boolean)
-    : [];
+    const stories = Array.isArray(data.stories)
+      ? data.stories.map((story) => normalizeStory(story, user.uid)).filter(Boolean)
+      : [];
 
-  const localStory = readLocalStory(user.uid);
-  if (localStory && !stories.some((story) => String(story.ownerUid) === user.uid && String(story.id || '') === String(localStory.id || ''))) {
-    stories.unshift(localStory);
+    const localStory = readLocalStory(user.uid);
+    if (localStory && !stories.some((story) => String(story.ownerUid) === user.uid && String(story.id || '') === String(localStory.id || ''))) {
+      stories.unshift(localStory);
+    }
+
+    return stories;
+  })();
+  try {
+    return await activeStoriesRequest;
+  } finally {
+    activeStoriesRequest = null;
   }
-
-  return stories;
 }
 
 export function renderStoriesRow(stories) {
