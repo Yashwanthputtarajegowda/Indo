@@ -29,8 +29,12 @@ async function shareStoryLink(story) {
     await navigator.share({ title, text: 'Watch this story on Indo', url });
     return;
   }
-  await navigator.clipboard?.writeText(url);
-  window.alert(`Story link copied:\n${url}`);
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(url);
+    window.alert(`Story link copied:\n${url}`);
+    return;
+  }
+  window.prompt('Copy this story link:', url);
 }
 
 function showSharedStory(story) {
@@ -74,7 +78,7 @@ function addStoryShareButton() {
   button.type = 'button';
   button.textContent = '↗';
   button.setAttribute('aria-label', 'Share story');
-  button.style.cssText = 'position:absolute;right:56px;bottom:12px;z-index:23;width:42px;height:44px;border:0;border-radius:10px;background:#20202a;color:#fff;font-size:20px;font-weight:900;cursor:pointer;';
+  button.style.cssText = 'position:absolute;right:calc(20% + 8px);bottom:12px;z-index:23;width:38px;height:44px;border:0;border-radius:10px;background:#20202a;color:#fff;font-size:20px;font-weight:900;cursor:pointer;';
   button.addEventListener('click', async (event) => {
     event.preventDefault();
     event.stopPropagation();
