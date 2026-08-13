@@ -7,16 +7,16 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-70" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-70" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-70" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-71" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-71" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-71" />
   <style>
     .story-file-name{display:none!important}
-    #story-preview{overflow:visible!important}
-    #story-preview .story-done-positioned{position:absolute!important;left:auto!important;right:0!important;bottom:0!important;width:20%!important;max-width:none!important;height:46px!important;z-index:100!important;margin:0!important;border:0!important;border-radius:10px!important;background:#7b3cff!important;color:#fff!important;font-weight:800!important;cursor:pointer!important;display:block!important;visibility:visible!important;opacity:1!important}
-    #story-preview .story-add-positioned{position:absolute!important;right:14px!important;bottom:62px!important;z-index:101!important;display:grid!important;visibility:visible!important;opacity:1!important}
+    #story-preview{overflow:hidden!important}
+    #story-preview #story-publish-button{position:absolute!important;left:auto!important;right:0!important;top:auto!important;bottom:0!important;transform:none!important;width:20%!important;height:44px!important;max-width:none!important;min-height:44px!important;margin:0!important;padding:0!important;border:0!important;border-radius:10px!important;background:#7b3cff!important;color:#fff!important;font-weight:800!important;z-index:150!important;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+    #story-preview #story-add-button{position:absolute!important;left:auto!important;right:14px!important;top:auto!important;bottom:62px!important;transform:none!important;z-index:101!important}
     #story-preview video,#story-preview .story-element{transform-origin:center center!important;touch-action:none!important}
-    #story-preview #indo-story-share-button{display:none!important}
+    #story-preview #indo-story-share-button,#story-preview #indo-story-done-hit{display:none!important}
   </style>
   <title>Indo</title>
 </head>
@@ -28,95 +28,25 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-70"></script>
+  <script src="./config/runtime-config.js?v=71"></script>
   <script>
     window.__indoFixStoryEditor = function fixStoryEditorLayout() {
-      const preview = document.getElementById('story-preview');
-      const publish = document.getElementById('story-publish-button');
-      const addButton = document.getElementById('story-add-button');
-      if (!preview || !publish || !addButton) return false;
-      preview.style.overflow = 'visible';
-      if (publish.parentElement !== preview) preview.appendChild(publish);
-      publish.textContent = 'Done';
-      publish.classList.add('story-done-positioned');
-      publish.style.setProperty('position','absolute','important');
-      publish.style.setProperty('left','auto','important');
-      publish.style.setProperty('right','0','important');
-      publish.style.setProperty('bottom','0','important');
-      publish.style.setProperty('width','20%','important');
-      publish.style.setProperty('height','46px','important');
-      publish.style.setProperty('z-index','100','important');
-      publish.style.setProperty('display','block','important');
-      publish.style.setProperty('visibility','visible','important');
-      publish.style.setProperty('opacity','1','important');
-      addButton.classList.add('story-add-positioned');
-      addButton.style.setProperty('right','14px','important');
-      addButton.style.setProperty('bottom','62px','important');
-      addButton.style.setProperty('z-index','101','important');
-      const panel = document.getElementById('story-add-panel');
-      if (panel) panel.style.bottom = '118px';
-      const oldSelect = document.getElementById('story-create-select');
-      if (oldSelect) oldSelect.style.display = 'none';
-      document.getElementById('indo-story-share-button')?.remove();
-      bindStoryPinchGestures(preview);
-      bindStoryPreviewAudio(preview);
-      return true;
+      const preview=document.getElementById('story-preview'),publish=document.getElementById('story-publish-button'),addButton=document.getElementById('story-add-button');
+      if(!preview||!publish||!addButton)return false;
+      preview.style.setProperty('position','relative','important');
+      if(publish.parentElement!==preview)preview.appendChild(publish);
+      publish.textContent='Done';
+      publish.style.setProperty('position','absolute','important');publish.style.setProperty('left','auto','important');publish.style.setProperty('right','0','important');publish.style.setProperty('top','auto','important');publish.style.setProperty('bottom','0','important');publish.style.setProperty('transform','none','important');publish.style.setProperty('width','20%','important');publish.style.setProperty('height','44px','important');publish.style.setProperty('max-width','none','important');publish.style.setProperty('margin','0','important');publish.style.setProperty('z-index','150','important');publish.style.setProperty('display','block','important');publish.style.setProperty('visibility','visible','important');publish.style.setProperty('opacity','1','important');
+      addButton.style.setProperty('position','absolute','important');addButton.style.setProperty('left','auto','important');addButton.style.setProperty('right','14px','important');addButton.style.setProperty('top','auto','important');addButton.style.setProperty('bottom','62px','important');addButton.style.setProperty('transform','none','important');addButton.style.setProperty('z-index','101','important');
+      const panel=document.getElementById('story-add-panel');if(panel){panel.style.setProperty('right','14px','important');panel.style.setProperty('left','auto','important');panel.style.setProperty('top','auto','important');panel.style.setProperty('bottom','118px','important');}
+      document.getElementById('story-create-select')?.style.setProperty('display','none','important');document.getElementById('indo-story-done-hit')?.remove();document.getElementById('indo-story-share-button')?.remove();
+      bindStoryPinchGestures(preview);bindStoryPreviewAudio(preview);return true;
     };
-
-    function bindStoryPreviewAudio(preview) {
-      if (!preview || preview.dataset.audioBound === '1') return;
-      const video = preview.querySelector('#story-preview-video');
-      if (!video) return;
-      preview.dataset.audioBound = '1';
-      const activateAudio = () => { video.muted = false; video.defaultMuted = false; video.volume = 1; video.play().catch(() => {}); };
-      preview.addEventListener('pointerdown', (event) => {
-        const target = event.target instanceof Element ? event.target : null;
-        if (!target) return;
-        if (target.closest('#indo-story-done-hit,#story-add-button,#story-add-panel,#story-font-picker,#story-publish-button,.story-photo-element,.story-emoji-element,.story-title-element')) return;
-        activateAudio();
-      }, true);
-      preview.addEventListener('click', (event) => {
-        const target = event.target instanceof Element ? event.target : null;
-        if (target?.closest('#indo-story-done-hit,#story-publish-button')) return;
-        if (target?.closest('#story-add-button,#story-add-panel,#story-font-picker,.story-photo-element,.story-emoji-element,.story-title-element')) return;
-        activateAudio();
-      }, true);
-    }
-
-    function bindStoryPinchGestures(preview) {
-      if (!preview || preview.dataset.pinchBound === '1') return;
-      preview.dataset.pinchBound = '1';
-      const pointers = new Map(); const states = new WeakMap(); let gesture = null; let suppressClick = false;
-      const getTarget = (event) => { const element = event.target instanceof Element ? event.target : null; if (!element) return null; if (element.matches('#story-preview-video')) return element; return element.closest('.story-photo-element, .story-emoji-element, .story-title-element'); };
-      const getState = (target) => { if (!states.has(target)) states.set(target, { scale: 1, rotation: 0 }); return states.get(target); };
-      const applyState = (target, state) => { if (target.matches('#story-preview-video')) target.style.transform = `scale(${state.scale}) rotate(${state.rotation}deg)`; else target.style.transform = `translate(-50%,-50%) scale(${state.scale}) rotate(${state.rotation}deg)`; target.dataset.gestureScale = String(state.scale); target.dataset.gestureRotation = String(state.rotation); };
-      const distance = (a,b) => Math.hypot(b.x-a.x,b.y-a.y); const angle = (a,b) => Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
-      preview.addEventListener('pointerdown',(event)=>{ const target=getTarget(event); pointers.set(event.pointerId,{x:event.clientX,y:event.clientY,target}); if(pointers.size!==2)return; const entries=[...pointers.values()]; const first=entries[0],second=entries[1],gestureTarget=first.target||second.target; if(!gestureTarget)return; const state=getState(gestureTarget); gesture={target:gestureTarget,startDistance:Math.max(1,distance(first,second)),startAngle:angle(first,second),startScale:state.scale,startRotation:state.rotation}; suppressClick=true; event.preventDefault(); event.stopImmediatePropagation(); },true);
-      preview.addEventListener('pointermove',(event)=>{ if(!pointers.has(event.pointerId))return; pointers.set(event.pointerId,{...pointers.get(event.pointerId),x:event.clientX,y:event.clientY}); if(!gesture||pointers.size<2)return; const entries=[...pointers.values()],first=entries[0],second=entries[1],state=getState(gesture.target); state.scale=Math.max(.5,Math.min(4,gesture.startScale*(distance(first,second)/gesture.startDistance))); state.rotation=gesture.startRotation+(angle(first,second)-gesture.startAngle); applyState(gesture.target,state); event.preventDefault(); event.stopImmediatePropagation(); },true);
-      const endPointer=(event)=>{ pointers.delete(event.pointerId); if(gesture&&pointers.size<2)gesture=null; if(pointers.size===0&&suppressClick)suppressClick=true; };
-      preview.addEventListener('pointerup',endPointer,true); preview.addEventListener('pointercancel',endPointer,true);
-      preview.addEventListener('click',(event)=>{ if(!suppressClick)return; suppressClick=false; event.preventDefault(); event.stopImmediatePropagation(); },true);
-    }
-
-    (function startStoryEditorFixPoll(){ let attempts=0; const timer=setInterval(()=>{ attempts+=1; window.__indoFixStoryEditor?.(); if(attempts>=100)clearInterval(timer); },100); })();
-
-    (function bindStoryVideoInteractionFix(){
-      let swallowNextStoryVideoClick=false;
-      const isStoryAction=(target)=>target instanceof Element && !!target.closest('#indo-story-done-hit,#story-publish-button,#indo-story-share-button');
-      document.addEventListener('pointerdown',(event)=>{
-        const target=event.target instanceof Element ? event.target : null; if(isStoryAction(target))return;
-        const preview=target?.closest('#story-preview'); if(!preview)return;
-        const panel=preview.querySelector('#story-add-panel'),video=preview.querySelector('#story-preview-video'); if(!panel||!video)return;
-        if(!panel.hidden&&target===video){ panel.hidden=true; preview.querySelector('#story-emoji-picker')?.setAttribute('hidden',''); video.muted=false; video.defaultMuted=false; video.volume=1; video.play().catch(()=>{}); swallowNextStoryVideoClick=true; event.preventDefault(); event.stopImmediatePropagation(); return; }
-        if(target===video){ video.muted=false; video.defaultMuted=false; video.volume=1; video.play().catch(()=>{}); }
-      },true);
-      document.addEventListener('click',(event)=>{ if(!swallowNextStoryVideoClick)return; const target=event.target instanceof Element ? event.target : null; if(!target?.closest('#story-preview-video'))return; swallowNextStoryVideoClick=false; event.preventDefault(); event.stopImmediatePropagation(); },true);
-    })();
-
-    window.addEventListener('error',(event)=>{ const message=String(event.error?.message||event.message||'Application failed to load.'); const source=event.filename?` ${event.filename}${event.lineno?`:${event.lineno}`:''}${event.colno?`:${event.colno}`:''}`:''; const root=document.getElementById('root'); if(!root||!root.querySelector('.splash-screen'))return; const safe=`${message}${source}`.replace(/[&<>\\"']/g,''); root.innerHTML=`<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${safe}</small><button type="button" onclick="location.reload()">Reload</button></main>`; });
-    window.addEventListener('unhandledrejection',(event)=>{ window.dispatchEvent(new ErrorEvent('error',{error:event.reason,message:String(event.reason?.message||event.reason||'Startup failed.')})); });
-    document.addEventListener('click',async(event)=>{ const button=event.target instanceof Element ? event.target.closest('.story-delete') : null; if(!button)return; event.preventDefault(); event.stopImmediatePropagation(); button.disabled=true; button.textContent='Deleting...'; try{ const [{auth},{getApp},{getDatabase,ref,get,remove}]=await Promise.all([import('./src/features/auth/firebase-client.js?v=20260813-70'),import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')]); const user=auth.currentUser; if(!user)throw new Error('Please login first.'); const video=button.closest('.story-viewer-v2-card')?.querySelector('video'); const storyUrl=String(video?.currentSrc||video?.src||'').trim(); if(!storyUrl)throw new Error('Story video could not be identified.'); const db=getDatabase(getApp()); const snapshot=await get(ref(db,'stories')); const stories=snapshot.val()||{}; let matchId=''; for(const [id,story] of Object.entries(stories)){ if(!story||String(story.ownerUid||'')!==String(user.uid||''))continue; const url=String(story.secureUrl||story.videoUrl||story.url||story.mediaUrl||'').trim(); if(url===storyUrl){matchId=id;break;} } if(!matchId)throw new Error('Story could not be found.'); await remove(ref(db,`stories/${matchId}`)); localStorage.removeItem('indo:last-story'); document.querySelector('.story-viewer-v2')?.remove(); window.location.reload(); }catch(error){ button.disabled=false; button.textContent=error?.message||'Could not delete story.'; } },true);
+    function bindStoryPreviewAudio(preview){if(!preview||preview.dataset.audioBound==='1')return;const video=preview.querySelector('#story-preview-video');if(!video)return;preview.dataset.audioBound='1';const activate=()=>{video.muted=false;video.defaultMuted=false;video.volume=1;video.play().catch(()=>{});};preview.addEventListener('pointerdown',e=>{const t=e.target instanceof Element?e.target:null;if(t?.closest('#story-publish-button,#story-add-button,#story-add-panel,.story-photo-element,.story-emoji-element,.story-title-element'))return;activate();},true);}
+    function bindStoryPinchGestures(preview){if(!preview||preview.dataset.pinchBound==='1')return;preview.dataset.pinchBound='1';const pointers=new Map(),states=new WeakMap();let gesture=null,suppress=false;const target=e=>{const el=e.target instanceof Element?e.target:null;if(!el)return null;if(el.matches('#story-preview-video'))return el;return el.closest('.story-photo-element,.story-emoji-element,.story-title-element');};const state=t=>{if(!states.has(t))states.set(t,{scale:1,rotation:0});return states.get(t);};const apply=(t,s)=>{t.style.transform=t.matches('#story-preview-video')?`scale(${s.scale}) rotate(${s.rotation}deg)`:`translate(-50%,-50%) scale(${s.scale}) rotate(${s.rotation}deg)`;t.dataset.gestureScale=String(s.scale);t.dataset.gestureRotation=String(s.rotation);};const dist=(a,b)=>Math.hypot(b.x-a.x,b.y-a.y),ang=(a,b)=>Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;preview.addEventListener('pointerdown',e=>{const t=target(e);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,target:t});if(pointers.size!==2)return;const a=[...pointers.values()],tgt=a[0].target||a[1].target;if(!tgt)return;const s=state(tgt);gesture={target:tgt,startDistance:Math.max(1,dist(a[0],a[1])),startAngle:ang(a[0],a[1]),startScale:s.scale,startRotation:s.rotation};suppress=true;e.preventDefault();e.stopImmediatePropagation();},true);preview.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId)||!gesture||pointers.size<2)return;pointers.set(e.pointerId,{...pointers.get(e.pointerId),x:e.clientX,y:e.clientY});const a=[...pointers.values()],s=state(gesture.target);s.scale=Math.max(.5,Math.min(4,gesture.startScale*(dist(a[0],a[1])/gesture.startDistance)));s.rotation=gesture.startRotation+(ang(a[0],a[1])-gesture.startAngle);apply(gesture.target,s);e.preventDefault();e.stopImmediatePropagation();},true);const end=e=>{pointers.delete(e.pointerId);if(gesture&&pointers.size<2)gesture=null;};preview.addEventListener('pointerup',end,true);preview.addEventListener('pointercancel',end,true);preview.addEventListener('click',e=>{if(!suppress)return;suppress=false;e.preventDefault();e.stopImmediatePropagation();},true);}
+    (function(){let n=0;const timer=setInterval(()=>{n++;window.__indoFixStoryEditor?.();if(n>=100)clearInterval(timer);},100);})();
+    document.addEventListener('click',async event=>{const button=event.target instanceof Element?event.target.closest('.story-delete'):null;if(!button)return;event.preventDefault();event.stopImmediatePropagation();button.disabled=true;button.textContent='Deleting...';try{const [{auth},{getApp},{getDatabase,ref,get,remove}]=await Promise.all([import('./src/features/auth/firebase-client.js?v=71'),import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')]);const user=auth.currentUser;if(!user)throw new Error('Please login first.');const video=button.closest('.story-viewer-v2-card')?.querySelector('video');const storyUrl=String(video?.currentSrc||video?.src||'').trim();if(!storyUrl)throw new Error('Story video could not be identified.');const db=getDatabase(getApp());const snapshot=await get(ref(db,'stories'));const stories=snapshot.val()||{};let matchId='';for(const [id,story] of Object.entries(stories)){if(!story||String(story.ownerUid||'')!==String(user.uid||''))continue;const url=String(story.secureUrl||story.videoUrl||story.url||story.mediaUrl||'').trim();if(url===storyUrl){matchId=id;break;}}if(!matchId)throw new Error('Story could not be found.');await remove(ref(db,`stories/${matchId}`));localStorage.removeItem('indo:last-story');document.querySelector('.story-viewer-v2')?.remove();window.location.reload();}catch(error){button.disabled=false;button.textContent=error?.message||'Could not delete story.';}},true);
   </script>
-  <script type="module" src="./src/main.js?v=20260813-70"></script>
+  <script type="module" src="./src/main.js?v=71"></script>
 </body>
 </html>
