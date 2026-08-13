@@ -19,15 +19,73 @@ function renderNav() {
 }
 
 function ensureStoryStyles() {
-  if (document.getElementById('indo-story-inline-v2')) return;
+  if (document.getElementById('indo-story-inline-v3')) return;
   const style = document.createElement('style');
-  style.id = 'indo-story-inline-v2';
+  style.id = 'indo-story-inline-v3';
   style.textContent = `
-    .stories-v2{display:flex!important;align-items:center!important;gap:8px!important;padding:8px 10px!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;border-bottom:1px solid #17171c!important;scrollbar-width:none!important}
+    .stories-v2{
+      display:flex!important;
+      align-items:flex-start!important;
+      gap:14px!important;
+      padding:10px 10px 12px!important;
+      overflow-x:auto!important;
+      overflow-y:hidden!important;
+      white-space:nowrap!important;
+      border-bottom:1px solid #17171c!important;
+      scrollbar-width:none!important;
+      min-height:86px!important;
+    }
     .stories-v2::-webkit-scrollbar{display:none!important}
-    .story-v2{display:flex!important;flex:0 0 auto!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;width:auto!important;min-width:0!important;height:44px!important;padding:0!important;margin:0!important;gap:8px!important;color:#d8d8df!important;text-align:left!important;border:0!important;background:none!important;white-space:nowrap!important}
-    .story-v2-avatar{display:grid!important;place-items:center!important;width:40px!important;height:40px!important;min-width:40px!important;flex:0 0 40px!important;border-radius:50%!important;background:linear-gradient(135deg,#743cff,#f83ab8)!important;color:#fff!important;font-size:13px!important;font-weight:800!important;margin:0!important}
-    .story-v2-name{display:inline-block!important;width:auto!important;min-width:0!important;margin:0!important;padding:0!important;color:#d8d8df!important;font-size:12px!important;font-weight:600!important;line-height:1!important;white-space:nowrap!important}
+    .story-v2{
+      display:flex!important;
+      flex:0 0 66px!important;
+      flex-direction:column!important;
+      align-items:center!important;
+      justify-content:flex-start!important;
+      width:66px!important;
+      min-width:66px!important;
+      max-width:66px!important;
+      height:auto!important;
+      min-height:72px!important;
+      padding:0!important;
+      margin:0!important;
+      gap:6px!important;
+      color:#d8d8df!important;
+      text-align:center!important;
+      border:0!important;
+      background:none!important;
+      white-space:normal!important;
+    }
+    .story-v2-avatar{
+      display:grid!important;
+      place-items:center!important;
+      width:56px!important;
+      height:56px!important;
+      min-width:56px!important;
+      max-width:56px!important;
+      flex:0 0 56px!important;
+      border-radius:50%!important;
+      background:linear-gradient(135deg,#743cff,#f83ab8)!important;
+      color:#fff!important;
+      font-size:15px!important;
+      font-weight:800!important;
+      margin:0 auto!important;
+    }
+    .story-v2-name{
+      display:block!important;
+      width:100%!important;
+      min-width:0!important;
+      margin:0!important;
+      padding:0!important;
+      color:#d8d8df!important;
+      font-size:10px!important;
+      font-weight:600!important;
+      line-height:1.15!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+      text-align:center!important;
+    }
   `;
   document.head.appendChild(style);
 }
@@ -46,7 +104,7 @@ async function loadFeed(app) {
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-25');
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-26');
     const videos = await loadHomeVideos();
     if (!videos.length) {
       status.textContent = 'No videos yet. Upload your first video.';
@@ -64,7 +122,7 @@ async function loadFeed(app) {
 async function loadStories(app) {
   const row = app.querySelector('[data-stories-v2]');
   try {
-    const { loadStories } = await import('../features/stories/stories.js?v=20260813-25');
+    const { loadStories } = await import('../features/stories/stories.js?v=20260813-26');
     const stories = await loadStories();
     row.innerHTML = addStoryItem() + stories.map(storyItem).join('');
   } catch (error) {
@@ -77,7 +135,7 @@ async function loadNotifications(app) {
   try {
     const button = app.querySelector('[data-screen="notifications"]');
     if (!button) return;
-    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-25');
+    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-26');
     const items = await loadNotifications();
     const unread = items.filter((item) => !item.read).length;
     if (!unread) return;
