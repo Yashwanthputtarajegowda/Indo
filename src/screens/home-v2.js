@@ -33,7 +33,7 @@ function escapeHtml(value = '') {
 function storyItem(story, isOwn = false) {
   const username = String(story.username || story.userName || story.handle || story.displayName || 'User').replace(/^@/, '');
   const initial = username.charAt(0).toUpperCase() || 'U';
-  const storyUrl = String(story.secureUrl || story.videoUrl || story.url || '');
+  const storyUrl = String(story.secureUrl || story.videoUrl || story.url || story.mediaUrl || '');
   return `<div class="story-v2" data-story-open data-story-url="${escapeHtml(storyUrl)}" data-story-name="${escapeHtml(username)}"><span class="story-v2-avatar">${initial}${isOwn ? '<button class="story-v2-add" type="button" data-story-add aria-label="Add another story">+</button>' : ''}</span><span class="story-v2-name">@${escapeHtml(username)}</span></div>`;
 }
 
@@ -60,7 +60,7 @@ async function openStoryCreate() {
     return;
   }
   const { state } = await import('../state.js');
-  const { render } = await import('../router.js?v=20260813-32');
+  const { render } = await import('../router.js?v=20260813-34');
   state.screen = 'story-create';
   await render(document.getElementById('root'));
 }
@@ -82,7 +82,7 @@ async function loadFeed(app) {
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-32');
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-34');
     const videos = await loadHomeVideos();
     if (!videos.length) { status.textContent = 'No videos yet. Upload your first video.'; return; }
     status.remove(); feed.innerHTML = videos.map(renderVideoCard).join(''); bindVideoCards(feed);
@@ -93,13 +93,14 @@ async function loadStories(app) {
   const row = app.querySelector('[data-stories-v2]');
   try {
     const [{ loadStories }, { auth }] = await Promise.all([
-      import('../features/stories/stories.js?v=20260813-32'),
+      import('../features/stories/stories.js?v=20260813-34'),
       import('../features/auth/firebase-client.js')
     ]);
     const stories = await loadStories();
     const currentUid = auth.currentUser?.uid || '';
-    const ownStories = stories.filter((story) => String(story.ownerUid || '') === currentUid);
-    const otherStories = stories.filter((story) => String(story.ownerUid || '') !== currentUid);
+    const ownerUid = (story) => String(story.ownerUid || story.uid || story.userId || story.creatorUid || '');
+    const ownStories = stories.filter((story) => ownerUid(story) === currentUid);
+    const otherStories = stories.filter((story) => ownerUid(story) !== currentUid);
     row.innerHTML = ownStories.length ? storyItem(ownStories[0], true) + otherStories.map((s) => storyItem(s, false)).join('') : addStoryItem() + otherStories.map((s) => storyItem(s, false)).join('');
     bindStoryInteractions(app);
   } catch (error) { console.warn('Stories unavailable:', error); row.innerHTML = addStoryItem(); bindStoryInteractions(app); }
@@ -108,7 +109,7 @@ async function loadStories(app) {
 async function loadNotifications(app) {
   try {
     const button = app.querySelector('[data-screen="notifications"]'); if (!button) return;
-    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-32');
+    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-34');
     const items = await loadNotifications(); const unread = items.filter((item) => !item.read).length;
     button.querySelector('.notification-badge')?.remove(); if (unread <= 0) return;
     const badge = document.createElement('span'); badge.className = 'notification-badge'; badge.textContent = unread > 99 ? '99+' : String(unread); button.style.position = 'relative'; button.appendChild(badge);
