@@ -2,11 +2,11 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV13) return;
-  window.__indoStoryRuntimeV13 = true;
+  if (window.__indoStoryRuntimeV14) return;
+  window.__indoStoryRuntimeV14 = true;
 
   const mobileStyle = document.createElement('style');
-  mobileStyle.id = 'indo-mobile-runtime-v7';
+  mobileStyle.id = 'indo-mobile-runtime-v8';
   mobileStyle.textContent = `
     html,body{width:100%;min-height:100%;-webkit-text-size-adjust:100%}
     body{overflow-x:hidden;overflow-y:auto}
@@ -19,11 +19,10 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
   `;
   document.head.appendChild(mobileStyle);
 
-  const warmScreens=()=>{const version='20260813-69';const screens=['./src/screens/home-v2.js','./src/screens/reels.js','./src/screens/create.js','./src/screens/story-create.js','./src/screens/profile-direct.js','./src/screens/settings.js','./src/screens/search.js','./src/screens/notifications.js','./src/screens/activity.js','./src/screens/wallet.js','./src/screens/blocked-users.js'];screens.forEach(path=>import(`${path}?v=${version}`).catch(()=>{}));};
+  const warmScreens=()=>{const version='20260813-70';const screens=['./src/screens/home-v2.js','./src/screens/reels.js','./src/screens/create.js','./src/screens/story-create.js','./src/screens/profile-direct.js','./src/screens/settings.js','./src/screens/search.js','./src/screens/notifications.js','./src/screens/activity.js','./src/screens/wallet.js','./src/screens/blocked-users.js'];screens.forEach(path=>import(`${path}?v=${version}`).catch(()=>{}));};
   if('requestIdleCallback' in window)window.requestIdleCallback(warmScreens,{timeout:1800});else window.setTimeout(warmScreens,500);
 
   let publishing=false;
-
   const collectStoryEditor=preview=>{const title=preview.querySelector('.story-title-element');const photos=[...preview.querySelectorAll('.story-photo-element')];const emojis=[...preview.querySelectorAll('.story-emoji-element')];const crop=preview.querySelector('#story-crop')?.value||'portrait';return{title:title?.textContent?.trim()||'',titleFont:title?.dataset?.font||title?.style?.fontFamily||'Arial, sans-serif',titleX:Number(title?.dataset?.x||50),titleY:Number(title?.dataset?.y||14),crop,stickerDataUrl:photos[0]?.src||'',stickerX:Number(photos[0]?.dataset?.x||50),stickerY:Number(photos[0]?.dataset?.y||50),stickerScale:Number(photos[0]?.dataset?.gestureScale||1),elements:[...(title?[{type:'title',text:title.textContent||'',x:Number(title.dataset?.x||50),y:Number(title.dataset?.y||14),font:title.dataset?.font||title.style?.fontFamily||'Arial, sans-serif'}]:[]),...photos.map(node=>({type:'photo',dataUrl:node.src||'',x:Number(node.dataset?.x||50),y:Number(node.dataset?.y||50),scale:Number(node.dataset?.gestureScale||1)})),...emojis.map(node=>({type:'emoji',emoji:node.textContent||'',x:Number(node.dataset?.x||50),y:Number(node.dataset?.y||50)}))]};};
 
   async function directPublish(preview,done,message){
@@ -32,7 +31,7 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     if(!(file instanceof File)||!file.type.startsWith('video/')){message.textContent='Video is not ready. Please select the video again.';return;}
     publishing=true;done.disabled=true;done.textContent='Posting...';message.textContent='Uploading story...';
     try{
-      const mod=await import(`../src/features/upload/story-publish.js?v=20260813-69`);
+      const mod=await import(`../src/features/upload/story-publish.js?v=20260813-70`);
       if(typeof mod.publishStory!=='function')throw new Error('Story publish module is invalid.');
       await mod.publishStory(file,()=>{},collectStoryEditor(preview));
       window.__indoStoryDraftFile=null;message.textContent='Story published successfully.';done.textContent='Done';window.setTimeout(()=>window.__indoNavigate?.('home'),350);
@@ -43,11 +42,8 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     const preview=document.getElementById('story-preview'),add=document.getElementById('story-add-button');
     if(!preview||!add)return false;
     preview.style.position='relative';
-
-    // Remove the original full-width publish control completely. The only publish control is Done.
     const legacyPublish=document.getElementById('story-publish-button');
     if(legacyPublish)legacyPublish.remove();
-
     add.style.setProperty('position','absolute','important');add.style.setProperty('right','14px','important');add.style.setProperty('bottom','62px','important');add.style.setProperty('z-index','101','important');
     const panel=document.getElementById('story-add-panel');if(panel)panel.style.bottom='118px';
     document.getElementById('story-create-select')?.style.setProperty('display','none','important');
@@ -75,6 +71,8 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
 
   const swallowGenericStoryText=(event)=>{const target=event.target instanceof Element?event.target:null;const preview=target?.closest('#story-preview');if(!preview)return;if(target?.closest('#story-text-button,#indo-story-done-hit,#story-add-button,#story-add-panel,#story-font-picker,.story-title-element,.story-photo-element,.story-emoji-element,.story-trash-zone'))return;if(!window.__indoStoryTextMode&&(event.type==='pointerdown'||event.type==='click'))event.stopImmediatePropagation();};
   document.addEventListener('pointerdown',swallowGenericStoryText,true);document.addEventListener('click',swallowGenericStoryText,true);
-
   window.__indoStoryStartTitle=(x,y)=>{const preview=document.getElementById('story-preview');if(!preview)return;window.__indoStoryTextMode=true;preview.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:x,clientY:y}));window.setTimeout(()=>{window.__indoStoryTextMode=false;},250);};
 })();
+
+// index.html still contains the old legacy poll; disable it after the inline script has finished loading.
+window.setTimeout(()=>{window.__indoFixStoryEditor=()=>false;},0);
