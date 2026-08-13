@@ -1,10 +1,106 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-56';
+const ROUTER_VERSION = '20260813-57';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
+}
+
+function applyGestureTransform(element, scale, rotation) {
+  const safeScale = Math.max(0.45, Math.min(4, scale));
+  const safeRotation = ((rotation + 180) % 360) - 180;
+  element.dataset.gestureScale = String(safeScale);
+  element.dataset.gestureRotation = String(safeRotation);
+  element.style.transform = `translate(-50%, -50%) scale(${safeScale}) rotate(${safeRotation}deg)`;
+}
+
+function enhanceStoryGestures() {
+  const preview = app.querySelector('#story-preview');
+  const video = app.querySelector('#story-preview-video');
+  if (!preview || !video || preview.dataset.gestureZoomBound === '1') return;
+  preview.dataset.gestureZoomBound = '1';
+  preview.style.touchAction = 'none';
+  video.style.transformOrigin = 'center center';
+
+  const pointers = new Map();
+  let gesture = null;
+
+  const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const angle = (a, b) => Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+  const getElementTarget = (node) => node instanceof Element ? node.closest('.story-element') : null;
+
+  const startGesture = () => {
+    if (pointers.size !== 2 || gesture) return;
+    const points = [...pointers.values()];
+    const firstTarget = getElementTarget(points[0].target);
+    const secondTarget = getElementTarget(points[1].target);
+    let target = null;
+    if (firstTarget && firstTarget === secondTarget) target = firstTarget;
+    else if (!firstTarget && !secondTarget) target = video;
+    if (!target) return;
+
+    const currentScale = Number(target.dataset.gestureScale || '1') || 1;
+    const currentRotation = Number(target.dataset.gestureRotation || '0') || 0;
+    gesture = {
+      target,
+      startDistance: Math.max(1, distance(points[0], points[1])),
+      startAngle: angle(points[0], points[1]),
+      startScale: currentScale,
+      startRotation: currentRotation
+    };
+    preview.classList.add('story-multi-gesture');
+  };
+
+  const updateGesture = () => {
+    if (!gesture || pointers.size !== 2) return;
+    const points = [...pointers.values()];
+    const currentDistance = Math.max(1, distance(points[0], points[1]));
+    const currentAngle = angle(points[0], points[1]);
+    const scale = gesture.startScale * (currentDistance / gesture.startDistance);
+    const rotation = gesture.startRotation + (currentAngle - gesture.startAngle);
+    applyGestureTransform(gesture.target, scale, rotation);
+    if (gesture.target === video) {
+      video.style.transform = `scale(${Math.max(1, Math.min(4, scale))}) rotate(${rotation}deg)`;
+    }
+  };
+
+  const endGesture = () => {
+    if (pointers.size < 2) {
+      gesture = null;
+      preview.classList.remove('story-multi-gesture');
+    }
+  };
+
+  preview.addEventListener('pointerdown', (event) => {
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, target: event.target });
+    if (pointers.size === 2) {
+      startGesture();
+      if (gesture) event.preventDefault();
+    }
+  }, true);
+
+  preview.addEventListener('pointermove', (event) => {
+    if (!pointers.has(event.pointerId)) return;
+    const entry = pointers.get(event.pointerId);
+    entry.x = event.clientX;
+    entry.y = event.clientY;
+    if (gesture) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      updateGesture();
+    }
+  }, true);
+
+  preview.addEventListener('pointerup', (event) => {
+    pointers.delete(event.pointerId);
+    endGesture();
+  }, true);
+
+  preview.addEventListener('pointercancel', (event) => {
+    pointers.delete(event.pointerId);
+    endGesture();
+  }, true);
 }
 
 function enhanceStoryCreateLayout() {
@@ -17,6 +113,7 @@ function enhanceStoryCreateLayout() {
   publish.classList.add('story-publish-on-preview');
   publish.style.cssText = 'position:absolute;left:auto;right:0;bottom:12px;width:20%;max-width:none;height:44px;z-index:22;margin:0;border:0;border-radius:10px;background:#7b3cff;color:#fff;font-weight:800;cursor:pointer;';
   addButton.style.bottom = '68px';
+  enhanceStoryGestures();
 }
 
 async function renderCurrentScreen() {
