@@ -1,6 +1,6 @@
 import { icons } from '../data.js';
 import { nav } from '../components/nav.js';
-import { auth } from '../auth/firebase-client.js';
+import { auth } from '../features/auth/firebase-client.js';
 import { loadProfileMedia } from '../features/profile/profile-media.js';
 import { loadFollowStatus, toggleFollow } from '../features/social/follow.js?v=20260813-30';
 
