@@ -3,8 +3,9 @@ import { renderLogin, renderSignup } from './screens/auth.js';
 import './features/feed/cloudinary-playback-hardener.js';
 import { installCloudinaryVideoCompatibility } from './features/feed/cloudinary-video-fix.js';
 import './features/ui/cleanup-topbar.js';
+import './features/ui/profile-video-native-controls.js';
 
-const VERSION = '20260813-98';
+const VERSION = '20260813-99';
 
 installCloudinaryVideoCompatibility();
 
