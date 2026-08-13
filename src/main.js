@@ -5,6 +5,14 @@ function showStartupError(error) {
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
 }
 
+async function openHomeAfterLogin() {
+  const { state } = await import('./state.js');
+  state.authenticated = true;
+  state.screen = 'home';
+  const { renderHome } = await import('./screens/home.js');
+  renderHome(app);
+}
+
 async function start() {
   try {
     const { renderLogin } = await import('./screens/auth.js');
@@ -36,13 +44,8 @@ async function start() {
       try {
         const { auth, signInWithEmailAndPassword } = await import('./features/auth/firebase-client.js');
         await signInWithEmailAndPassword(auth, email, password);
-
         if (message) message.textContent = 'Login successful.';
-        const { state } = await import('./state.js');
-        state.authenticated = true;
-        state.screen = 'home';
-        const { render } = await import('./router.js');
-        render(app);
+        await openHomeAfterLogin();
       } catch (error) {
         console.error('Login failed:', error);
         if (message) message.textContent = error?.message || 'Login failed. Please check your email and password.';
