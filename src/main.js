@@ -1,15 +1,47 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-51';
+const ROUTER_VERSION = '20260813-52';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
 }
 
+function enhanceStoryCreateLayout() {
+  const preview = app.querySelector('#story-preview');
+  const publish = app.querySelector('#story-publish-button');
+  const addButton = app.querySelector('#story-add-button');
+  if (!preview || !publish || !addButton) return;
+
+  if (publish.parentElement !== preview) preview.appendChild(publish);
+
+  publish.textContent = 'Done';
+  publish.classList.add('story-publish-on-preview');
+  publish.style.cssText = [
+    'position:absolute',
+    'left:20%',
+    'right:0',
+    'bottom:12px',
+    'width:80%',
+    'max-width:none',
+    'height:44px',
+    'z-index:22',
+    'margin:0',
+    'border:0',
+    'border-radius:10px',
+    'background:#7b3cff',
+    'color:#fff',
+    'font-weight:800',
+    'cursor:pointer'
+  ].join(';');
+
+  addButton.style.bottom = '68px';
+}
+
 async function renderCurrentScreen() {
   const { render } = await import(`./router.js?v=${ROUTER_VERSION}`);
   await render(app);
+  if (document.querySelector('#story-preview')) enhanceStoryCreateLayout();
 }
 
 async function navigate(screen) {
