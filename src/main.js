@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-24';
+const ROUTER_VERSION = '20260813-25';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
@@ -25,9 +25,10 @@ async function openHomeAfterLogin() {
   await renderCurrentScreen();
 }
 
-async function openCreatorProfile(username) {
+async function openCreatorProfile(username, uid = '') {
   const cleanUsername = String(username || '').replace(/^@/, '').trim();
-  if (!cleanUsername) return;
+  const cleanUid = String(uid || '').trim();
+  if (!cleanUsername && !cleanUid) return;
 
   const { state } = await import('./state.js');
   const apiBase = window.INDO_API_BASE || '';
@@ -38,10 +39,25 @@ async function openCreatorProfile(username) {
   } catch {}
 
   try {
-    const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(cleanUsername)}`, { headers });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.profile) throw new Error(data.message || 'Profile could not be opened.');
-    state.profile = data.profile;
+    let profile = null;
+    if (cleanUsername) {
+      const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(cleanUsername)}`, { headers });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.profile) profile = data.profile;
+    }
+
+    // The profile endpoint is not required to open a creator page.
+    // Video metadata already contains the creator username/owner UID.
+    profile = {
+      ...(profile || {}),
+      username: profile?.username || cleanUsername,
+      uid: profile?.uid || profile?.userId || cleanUid,
+      ownerUid: profile?.ownerUid || cleanUid
+    };
+
+    if (!profile.username && !profile.uid && !profile.ownerUid) throw new Error('Creator information is missing.');
+
+    state.profile = profile;
     state.screen = 'profile';
     await renderCurrentScreen();
   } catch (error) {
@@ -65,7 +81,7 @@ function bindNavigation() {
       event.preventDefault();
       event.stopImmediatePropagation();
       try {
-        await openCreatorProfile(profileTarget.dataset.profileUsername || '');
+        await openCreatorProfile(profileTarget.dataset.profileUsername || '', profileTarget.dataset.profileUid || '');
       } catch (error) {
         console.error('Creator profile navigation failed:', error);
         showStartupError(error);
