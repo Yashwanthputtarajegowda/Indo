@@ -3,8 +3,8 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV4) return;
-  window.__indoStoryRuntimeV4 = true;
+  if (window.__indoStoryRuntimeV5) return;
+  window.__indoStoryRuntimeV5 = true;
 
   let publishing = false;
 
@@ -43,7 +43,7 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     publish.textContent = 'Posting...';
     message.textContent = 'Uploading story...';
     try {
-      const { publishStory } = await import('../src/features/upload/story-publish.js?v=20260813-62');
+      const { publishStory } = await import('./src/features/upload/story-publish.js?v=20260813-63');
       await publishStory(file, () => {}, collectStoryEditor(preview));
       window.__indoStoryDraftFile = null;
       message.textContent = 'Story published successfully.';
@@ -100,19 +100,18 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
       hit.id = 'indo-story-done-hit';
       hit.type = 'button';
       hit.setAttribute('aria-label', 'Done');
-      hit.style.cssText = 'position:absolute;right:0;bottom:0;width:20%;height:44px;z-index:150;cursor:pointer;background:transparent;border:0;padding:0;margin:0;touch-action:manipulation;';
-      hit.addEventListener('pointerdown', (event) => {
+      hit.style.cssText = 'position:absolute;right:0;bottom:0;width:20%;height:44px;z-index:150;cursor:pointer;background:transparent;border:0;padding:0;margin:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent;';
+      const trigger = (event) => {
         event.preventDefault();
         event.stopPropagation();
         const currentPreview = document.getElementById('story-preview');
         const currentPublish = document.getElementById('story-publish-button');
         const currentMessage = document.getElementById('story-create-message');
         if (currentPreview && currentPublish && currentMessage) void directPublish(currentPreview, currentPublish, currentMessage);
-      });
-      hit.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-      });
+      };
+      hit.addEventListener('pointerup', trigger, true);
+      hit.addEventListener('touchend', trigger, { capture: true, passive: false });
+      hit.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); }, true);
       preview.appendChild(hit);
     }
 
