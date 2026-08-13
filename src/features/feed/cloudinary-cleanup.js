@@ -11,13 +11,13 @@ function removeCard(video) {
 async function validateVideo(video) {
   if (!(video instanceof HTMLVideoElement)) return;
   if (video.dataset[CHECKED_KEY] === '1' || video.dataset[CHECKING_KEY] === '1') return;
-  const source = String(video.dataset.videoSrc || video.currentSrc || video.src || '').trim();
+  const source = String(video.dataset.originalVideoSrc || video.dataset.indoOriginalSrc || video.dataset.videoSrc || video.currentSrc || video.src || '').trim();
   if (!source || !source.includes('res.cloudinary.com/')) return;
 
   video.dataset[CHECKING_KEY] = '1';
   try {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 5000);
+    const timeout = window.setTimeout(() => controller.abort(), 7000);
     const response = await fetch(source, {
       method: 'HEAD',
       mode: 'cors',
@@ -25,13 +25,18 @@ async function validateVideo(video) {
       signal: controller.signal,
     });
     window.clearTimeout(timeout);
-    if (!response.ok) {
+
+    // Cloudinary transformations can temporarily return non-200 while being
+    // generated. Only a definitive missing response should remove the card.
+    if (response.status === 404 || response.status === 410) {
       removeCard(video);
       return;
     }
-    video.dataset[CHECKED_KEY] = '1';
+    if (response.ok || response.status === 206 || response.status === 403 || response.status === 405) {
+      video.dataset[CHECKED_KEY] = '1';
+    }
   } catch {
-    // A CORS/network failure is not proof that the asset is deleted.
+    // Network/CORS/timeout is not proof that the asset is deleted.
   } finally {
     delete video.dataset[CHECKING_KEY];
   }
@@ -40,11 +45,10 @@ async function validateVideo(video) {
 function bind(video) {
   if (!(video instanceof HTMLVideoElement) || video.dataset.indoCleanupBound === '1') return;
   video.dataset.indoCleanupBound = '1';
-  video.addEventListener('error', () => removeCard(video), { once: false });
-  video.addEventListener('abort', () => {
-    window.setTimeout(() => {
-      if (video.readyState === 0 && video.currentSrc) removeCard(video);
-    }, 2500);
+  // Playback code owns recovery/fallback. Do not remove the card on the first
+  // transient error because a Cloudinary transformed rendition may still be readying.
+  video.addEventListener('error', () => {
+    if (video.dataset.indoVideoFinalFailure === '1') removeCard(video);
   }, { once: false });
   validateVideo(video);
 }
@@ -56,10 +60,10 @@ function scan() {
 export function startCloudinaryCleanup() {
   if (window.__indoCloudinaryCleanupStarted) return;
   window.__indoCloudinaryCleanupStarted = true;
-  window.setTimeout(scan, 300);
+  window.setTimeout(scan, 800);
   window.setInterval(() => {
     if (document.querySelector('#root .video-post')) scan();
-  }, 3000);
+  }, 5000);
 }
 
 startCloudinaryCleanup();
