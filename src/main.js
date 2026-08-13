@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-27';
+const ROUTER_VERSION = '20260813-28';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
