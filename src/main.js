@@ -5,16 +5,44 @@ function showStartupError(error) {
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-logo">I</div><div class="splash-name">Indo</div><p>Indo could not start.</p><small>${message.replace(/[&<>\\"']/g, '')}</small><button type="button" onclick="location.reload()">Reload</button></main>`;
 }
 
+async function renderCurrentScreen() {
+  const { render } = await import('./router.js');
+  render(app);
+}
+
 async function openHomeAfterLogin() {
   const { state } = await import('./state.js');
   state.authenticated = true;
   state.screen = 'home';
-  const { renderHome } = await import('./screens/home.js?v=20260813-12');
-  renderHome(app);
+  await renderCurrentScreen();
+}
+
+function bindNavigation() {
+  document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-screen]');
+    if (!button || !app.contains(button)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const screen = button.dataset.screen;
+    if (!screen) return;
+
+    try {
+      const { state } = await import('./state.js');
+      state.screen = screen;
+      await renderCurrentScreen();
+    } catch (error) {
+      console.error('Navigation failed:', error);
+      showStartupError(error);
+    }
+  });
 }
 
 async function start() {
   try {
+    bindNavigation();
+
     const { renderLogin } = await import('./screens/auth.js');
     renderLogin(app);
 
