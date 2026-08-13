@@ -7,10 +7,14 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-52" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-52" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-52" />
-  <style>.story-file-name{display:none!important}</style>
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-53" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-53" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-53" />
+  <style>
+    .story-file-name{display:none!important}
+    #story-preview .story-done-positioned{position:absolute!important;left:20%!important;bottom:12px!important;width:80%!important;max-width:none!important;height:46px!important;z-index:21!important}
+    #story-preview .story-add-positioned{position:absolute!important;right:14px!important;bottom:68px!important;z-index:22!important}
+  </style>
   <title>Indo</title>
 </head>
 <body>
@@ -21,8 +25,26 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-52"></script>
+  <script src="./config/runtime-config.js?v=20260813-53"></script>
   <script>
+    window.__indoFixStoryEditor = function fixStoryEditorLayout() {
+      const preview = document.getElementById('story-preview');
+      const publish = document.getElementById('story-publish-button');
+      const addButton = document.getElementById('story-add-button');
+      if (!preview || !publish || !addButton) return false;
+      if (publish.parentElement !== preview) preview.appendChild(publish);
+      publish.textContent = 'Done';
+      publish.classList.add('story-done-positioned');
+      addButton.classList.add('story-add-positioned');
+      const panel = document.getElementById('story-add-panel');
+      if (panel) {
+        panel.style.bottom = '124px';
+      }
+      const oldSelect = document.getElementById('story-create-select');
+      if (oldSelect) oldSelect.style.display = 'none';
+      return true;
+    };
+
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
       const source = event.filename ? ` ${event.filename}${event.lineno ? `:${event.lineno}` : ''}${event.colno ? `:${event.colno}` : ''}` : '';
@@ -44,7 +66,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-52'),
+          import('./src/features/auth/firebase-client.js?v=20260813-53'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -73,6 +95,6 @@
       }
     }, true);
   </script>
-  <script type="module" src="./src/main.js?v=20260813-52"></script>
+  <script type="module" src="./src/main.js?v=20260813-53"></script>
 </body>
 </html>
