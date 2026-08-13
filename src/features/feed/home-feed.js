@@ -199,18 +199,23 @@ function loadVideoSource(video) {
 
 function bindLazyVideo(video, videoId) {
   let observer = null;
+  const card = video.closest('[data-video-id]');
+  const hideBrokenCard = () => {
+    observer?.disconnect();
+    card?.remove();
+  };
   const playIfVisible = () => {
     if (!loadVideoSource(video)) return;
     video.muted = true;
     video.play().catch(() => {});
   };
   const pause = () => { if (!video.paused) video.pause(); };
-  video.addEventListener('error', () => {
-    const fallback = document.createElement('div');
-    fallback.className = 'post-video video-unavailable';
-    fallback.textContent = 'Video unavailable. Please try again later.';
-    observer?.disconnect();
-    video.replaceWith(fallback);
+  video.addEventListener('error', hideBrokenCard, { once: true });
+  video.addEventListener('abort', hideBrokenCard, { once: true });
+  video.addEventListener('stalled', () => {
+    window.setTimeout(() => {
+      if (video.readyState === 0) hideBrokenCard();
+    }, 3000);
   }, { once: true });
   video.addEventListener('play', () => maybeRecordVideoView(videoId), { passive: true });
   if ('IntersectionObserver' in window) {
