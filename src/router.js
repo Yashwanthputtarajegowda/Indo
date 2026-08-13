@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 
-const VERSION = '20260813-31';
+const VERSION = '20260813-32';
 
 function renderRouteError(app, error) {
   const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\"']/g, '');
@@ -26,6 +26,7 @@ export async function render(app) {
   if (state.screen === 'home') return renderLazy(app, './screens/home-v2.js', 'renderHome');
   if (state.screen === 'reels') return renderLazy(app, './screens/reels.js', 'renderReels');
   if (state.screen === 'create') return renderLazy(app, './screens/create.js', 'renderCreate');
+  if (state.screen === 'story-create') return renderLazy(app, './screens/story-create.js', 'renderStoryCreate');
   if (state.screen === 'profile') return renderLazy(app, './screens/profile-direct.js', 'renderProfile', [state.profile]);
   if (state.screen === 'settings') return renderLazy(app, './screens/settings.js', 'renderSettings', [state.accountType, state.earning, state.earningSummary]);
   if (state.screen === 'search') return renderLazy(app, './screens/search.js', 'renderSearch');
