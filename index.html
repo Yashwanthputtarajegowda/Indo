@@ -7,9 +7,9 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-122" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-122" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-122" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-123" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-123" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-123" />
   <style>
     .story-file-name{display:none!important}
     #story-preview{overflow:hidden!important}
@@ -26,11 +26,10 @@
     </main>
   </div>
 
-  <script src="./config/runtime-config.js?v=122"></script>
+  <script src="./config/runtime-config.js?v=123"></script>
   <script type="module">
     const root = document.getElementById('root');
-    const ROUTER_VERSION = '20260813-122';
-
+    const ROUTER_VERSION = '20260813-123';
     const escapeText = (value) => String(value ?? '').replace(/[&<>\\"']/g, '');
 
     function showError(error) {
@@ -52,8 +51,8 @@
     }
 
     function bindNavigation() {
-      if (window.__indoNavigationBoundV2) return;
-      window.__indoNavigationBoundV2 = true;
+      if (window.__indoNavigationBoundV3) return;
+      window.__indoNavigationBoundV3 = true;
       window.__indoNavigate = navigate;
       document.addEventListener('click', async (event) => {
         const element = event.target instanceof Element ? event.target : null;
@@ -63,8 +62,12 @@
         if (!screen) return;
         event.preventDefault();
         event.stopImmediatePropagation();
-        try { await navigate(screen); }
-        catch (error) { console.error('Navigation failed:', error); showError(error); }
+        try {
+          await navigate(screen);
+        } catch (error) {
+          console.error('Navigation failed:', error);
+          showError(error);
+        }
       }, true);
     }
 
