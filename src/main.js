@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-31';
+const ROUTER_VERSION = '20260813-32';
 
 function showStartupError(error) {
   const message = error?.message || String(error || 'Unknown startup error.');
@@ -66,6 +66,7 @@ async function openCreatorProfile(username, uid = '') {
 function bindNavigation() {
   if (window.__indoNavigationBound) return;
   window.__indoNavigationBound = true;
+  window.__indoNavigate = navigate;
   document.addEventListener('click', async (event) => {
     const element = event.target instanceof Element ? event.target : null;
     const profileTarget = element?.closest('[data-profile-username]');
