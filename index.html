@@ -112,8 +112,11 @@
         }
         if (title) {
           const titleNode = document.createElement('div');
+          const x = Number(cached?.titleX ?? 50);
+          const y = Number(cached?.titleY ?? 14);
+          const font = String(cached?.titleFont || 'Arial, sans-serif');
           titleNode.textContent = title;
-          titleNode.style.cssText = 'position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:5;max-width:86%;padding:6px 12px;border-radius:8px;background:rgba(0,0,0,.34);color:#fff;font-size:22px;font-weight:900;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.6);pointer-events:none;';
+          titleNode.style.cssText = `position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%);z-index:5;max-width:86%;padding:6px 12px;border-radius:8px;background:rgba(0,0,0,.34);color:#fff;font-size:22px;font-weight:900;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.6);pointer-events:none;font-family:${font};`;
           card.appendChild(titleNode);
         }
         if (sticker) {
