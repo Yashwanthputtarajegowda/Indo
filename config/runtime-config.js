@@ -3,8 +3,8 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV6) return;
-  window.__indoStoryRuntimeV6 = true;
+  if (window.__indoStoryRuntimeV7) return;
+  window.__indoStoryRuntimeV7 = true;
 
   const mobileStyle = document.createElement('style');
   mobileStyle.id = 'indo-mobile-runtime-v1';
@@ -23,6 +23,28 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     .story-preview, .story-preview video { max-width:100%; }
   `;
   document.head.appendChild(mobileStyle);
+
+  // Warm the screen modules while the current screen is idle so taps can open
+  // the next page immediately instead of waiting for a new module download.
+  const warmScreens = () => {
+    const version = '20260813-63';
+    const screens = [
+      './src/screens/home-v2.js',
+      './src/screens/reels.js',
+      './src/screens/create.js',
+      './src/screens/story-create.js',
+      './src/screens/profile-direct.js',
+      './src/screens/settings.js',
+      './src/screens/search.js',
+      './src/screens/notifications.js',
+      './src/screens/activity.js',
+      './src/screens/wallet.js',
+      './src/screens/blocked-users.js'
+    ];
+    screens.forEach((path) => import(`${path}?v=${version}`).catch(() => {}));
+  };
+  if ('requestIdleCallback' in window) window.requestIdleCallback(warmScreens, { timeout: 1800 });
+  else window.setTimeout(warmScreens, 500);
 
   let publishing = false;
 
@@ -80,7 +102,6 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     const publish = document.getElementById('story-publish-button');
     const add = document.getElementById('story-add-button');
     if (!preview || !publish || !add) return false;
-
     preview.style.position = 'relative';
     if (publish.parentElement !== preview) preview.appendChild(publish);
     publish.textContent = publishing ? 'Posting...' : 'Done';
