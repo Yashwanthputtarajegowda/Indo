@@ -69,8 +69,12 @@ function openPicker(event) {
     window.__indoStoryDraftFile = file;
     await window.__indoNavigate?.('story-create');
   }, { once: true });
-  try { if (typeof input.showPicker === 'function') input.showPicker(); else input.click(); }
-  catch { input.click(); }
+  try {
+    if (typeof input.showPicker === 'function') input.showPicker();
+    else input.click();
+  } catch {
+    input.click();
+  }
 }
 
 async function deleteStory(storyId, overlay) {
@@ -186,8 +190,11 @@ async function renderStoryRow(row) {
   else html.push(`<button class="story-v2" type="button" data-story-add aria-label="Add your story"><span class="story-v2-avatar">+</span><span class="story-v2-name">Your story</span></button>`);
   for (const [owner, group] of groups) if (owner !== currentUid) html.push(renderGroup(group, false));
   row.innerHTML = html.join('');
-  row.querySelectorAll('[data-story-add]').forEach((button) => button.addEventListener('click', openPicker));
-  row.querySelectorAll('[data-story-stack-owner]').forEach((item) => item.addEventListener('click', () => openViewer(groups.get(item.dataset.storyStackOwner) || [])));
+  row.querySelectorAll('[data-story-add]').forEach((button) => button.addEventListener('click', (event) => { event.stopPropagation(); openPicker(event); }));
+  row.querySelectorAll('[data-story-stack-owner]').forEach((item) => item.addEventListener('click', (event) => {
+    if (event.target instanceof Element && event.target.closest('[data-story-add]')) return;
+    openViewer(groups.get(item.dataset.storyStackOwner) || []);
+  }));
 }
 
 export async function enhanceStoryRow(app) {
