@@ -19,9 +19,35 @@ function renderMediaGrid(videos) {
 export function renderProfile(app, profile = null) {
   const username = escapeHtml(profile?.username || '');
   const bio = escapeHtml(profile?.bio || 'Welcome to Indo.');
+  const displayName = escapeHtml(profile?.name || profile?.username || 'Indo User');
   const initial = escapeHtml((profile?.name || profile?.username || 'I').replace(/^@/, '').charAt(0).toUpperCase() || 'I');
+  const followers = Number(profile?.followersCount || 0);
+  const following = Number(profile?.followingCount || 0);
 
-  app.innerHTML = `<div class="app-shell"><header class="page-head profile-head"><span></span><h2>${username || 'Profile'}</h2><button data-screen="settings" aria-label="Settings">${icons.settings}</button></header><main class="profile-page"><section class="profile-summary"><div class="avatar profile-avatar">${initial}<span class="plus">+</span></div><div class="stats"><div><b data-post-count>0</b><span>Posts</span></div><div><b>${Number(profile?.followersCount || 0)}</b><span>Followers</span></div><div><b>${Number(profile?.followingCount || 0)}</b><span>Following</span></div></div></section><div class="userid">${username || 'User ID not available'}</div><p class="bio">${bio}</p><button class="edit-btn" data-edit-profile>Edit Profile</button><div class="tabs"><button class="active">▦</button><button>▶</button><button>♧</button></div><div class="grid" data-profile-media><div class="profile-empty">Loading posts...</div></div></main>${nav('profile')}</div>`;
+  app.innerHTML = `<div class="app-shell">
+    <header class="page-head profile-head"><span></span><h2>${username || 'Profile'}</h2><button data-screen="settings" aria-label="Settings">${icons.settings}</button></header>
+    <main class="profile-page">
+      <section class="profile-summary profile-summary-v2">
+        <div class="avatar profile-avatar">${initial}<span class="plus">+</span></div>
+        <div class="profile-main-info">
+          <div class="profile-name-row">
+            <h3 class="profile-inline-name">${displayName}</h3>
+            <span class="profile-inline-username">${username ? `@${username.replace(/^@/, '')}` : ''}</span>
+          </div>
+          <div class="stats">
+            <div><b data-post-count>0</b><span>Posts</span></div>
+            <div><b>${followers}</b><span>Followers</span></div>
+            <div><b>${following}</b><span>Following</span></div>
+          </div>
+        </div>
+      </section>
+      <p class="bio">${bio}</p>
+      <button class="edit-btn" data-edit-profile>Edit Profile</button>
+      <div class="tabs"><button class="active">▦</button><button>▶</button><button>♧</button></div>
+      <div class="grid" data-profile-media><div class="profile-empty">Loading posts...</div></div>
+    </main>
+    ${nav('profile')}
+  </div>`;
 
   const mediaGrid = app.querySelector('[data-profile-media]');
   const postCount = app.querySelector('[data-post-count]');
@@ -29,11 +55,15 @@ export function renderProfile(app, profile = null) {
   loadProfileMedia().then(({ profile: latestProfile, videos }) => {
     postCount.textContent = String(videos.length);
     mediaGrid.innerHTML = renderMediaGrid(videos);
-    if (latestProfile?.username && latestProfile.username !== profile?.username) {
+    if (latestProfile) {
+      const latestUsername = escapeHtml(latestProfile.username || '');
+      const latestName = escapeHtml(latestProfile.name || latestProfile.username || 'Indo User');
+      const inlineName = app.querySelector('.profile-inline-name');
+      const inlineUsername = app.querySelector('.profile-inline-username');
       const header = app.querySelector('.profile-head h2');
-      const userId = app.querySelector('.userid');
-      if (header) header.textContent = latestProfile.username;
-      if (userId) userId.textContent = latestProfile.username;
+      if (inlineName) inlineName.textContent = latestName;
+      if (inlineUsername) inlineUsername.textContent = latestUsername ? `@${latestUsername.replace(/^@/, '')}` : '';
+      if (header && latestUsername) header.textContent = latestUsername;
     }
   }).catch(() => {
     postCount.textContent = '0';
