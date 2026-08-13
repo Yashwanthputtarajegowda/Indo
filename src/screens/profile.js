@@ -6,6 +6,20 @@ function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
 }
 
+function ensureProfileLayoutStyles() {
+  if (document.getElementById('indo-profile-layout-v3')) return;
+  const style = document.createElement('style');
+  style.id = 'indo-profile-layout-v3';
+  style.textContent = `
+    .profile-identity-row{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:14px!important;width:100%!important;margin:4px 0 18px!important;padding:0!important}
+    .profile-identity-row .profile-avatar{flex:0 0 88px!important;width:88px!important;height:88px!important;margin:0!important}
+    .profile-userid-block{display:flex!important;flex:1 1 auto!important;align-items:center!important;justify-content:flex-start!important;min-width:0!important}
+    .profile-userid{display:block!important;margin:0!important;padding:0!important;color:#fff!important;font-size:16px!important;font-weight:800!important;line-height:1.2!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+    .profile-stats-row{width:100%!important;margin:0 0 18px!important}
+  `;
+  document.head.appendChild(style);
+}
+
 function renderMediaGrid(videos) {
   if (!videos.length) return '<div class="profile-empty">No posts yet.</div>';
   return videos.map((video) => {
@@ -17,6 +31,7 @@ function renderMediaGrid(videos) {
 }
 
 export function renderProfile(app, profile = null) {
+  ensureProfileLayoutStyles();
   const username = escapeHtml(profile?.username || '');
   const bio = escapeHtml(profile?.bio || 'Welcome to Indo.');
   const initial = escapeHtml((profile?.name || profile?.username || 'I').replace(/^@/, '').charAt(0).toUpperCase() || 'I');
@@ -28,9 +43,7 @@ export function renderProfile(app, profile = null) {
     <main class="profile-page">
       <section class="profile-identity-row">
         <div class="avatar profile-avatar">${initial}<span class="plus">+</span></div>
-        <div class="profile-userid-block">
-          <div class="profile-userid">${username ? `@${username.replace(/^@/, '')}` : '@user'}</div>
-        </div>
+        <div class="profile-userid-block"><div class="profile-userid">${username ? `@${username.replace(/^@/, '')}` : '@user'}</div></div>
       </section>
       <section class="stats profile-stats-row">
         <div><b data-post-count>0</b><span>Posts</span></div>
