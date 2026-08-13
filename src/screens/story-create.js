@@ -99,7 +99,7 @@ export function renderStoryCreate(app, draftFileOverride = null) {
       </header>
       <main class="story-editor">
         <input id="story-create-file" type="file" accept="video/*" hidden>
-        <input id="story-sticker-file" type="file" accept="image/*" hidden>
+        <input id="story-sticker-file" type="file" accept="image/*" multiple hidden>
         <div class="story-preview-wrap">
           <div id="story-preview" class="story-preview">
             <video id="story-preview-video" autoplay playsinline muted></video>
@@ -108,7 +108,7 @@ export function renderStoryCreate(app, draftFileOverride = null) {
             <div id="story-add-panel" class="story-add-panel" hidden>
               <label>Crop<select id="story-crop"><option value="portrait">Portrait 9:16</option><option value="cover">Fill screen</option><option value="square">Square 1:1</option><option value="landscape">Landscape 16:9</option></select></label>
               <div class="row">
-                <button id="story-sticker-select" type="button">Add photo</button>
+                <button id="story-sticker-select" type="button">Add photos</button>
                 <button id="story-emoji-toggle" type="button">Add emoji</button>
               </div>
               <div id="story-emoji-picker" class="emoji-grid" hidden>
@@ -255,11 +255,11 @@ export function renderStoryCreate(app, draftFileOverride = null) {
   const updateTitleByClick=(event)=>{if(event.target.closest('.story-element,.story-add-button,.story-add-panel,.story-font-picker,.story-trash-zone'))return;startTitleInput(event.clientX,event.clientY);};
   preview.addEventListener('click',(event)=>{if(event.target.closest('.story-title-element')){const el=event.target.closest('.story-title-element');finishTitleInput();currentTitleFont=el.dataset.font||el.style.fontFamily||currentTitleFont;buildFontPicker(event.clientX,event.clientY);return;}updateTitleByClick(event);});
   const applyCrop=()=>{preview.classList.remove('crop-cover','crop-square','crop-landscape');if(cropInput.value==='cover')preview.classList.add('crop-cover');if(cropInput.value==='square')preview.classList.add('crop-square');if(cropInput.value==='landscape')preview.classList.add('crop-landscape');};
-  const addPhoto=async(file)=>{if(!file)return;try{const dataUrl=await compressSticker(file);const image=document.createElement('img');image.src=dataUrl;image.alt='';image.className='story-element story-photo-element';image.style.left='50%';image.style.top='50%';const entry={element:image,dataUrl,x:50,y:50,scale:1};photoElements.push(entry);preview.appendChild(image);makeDraggable(image,(point)=>{entry.x=point.x;entry.y=point.y;});}catch{message.textContent='Could not add that photo.';}};
+  const addPhoto=async(file)=>{if(!file)return;try{const dataUrl=await compressSticker(file);const image=document.createElement('img');image.src=dataUrl;image.alt='';image.className='story-element story-photo-element';image.style.left='50%';image.style.top='50%';const offset=Math.min(18,photoElements.length*3);image.style.left=`${Math.min(88,50+offset)}%`;image.style.top=`${Math.min(88,50+offset)}%`;const entry={element:image,dataUrl,x:parseFloat(image.style.left)||50,y:parseFloat(image.style.top)||50,scale:1};photoElements.push(entry);preview.appendChild(image);makeDraggable(image,(point)=>{entry.x=point.x;entry.y=point.y;});message.textContent=`${photoElements.length} photo${photoElements.length===1?'':'s'} added. You can keep adding more.`;}catch{message.textContent='Could not add that photo.';}};
   addButton.addEventListener('click',(event)=>{event.stopPropagation();closeFontPicker();addPanel.hidden=!addPanel.hidden;if(addPanel.hidden)emojiPicker.hidden=true;});
   cropInput.addEventListener('change',applyCrop);
   stickerButton.addEventListener('click',(event)=>{event.stopPropagation();stickerInput.click();});
-  stickerInput.addEventListener('change',async()=>{await addPhoto(stickerInput.files?.[0]);stickerInput.value='';});
+  stickerInput.addEventListener('change',async()=>{const files=Array.from(stickerInput.files||[]);stickerInput.value='';for(const file of files)await addPhoto(file);});
   emojiToggle.addEventListener('click',(event)=>{event.stopPropagation();emojiPicker.hidden=!emojiPicker.hidden;});
   emojiPicker.addEventListener('click',(event)=>{const button=event.target.closest('[data-emoji]');if(!button)return;event.stopPropagation();const emoji=button.dataset.emoji||'';const node=document.createElement('div');node.className='story-element story-emoji-element';node.textContent=emoji;node.style.left='50%';node.style.top='50%';const entry={element:node,emoji,x:50,y:50};emojiElements.push(entry);preview.appendChild(node);makeDraggable(node,(point)=>{entry.x=point.x;entry.y=point.y;});emojiPicker.hidden=true;});
   preview.addEventListener('pointerdown',(event)=>{if(event.target.closest('.story-title-element,.story-photo-element,.story-emoji-element,.story-add-button,.story-add-panel,.story-font-picker,.story-trash-zone'))return;startTitleInput(event.clientX,event.clientY);});
