@@ -4,8 +4,8 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
 
 // Stable Story editor layout/interaction fix.
 (function () {
-  if (window.__indoStoryLayoutFixV2) return;
-  window.__indoStoryLayoutFixV2 = true;
+  if (window.__indoStoryLayoutFixV3) return;
+  window.__indoStoryLayoutFixV3 = true;
 
   const apply = function () {
     const preview = document.getElementById('story-preview');
@@ -31,17 +31,19 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     publish.style.setProperty('color', '#fff', 'important');
     publish.style.setProperty('font-weight', '800', 'important');
     publish.style.setProperty('cursor', 'pointer', 'important');
+    publish.style.setProperty('pointer-events', 'auto', 'important');
 
-    // + goes directly above Done, at the position previously occupied by the action.
+    // + stays directly above Done.
     add.style.setProperty('position', 'absolute', 'important');
     add.style.setProperty('right', '14px', 'important');
     add.style.setProperty('bottom', '68px', 'important');
     add.style.setProperty('z-index', '101', 'important');
+    add.style.setProperty('pointer-events', 'auto', 'important');
 
     // Never let Done act like a video/title click.
     if (publish.dataset.indoDoneGuard !== '1') {
       publish.dataset.indoDoneGuard = '1';
-      ['pointerdown', 'pointerup', 'click'].forEach(function (name) {
+      ['pointerdown', 'pointerup'].forEach(function (name) {
         publish.addEventListener(name, function (event) {
           event.stopPropagation();
         }, true);
@@ -50,11 +52,26 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     return true;
   };
 
+  // Hard-route a real Done click to the story editor's own click listener.
+  // This avoids other document-level gesture handlers swallowing the action.
+  document.addEventListener('click', function (event) {
+    const target = event.target instanceof Element ? event.target.closest('#story-publish-button') : null;
+    if (!target) return;
+    if (target.dataset.indoSyntheticClick === '1') {
+      target.dataset.indoSyntheticClick = '0';
+      return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    target.dataset.indoSyntheticClick = '1';
+    target.click();
+  }, true);
+
   const start = function () {
     let attempts = 0;
     const timer = window.setInterval(function () {
       attempts += 1;
-      if (apply() || attempts >= 40) window.clearInterval(timer);
+      if (apply() || attempts >= 60) window.clearInterval(timer);
     }, 100);
     apply();
   };
