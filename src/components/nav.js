@@ -1,11 +1,12 @@
 import { icons } from '../data.js';
 
 export function nav(active) {
-  return `<nav class="bottom-nav">
-    <button data-screen="home" class="${active === 'home' ? 'active' : ''}">${icons.home}<span>Home</span></button>
-    <button data-screen="search" class="${active === 'search' ? 'active' : ''}">${icons.search}<span>Search</span></button>
-    <button data-screen="reels" class="${active === 'reels' ? 'active' : ''}">${icons.reel}<span>Reels</span></button>
-    <button data-screen="create" class="${active === 'create' ? 'active' : ''}">${icons.create}<span>Create</span></button>
-    <button data-screen="profile" class="${active === 'profile' ? 'active' : ''}">${icons.profile}<span>Profile</span></button>
+  const isActive = (screen) => active === screen ? 'active' : '';
+  return `<nav class="bottom-nav" aria-label="Primary navigation">
+    <button type="button" data-screen="home" class="${isActive('home')}">${icons.home}<span>Home</span></button>
+    <button type="button" data-screen="messages" class="${isActive('messages')}">⌕<span>Message</span></button>
+    <button type="button" data-screen="reels" class="${isActive('reels')}">${icons.reel}<span>Reel</span></button>
+    <button type="button" data-screen="video" class="${isActive('video')}">▣<span>Video</span></button>
+    <button type="button" data-screen="profile" class="${isActive('profile')}">${icons.profile}<span>Profile</span></button>
   </nav>`;
 }
