@@ -7,9 +7,9 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-48" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-48" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-48" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-49" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-49" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-49" />
   <style>
     .story-file-name{display:none!important}
     .story-publish-on-preview{position:absolute!important;right:12px!important;bottom:12px!important;width:calc(100% - 24px)!important;max-width:190px!important;height:48px!important;z-index:22!important;margin:0!important}
@@ -24,7 +24,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-48"></script>
+  <script src="./config/runtime-config.js?v=20260813-49"></script>
   <script>
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
@@ -68,7 +68,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-48'),
+          import('./src/features/auth/firebase-client.js?v=20260813-49'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -194,6 +194,6 @@
     });
     storyEditorObserver.observe(document.body, { childList: true, subtree: true });
   </script>
-  <script type="module" src="./src/main.js?v=20260813-48"></script>
+  <script type="module" src="./src/main.js?v=20260813-49"></script>
 </body>
 </html>
