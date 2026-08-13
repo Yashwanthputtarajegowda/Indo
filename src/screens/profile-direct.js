@@ -5,9 +5,9 @@ function esc(value = '') {
 }
 
 function installStyles() {
-  if (document.getElementById('indo-profile-direct-v4')) return;
+  if (document.getElementById('indo-profile-direct-v5')) return;
   const s = document.createElement('style');
-  s.id = 'indo-profile-direct-v4';
+  s.id = 'indo-profile-direct-v5';
   s.textContent = `
     .profile-direct-page{width:100%;max-width:520px;min-height:calc(100vh - 64px);padding:20px 15px 96px;margin:0 auto;box-sizing:border-box}
     .profile-direct-head{width:100%;max-width:520px;height:64px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 18px;margin:0 auto;border-bottom:1px solid #18181e;background:rgba(7,7,10,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(16px)}
@@ -33,10 +33,6 @@ function installStyles() {
   document.head.appendChild(s);
 }
 
-function removeForeignBottomNavs(app) {
-  app.querySelectorAll('.profile-direct-nav').forEach((node) => node.remove());
-}
-
 async function authRequest(path, options = {}) {
   const user = auth.currentUser;
   if (!user) throw new Error('Please login first.');
@@ -58,7 +54,6 @@ async function loadTargetVideos(targetUid) {
 
 export async function renderProfile(app, profile = null) {
   installStyles();
-  removeForeignBottomNavs(app);
 
   const currentUid = String(auth.currentUser?.uid || '').trim();
   const requestedUid = String(profile?.uid || profile?.userId || profile?.ownerUid || '').trim();
@@ -84,7 +79,7 @@ export async function renderProfile(app, profile = null) {
       ${own ? '<button class="profile-direct-edit" type="button" data-screen="settings">Edit Profile</button>' : ''}
       <div class="profile-direct-grid" data-grid><div class="profile-direct-empty">Loading posts...</div></div>
     </main>
-    <nav class="bottom-nav" aria-label="Primary navigation"><button data-screen="home"><span class="nav-icon">⌂</span><span>Home</span></button><button data-screen="search"><span class="nav-icon">⌕</span><span>Search</span></button><button data-screen="reels"><span class="nav-icon">▶</span><span>Reels</span></button><button data-screen="create"><span class="nav-icon create-icon-nav">＋</span><span>Create</span></button><button data-screen="profile" class="active"><span class="nav-icon">●</span><span>Profile</span></button></nav>
+    <nav class="bottom-nav"><button data-screen="home">⌂<span>Home</span></button><button data-screen="search">⌕<span>Search</span></button><button data-screen="reels">▶<span>Reels</span></button><button data-screen="create">＋<span>Create</span></button><button data-screen="profile" class="active">●<span>Profile</span></button></nav>
   </div>`;
 
   const followButton = app.querySelector('[data-follow]');
