@@ -2,14 +2,16 @@ const appIcons = {
   home: '⌂', search: '⌕', reel: '▶', create: '+', profile: '●', heart: '♡', bell: '♧'
 };
 
+const LAST_STORY_KEY = 'indo:last-story';
+
 function renderNav() {
   return `<nav class="bottom-nav"><button data-screen="home" class="active">${appIcons.home}<span>Home</span></button><button data-screen="search">${appIcons.search}<span>Search</span></button><button data-screen="reels">${appIcons.reel}<span>Reels</span></button><button data-screen="create">${appIcons.create}<span>Create</span></button><button data-screen="profile">${appIcons.profile}<span>Profile</span></button></nav>`;
 }
 
 function ensureStoryStyles() {
-  if (document.getElementById('indo-story-inline-v5')) return;
+  if (document.getElementById('indo-story-inline-v6')) return;
   const style = document.createElement('style');
-  style.id = 'indo-story-inline-v5';
+  style.id = 'indo-story-inline-v6';
   style.textContent = `
     .stories-v2{display:flex!important;align-items:flex-start!important;gap:14px!important;padding:10px 10px 12px!important;overflow-x:auto!important;border-bottom:1px solid #17171c!important;scrollbar-width:none!important;min-height:86px!important}
     .stories-v2::-webkit-scrollbar{display:none!important}
@@ -28,6 +30,30 @@ function ensureStoryStyles() {
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>\"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[char]));
+}
+
+function normalizeStory(story) {
+  if (!story || typeof story !== 'object') return null;
+  const url = String(story.secureUrl || story.videoUrl || story.url || story.mediaUrl || '').trim();
+  if (!url) return null;
+  return { ...story, secureUrl: url };
+}
+
+function getCachedOwnStory(currentUid) {
+  try {
+    const story = normalizeStory(JSON.parse(localStorage.getItem(LAST_STORY_KEY) || 'null'));
+    if (!story) return null;
+    const ownerUid = String(story.ownerUid || story.uid || story.userId || story.creatorUid || '').trim();
+    const expiresAt = Number(story.expiresAt || 0);
+    if (ownerUid !== String(currentUid || '').trim()) return null;
+    if (expiresAt && expiresAt <= Date.now()) {
+      localStorage.removeItem(LAST_STORY_KEY);
+      return null;
+    }
+    return story;
+  } catch {
+    return null;
+  }
 }
 
 function storyItem(story, isOwn = false) {
@@ -82,7 +108,7 @@ async function loadFeed(app) {
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-34');
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-35');
     const videos = await loadHomeVideos();
     if (!videos.length) { status.textContent = 'No videos yet. Upload your first video.'; return; }
     status.remove(); feed.innerHTML = videos.map(renderVideoCard).join(''); bindVideoCards(feed);
@@ -93,23 +119,40 @@ async function loadStories(app) {
   const row = app.querySelector('[data-stories-v2]');
   try {
     const [{ loadStories }, { auth }] = await Promise.all([
-      import('../features/stories/stories.js?v=20260813-34'),
+      import('../features/stories/stories.js?v=20260813-35'),
       import('../features/auth/firebase-client.js')
     ]);
-    const stories = await loadStories();
+    const stories = (await loadStories()).map(normalizeStory).filter(Boolean);
     const currentUid = auth.currentUser?.uid || '';
-    const ownerUid = (story) => String(story.ownerUid || story.uid || story.userId || story.creatorUid || '');
-    const ownStories = stories.filter((story) => ownerUid(story) === currentUid);
-    const otherStories = stories.filter((story) => ownerUid(story) !== currentUid);
-    row.innerHTML = ownStories.length ? storyItem(ownStories[0], true) + otherStories.map((s) => storyItem(s, false)).join('') : addStoryItem() + otherStories.map((s) => storyItem(s, false)).join('');
+    const cachedOwn = getCachedOwnStory(currentUid);
+    const merged = [...(cachedOwn ? [cachedOwn] : []), ...stories];
+    const ownStories = [];
+    const otherStories = [];
+    const seen = new Set();
+    for (const story of merged) {
+      const ownerUid = String(story.ownerUid || story.uid || story.userId || story.creatorUid || '').trim();
+      const storyId = String(story.id || story.publicId || story.secureUrl || '');
+      if (seen.has(storyId)) continue;
+      seen.add(storyId);
+      if (ownerUid && ownerUid === currentUid) ownStories.push(story);
+      else if (ownerUid) otherStories.push(story);
+    }
+    row.innerHTML = ownStories.length
+      ? storyItem(ownStories[0], true) + otherStories.map((story) => storyItem(story, false)).join('')
+      : addStoryItem() + otherStories.map((story) => storyItem(story, false)).join('');
     bindStoryInteractions(app);
-  } catch (error) { console.warn('Stories unavailable:', error); row.innerHTML = addStoryItem(); bindStoryInteractions(app); }
+  } catch (error) {
+    const cachedOwn = getCachedOwnStory(auth?.currentUser?.uid || '');
+    row.innerHTML = cachedOwn ? storyItem(cachedOwn, true) : addStoryItem();
+    bindStoryInteractions(app);
+    console.warn('Stories unavailable:', error);
+  }
 }
 
 async function loadNotifications(app) {
   try {
     const button = app.querySelector('[data-screen="notifications"]'); if (!button) return;
-    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-34');
+    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-35');
     const items = await loadNotifications(); const unread = items.filter((item) => !item.read).length;
     button.querySelector('.notification-badge')?.remove(); if (unread <= 0) return;
     const badge = document.createElement('span'); badge.className = 'notification-badge'; badge.textContent = unread > 99 ? '99+' : String(unread); button.style.position = 'relative'; button.appendChild(badge);
