@@ -7,9 +7,9 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-45" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-45" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-45" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-46" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-46" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-46" />
   <title>Indo</title>
 </head>
 <body>
@@ -20,7 +20,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-45"></script>
+  <script src="./config/runtime-config.js?v=20260813-46"></script>
   <script>
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
@@ -64,7 +64,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-45'),
+          import('./src/features/auth/firebase-client.js?v=20260813-46'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -134,37 +134,48 @@
       }
 
       const picker = document.querySelector('.story-font-picker');
-      if (!picker || picker.hidden || picker.children.length >= 20) return;
+      if (!picker || picker.hidden || picker.dataset.loaded === '1') return;
+
       const fonts = [
-        ['Arial', 'Arial, sans-serif'],
-        ['Georgia', 'Georgia, serif'],
-        ['Times New Roman', '"Times New Roman", serif'],
-        ['Courier New', '"Courier New", monospace'],
-        ['Verdana', 'Verdana, sans-serif'],
-        ['Tahoma', 'Tahoma, sans-serif'],
-        ['Trebuchet MS', '"Trebuchet MS", sans-serif'],
-        ['Arial Black', '"Arial Black", sans-serif'],
-        ['Impact', 'Impact, sans-serif'],
-        ['Comic Sans MS', '"Comic Sans MS", cursive'],
-        ['Lucida Console', '"Lucida Console", monospace'],
-        ['Palatino', 'Palatino, serif'],
-        ['Garamond', 'Garamond, serif'],
-        ['Book Antiqua', '"Book Antiqua", Palatino, serif'],
-        ['Century Gothic', '"Century Gothic", sans-serif'],
-        ['Franklin Gothic', '"Franklin Gothic Medium", sans-serif'],
-        ['Gill Sans', '"Gill Sans", sans-serif'],
-        ['Copperplate', 'Copperplate, fantasy'],
-        ['Brush Script', '"Brush Script MT", cursive'],
-        ['Monospace', 'monospace']
+        ['Poppins', '"Poppins", sans-serif'],
+        ['Roboto', '"Roboto", sans-serif'],
+        ['Montserrat', '"Montserrat", sans-serif'],
+        ['Playfair Display', '"Playfair Display", serif'],
+        ['Lora', '"Lora", serif'],
+        ['Merriweather', '"Merriweather", serif'],
+        ['Oswald', '"Oswald", sans-serif'],
+        ['Bebas Neue', '"Bebas Neue", sans-serif'],
+        ['Pacifico', '"Pacifico", cursive'],
+        ['Lobster', '"Lobster", cursive'],
+        ['Comfortaa', '"Comfortaa", sans-serif'],
+        ['Raleway', '"Raleway", sans-serif'],
+        ['Abril Fatface', '"Abril Fatface", cursive'],
+        ['Dancing Script', '"Dancing Script", cursive'],
+        ['Bangers', '"Bangers", cursive'],
+        ['Permanent Marker', '"Permanent Marker", cursive'],
+        ['Anton', '"Anton", sans-serif'],
+        ['Satisfy', '"Satisfy", cursive'],
+        ['Caveat', '"Caveat", cursive'],
+        ['Quicksand', '"Quicksand", sans-serif']
       ];
-      const title = document.querySelector('.story-title-element');
-      const current = title?.dataset.font || title?.style.fontFamily || 'Arial, sans-serif';
+
+      if (!document.getElementById('indo-story-fonts-v1')) {
+        const link = document.createElement('link');
+        link.id = 'indo-story-fonts-v1';
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Anton&family=Abril+Fatface&family=Bangers&family=Bebas+Neue&family=Caveat:wght@400;600;700&family=Comfortaa:wght@400;600;700&family=Dancing+Script:wght@400;600;700&family=Lobster&family=Lora:wght@400;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700;800&family=Oswald:wght@400;500;600;700&family=Pacifico&family=Permanent+Marker&family=Playfair+Display:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&family=Quicksand:wght@400;600;700&family=Raleway:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Satisfy&display=swap';
+        document.head.appendChild(link);
+      }
+
+      const current = document.querySelector('.story-title-element')?.dataset.font || '"Poppins", sans-serif';
       picker.innerHTML = '';
+      picker.dataset.loaded = '1';
       picker.style.maxHeight = '300px';
       picker.style.overflowY = 'auto';
       picker.style.overflowX = 'hidden';
       picker.style.webkitOverflowScrolling = 'touch';
       picker.style.gridTemplateRows = 'repeat(20, 38px)';
+
       fonts.forEach(([name, value]) => {
         const button = document.createElement('button');
         button.type = 'button';
@@ -192,6 +203,6 @@
     });
     storyEditorObserver.observe(document.body, { childList: true, subtree: true });
   </script>
-  <script type="module" src="./src/main.js?v=20260813-45"></script>
+  <script type="module" src="./src/main.js?v=20260813-46"></script>
 </body>
 </html>
