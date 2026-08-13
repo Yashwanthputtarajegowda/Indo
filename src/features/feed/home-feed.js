@@ -66,6 +66,7 @@ export function renderVideoCard(video) {
   const creatorRaw = String(video.creator || '@indo');
   const creator = escapeHtml(creatorRaw);
   const usernameKey = escapeHtml(creatorRaw.replace(/^@/, ''));
+  const ownerUid = escapeHtml(video.ownerUid || '');
   const creatorAvatar = escapeHtml(video.creatorAvatar || video.avatarUrl || video.profilePhoto || video.photoURL || '');
   const caption = escapeHtml(video.caption || '');
   const views = Number(video.views || 0).toLocaleString();
@@ -79,9 +80,9 @@ export function renderVideoCard(video) {
   const source = mediaUrl
     ? `<video class="post-video" autoplay playsinline preload="metadata"${poster} src="${escapeHtml(mediaUrl)}"></video>`
     : '<div class="post-video video-unavailable">Video unavailable</div>';
-  return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}" data-owner-uid="${escapeHtml(video.ownerUid || '')}">
+  return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}" data-owner-uid="${ownerUid}">
     <div class="post-head">
-      <button class="post-creator" type="button" data-profile-username="${usernameKey}" aria-label="Open ${creator} profile" style="display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:9px;width:auto;min-width:0;height:100%;margin:0;padding:0;text-align:left;white-space:nowrap;">
+      <button class="post-creator" type="button" data-profile-username="${usernameKey}" data-profile-uid="${ownerUid}" aria-label="Open ${creator} profile" style="display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:9px;width:auto;min-width:0;height:100%;margin:0;padding:0;text-align:left;white-space:nowrap;">
         ${avatar}<span class="post-creator-name" style="display:block;margin:0;padding:0;font-size:13px;font-weight:700;line-height:1;white-space:nowrap;">${creator}</span>
       </button>
       <button class="icon-btn post-more" type="button" data-feed-more aria-label="More options">⋯</button>
