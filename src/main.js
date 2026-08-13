@@ -1,6 +1,6 @@
 const app = document.getElementById('root');
 
-const ROUTER_VERSION = '20260813-105';
+const ROUTER_VERSION = '20260813-106';
 const LAST_STORY_KEY = 'indo:last-story';
 
 function showStartupError(error) {
