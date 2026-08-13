@@ -225,7 +225,7 @@ async function loadFeed(app) {
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-36');
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-37');
     const videos = await loadHomeVideos();
     if (!videos.length) { status.textContent = 'No videos yet. Upload your first video.'; return; }
     status.remove(); feed.innerHTML = videos.map(renderVideoCard).join(''); bindVideoCards(feed);
@@ -269,7 +269,7 @@ async function loadStories(app) {
 
 async function loadNotifications(app) {
   try {
-    const button = app.querySelector('[data-screen="notifications"]'); if (!button) return;
+    const button = app.querySelector('[data-screen=\"notifications\"]'); if (!button) return;
     const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-36');
     const items = await loadNotifications(); const unread = items.filter((item) => !item.read).length;
     button.querySelector('.notification-badge')?.remove(); if (unread <= 0) return;
@@ -279,6 +279,6 @@ async function loadNotifications(app) {
 
 export function renderHome(app) {
   ensureStoryStyles();
-  app.innerHTML = `<div class="app-shell"><header class="topbar"><div class="brand"><span>♥</span>Indo</div><div class="top-actions"><button class="notification-button" data-screen="notifications" aria-label="Notifications">${appIcons.bell}</button></div></header><div class="stories-v2" data-stories-v2></div><main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>${renderNav()}</div>`;
+  app.innerHTML = `<div class=\"app-shell\"><header class=\"topbar\"><div class=\"brand\"><span>♥</span>Indo</div><div class=\"top-actions\"><button class=\"notification-button\" data-screen=\"notifications\" aria-label=\"Notifications\">${appIcons.bell}</button></div></header><div class=\"stories-v2\" data-stories-v2></div><main class=\"feed\"><div class=\"feed-status\" data-feed-status>Loading videos...</div><div data-home-feed></div></main>${renderNav()}</div>`;
   loadStories(app); loadFeed(app); loadNotifications(app);
 }
