@@ -1,6 +1,8 @@
 import { state } from '../../state.js';
 import { submitSignup } from './signup-form.js';
 
+const ROUTER_VERSION = '20260814-130';
+
 function getRoot() {
   return document.getElementById('root');
 }
@@ -11,7 +13,7 @@ async function goTo(screen) {
     return;
   }
   state.screen = screen;
-  const { render } = await import(`../../router.js?v=20260813-120`);
+  const { render } = await import(`../../router.js?v=${ROUTER_VERSION}`);
   await render(getRoot());
 }
 
