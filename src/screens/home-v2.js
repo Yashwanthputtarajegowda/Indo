@@ -86,7 +86,7 @@ async function openStoryCreate() {
     return;
   }
   const { state } = await import('../state.js');
-  const { render } = await import('../router.js?v=20260813-34');
+  const { render } = await import('../router.js?v=20260813-35');
   state.screen = 'story-create';
   await render(document.getElementById('root'));
 }
@@ -117,13 +117,14 @@ async function loadFeed(app) {
 
 async function loadStories(app) {
   const row = app.querySelector('[data-stories-v2]');
+  let currentUid = '';
   try {
     const [{ loadStories }, { auth }] = await Promise.all([
       import('../features/stories/stories.js?v=20260813-35'),
       import('../features/auth/firebase-client.js')
     ]);
+    currentUid = auth.currentUser?.uid || '';
     const stories = (await loadStories()).map(normalizeStory).filter(Boolean);
-    const currentUid = auth.currentUser?.uid || '';
     const cachedOwn = getCachedOwnStory(currentUid);
     const merged = [...(cachedOwn ? [cachedOwn] : []), ...stories];
     const ownStories = [];
@@ -142,7 +143,7 @@ async function loadStories(app) {
       : addStoryItem() + otherStories.map((story) => storyItem(story, false)).join('');
     bindStoryInteractions(app);
   } catch (error) {
-    const cachedOwn = getCachedOwnStory(auth?.currentUser?.uid || '');
+    const cachedOwn = getCachedOwnStory(currentUid);
     row.innerHTML = cachedOwn ? storyItem(cachedOwn, true) : addStoryItem();
     bindStoryInteractions(app);
     console.warn('Stories unavailable:', error);
