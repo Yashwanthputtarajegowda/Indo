@@ -1,44 +1,72 @@
 const LAST_STORY_KEY = 'indo:last-story';
+const STORY_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function esc(value = '') {
-  return String(value).replace(/[&<>\"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[c]));
+  return String(value).replace(/[&<>\"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' }[c]));
 }
 
 function normalizeStory(story) {
   if (!story || typeof story !== 'object') return null;
   const secureUrl = String(story.secureUrl || story.videoUrl || story.url || story.mediaUrl || '').trim();
-  return secureUrl ? { ...story, secureUrl } : null;
+  if (!secureUrl) return null;
+  const createdAt = Number(story.createdAt || story.timestamp || 0);
+  const expiresAt = Number(story.expiresAt || 0);
+  if (createdAt && Date.now() - createdAt > STORY_MAX_AGE_MS) return null;
+  if (expiresAt && expiresAt <= Date.now()) return null;
+  return {
+    ...story,
+    secureUrl,
+    ownerUid: String(story.ownerUid || story.uid || story.userId || story.creatorUid || '').trim(),
+    username: String(story.username || story.userName || story.handle || story.name || 'Indo User').replace(/^@/, ''),
+    name: String(story.name || story.username || story.userName || 'Indo User')
+  };
 }
 
 function readCachedOwnStory(uid) {
   try {
     const story = normalizeStory(JSON.parse(localStorage.getItem(LAST_STORY_KEY) || 'null'));
-    if (!story) return null;
-    const ownerUid = String(story.ownerUid || story.uid || story.userId || story.creatorUid || '').trim();
-    const expiresAt = Number(story.expiresAt || 0);
-    if (ownerUid !== String(uid || '').trim()) return null;
-    if (expiresAt && expiresAt <= Date.now()) {
-      localStorage.removeItem(LAST_STORY_KEY);
-      return null;
-    }
+    if (!story || String(story.ownerUid) !== String(uid || '')) return null;
     return story;
   } catch {
     return null;
   }
 }
 
-function renderNav() {
-  return `
-    <nav class="bottom-nav">
-      <button type="button" data-screen="home" class="active">⌂<span>Home</span></button>
-      <button type="button" data-message-section aria-label="Message">⌕<span>Message</span></button>
-      <button type="button" data-screen="reels">▶<span>Reels</span></button>
-      <button type="button" data-video-section aria-label="Video">▣<span>Video</span></button>
-      <button type="button" data-screen="profile">●<span>Profile</span></button>
-    </nav>`;
+function storyTime(story) {
+  const value = Number(story.createdAt || story.timestamp || 0);
+  if (!value) return '';
+  const minutes = Math.max(0, Math.floor((Date.now() - value) / 60000));
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return '1d ago';
 }
 
-function renderTopbar() {
+function storyCard(story, { own = false } = {}) {
+  const username = story.username || 'Indo User';
+  const initial = username.charAt(0).toUpperCase() || 'I';
+  const id = String(story.id || story.publicId || story.secureUrl || '');
+  return `
+    <button class="indo-story-card${own ? ' indo-story-card-own' : ''}" type="button"
+      data-story-id="${esc(id)}"
+      data-story-owner="${esc(story.ownerUid)}"
+      data-story-url="${esc(story.secureUrl)}"
+      data-story-name="${esc(username)}">
+      <div class="indo-story-card-media">
+        ${own
+          ? '<div class="indo-story-own-bg"><span class="indo-story-plus">+</span></div>'
+          : `<div class="indo-story-avatar">${esc(initial)}</div>`}
+        ${!own && story.isOnline ? '<span class="indo-story-online" aria-label="Online"></span>' : ''}
+      </div>
+      <div class="indo-story-card-body">
+        <strong>${own ? 'Your Story' : `@${esc(username)}`}</strong>
+        <span>${own ? 'Share a moment with your story' : esc(storyTime(story))}</span>
+      </div>
+    </button>`;
+}
+
+function renderTopbarFallback() {
   return `
     <header class="topbar">
       <div class="brand"><span>♥</span>Indo</div>
@@ -50,20 +78,30 @@ function renderTopbar() {
     </header>`;
 }
 
-function ensureStoryStyles() {
-  if (document.getElementById('indo-home-v8-style')) return;
+function ensureHomeStoryStyles() {
+  const id = 'indo-home-story-cards-v1';
+  if (document.getElementById(id)) return;
   const style = document.createElement('style');
-  style.id = 'indo-home-v8-style';
+  style.id = id;
   style.textContent = `
-    .indo-story-row{display:flex;align-items:flex-start;gap:14px;padding:10px;overflow-x:auto;border-bottom:1px solid #17171c;scrollbar-width:none;min-height:86px}
+    .indo-story-row{display:flex;gap:12px;align-items:stretch;overflow-x:auto;overflow-y:hidden;padding:16px 12px 14px;margin:0;border-bottom:1px solid #17171c;scrollbar-width:none;-webkit-overflow-scrolling:touch}
     .indo-story-row::-webkit-scrollbar{display:none}
-    .indo-story-item{position:relative;display:flex;flex:0 0 66px;flex-direction:column;align-items:center;width:66px;gap:6px;border:0;background:none;color:#d8d8df;cursor:pointer;padding:0}
-    .indo-story-avatar{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#743cff,#f83ab8);color:#fff;font-weight:800}
-    .indo-story-name{display:block;width:100%;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
-    .indo-story-add{position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;border-radius:50%;border:2px solid #09090e;background:#7b3cff;color:#fff;font-weight:900}
+    .indo-story-card{position:relative;display:flex;flex:0 0 168px;min-width:168px;height:184px;flex-direction:column;overflow:hidden;padding:0;text-align:left;border:1px solid #262632;border-radius:18px;background:#111117;color:#f4f4f7;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+    .indo-story-card:active{transform:scale(.985)}
+    .indo-story-card-own{border-color:#6f34d7;background:linear-gradient(145deg,#4a23a8 0%,#cf2f9f 100%)}
+    .indo-story-card-media{position:relative;height:104px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#1a1a23}
+    .indo-story-avatar{width:76px;height:76px;border-radius:20px;display:grid;place-items:center;background:linear-gradient(135deg,#7637ff,#f044ae);color:#fff;font-size:28px;font-weight:900;box-shadow:0 0 0 2px rgba(255,255,255,.08)}
+    .indo-story-own-bg{width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,#7736ff,#dd2da8)}
+    .indo-story-plus{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.08);font-size:34px;font-weight:300;color:#fff}
+    .indo-story-online{position:absolute;right:10px;top:10px;width:12px;height:12px;border-radius:50%;background:#2ee66b;border:2px solid #111117}
+    .indo-story-card-body{display:flex;min-width:0;flex:1;flex-direction:column;justify-content:center;gap:7px;padding:12px 12px 13px}
+    .indo-story-card-body strong{font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .indo-story-card-body span{font-size:11px;line-height:1.3;color:#b6b6c1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .indo-story-card-own .indo-story-card-body span{color:#f0e4ff}
+    .indo-story-card::after{content:'';position:absolute;left:12px;right:12px;bottom:8px;height:3px;border-radius:99px;background:linear-gradient(90deg,#8439ff,#ee3cab)}
     .indo-story-viewer{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.96);display:grid;place-items:center;padding:18px}
-    .indo-story-card{position:relative;width:min(100%,420px);height:min(90vh,760px);background:#000;border-radius:16px;overflow:hidden}
-    .indo-story-card video{width:100%;height:100%;object-fit:contain;background:#000}
+    .indo-story-card-viewer{position:relative;width:min(100%,420px);height:min(90vh,760px);background:#000;border-radius:16px;overflow:hidden}
+    .indo-story-card-viewer video{width:100%;height:100%;object-fit:contain;background:#000}
     .indo-story-close,.indo-story-share,.indo-story-more{position:absolute;top:10px;z-index:3;width:34px;height:34px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff}
     .indo-story-close{left:12px;font-size:24px}.indo-story-share{right:52px}.indo-story-more{right:12px}
     .indo-story-title{position:absolute;left:54px;right:90px;top:17px;z-index:2;color:#fff;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -81,7 +119,7 @@ async function openStoryViewer(story, isOwn = false) {
   overlay.className = 'indo-story-viewer';
   const id = String(story.id || story.publicId || '');
   const username = String(story.username || story.name || 'user').replace(/^@/, '');
-  overlay.innerHTML = `<div class="indo-story-card">
+  overlay.innerHTML = `<div class="indo-story-card-viewer">
     <button class="indo-story-close" type="button">×</button>
     <button class="indo-story-share" type="button">↗</button>
     ${isOwn ? '<button class="indo-story-more" type="button">⋯</button><div class="indo-story-menu"><button class="delete" type="button">Delete story</button></div>' : ''}
@@ -119,11 +157,17 @@ async function openStoryViewer(story, isOwn = false) {
   overlay.querySelector('video')?.play().catch(() => {});
 }
 
-function storyItem(story, own = false) {
-  const username = String(story.username || story.userName || story.handle || story.name || 'User').replace(/^@/, '');
-  const ownerUid = String(story.ownerUid || story.uid || story.userId || story.creatorUid || '');
-  const id = String(story.id || story.publicId || story.secureUrl || '');
-  return `<button class="indo-story-item" type="button" data-story-id="${esc(id)}" data-story-owner="${esc(ownerUid)}" data-story-url="${esc(story.secureUrl)}" data-story-name="${esc(username)}"><span class="indo-story-avatar">${esc(username.charAt(0).toUpperCase() || 'U')}${own ? '<button class="indo-story-add" type="button" data-story-add aria-label="Add another story">+</button>' : ''}</span><span class="indo-story-name">@${esc(username)}</span></button>`;
+function bindStories(app) {
+  app.querySelectorAll('[data-story-id]').forEach((item) => item.addEventListener('click', async () => {
+    const story = {
+      id: item.dataset.storyId,
+      ownerUid: item.dataset.storyOwner,
+      secureUrl: item.dataset.storyUrl,
+      username: item.dataset.storyName
+    };
+    const { auth } = await import('../features/auth/firebase-client.js');
+    await openStoryViewer(story, Boolean(auth.currentUser?.uid && auth.currentUser.uid === story.ownerUid));
+  }));
 }
 
 async function openStoryPicker(event) {
@@ -144,35 +188,30 @@ async function openStoryPicker(event) {
   input.click();
 }
 
-function bindStories(app) {
-  app.querySelectorAll('[data-story-add]').forEach((button) => button.addEventListener('click', openStoryPicker));
-  app.querySelectorAll('[data-story-id]').forEach((item) => item.addEventListener('click', async (event) => {
-    if (event.target instanceof Element && event.target.closest('[data-story-add]')) return;
-    const story = { id: item.dataset.storyId, ownerUid: item.dataset.storyOwner, secureUrl: item.dataset.storyUrl, username: item.dataset.storyName };
-    const { auth } = await import('../features/auth/firebase-client.js');
-    await openStoryViewer(story, Boolean(auth.currentUser?.uid && auth.currentUser.uid === story.ownerUid));
-  }));
-}
-
 async function loadStories(app) {
   const row = app?.querySelector('[data-stories]');
   if (!row) return;
   try {
     const [{ loadStories: fetchStories }, { auth }] = await Promise.all([
-      import('../features/stories/stories.js?v=20260813-120'),
+      import('../features/stories/stories.js?v=20260814-126'),
       import('../features/auth/firebase-client.js'),
     ]);
     const currentUid = auth.currentUser?.uid || '';
     const stories = (await fetchStories()).map(normalizeStory).filter(Boolean);
-    const own = stories.find((item) => String(item.ownerUid || item.uid || item.userId || item.creatorUid || '') === currentUid) || readCachedOwnStory(currentUid);
-    const others = stories.filter((item) => String(item.ownerUid || item.uid || item.userId || item.creatorUid || '') !== currentUid);
-    row.innerHTML = (own ? storyItem(own, true) : `<button class="indo-story-item" type="button" data-story-add><span class="indo-story-avatar">+</span><span class="indo-story-name">Your story</span></button>`) + others.map((item) => storyItem(item, false)).join('');
+    const own = stories.find((item) => item.ownerUid === currentUid) || readCachedOwnStory(currentUid);
+    const seenOwners = new Set();
+    const others = stories.filter((item) => item.ownerUid && item.ownerUid !== currentUid && !seenOwners.has(item.ownerUid) && seenOwners.add(item.ownerUid));
+    const cards = [];
+    if (own) cards.push(storyCard(own, { own: true }));
+    else cards.push(`<button class="indo-story-card indo-story-card-own" type="button" data-story-add><div class="indo-story-card-media"><div class="indo-story-own-bg"><span class="indo-story-plus">+</span></div></div><div class="indo-story-card-body"><strong>Your Story</strong><span>Share a moment with your story</span></div></button>`);
+    for (const story of others) cards.push(storyCard(story));
+    row.innerHTML = cards.join('');
+    row.querySelector('[data-story-add]')?.addEventListener('click', openStoryPicker);
     bindStories(app);
   } catch (error) {
     console.warn('Stories unavailable:', error);
-    const cached = readCachedOwnStory('');
-    row.innerHTML = cached ? storyItem(cached, true) : `<button class="indo-story-item" type="button" data-story-add><span class="indo-story-avatar">+</span><span class="indo-story-name">Your story</span></button>`;
-    bindStories(app);
+    row.innerHTML = `<button class="indo-story-card indo-story-card-own" type="button" data-story-add><div class="indo-story-card-media"><div class="indo-story-own-bg"><span class="indo-story-plus">+</span></div></div><div class="indo-story-card-body"><strong>Your Story</strong><span>Share a moment with your story</span></div></button>`;
+    row.querySelector('[data-story-add]')?.addEventListener('click', openStoryPicker);
   }
 }
 
@@ -180,7 +219,7 @@ async function loadFeed(app) {
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-120');
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260814-126');
     const videos = await loadHomeVideos();
     if (!videos.length) { status.textContent = 'No videos yet. Upload your first video.'; return; }
     status.remove();
@@ -196,7 +235,7 @@ async function loadNotifications(app) {
   try {
     const button = app.querySelector('.notification-button');
     if (!button) return;
-    const { loadNotifications: fetchNotifications } = await import('../features/notifications/notifications.js?v=20260813-120');
+    const { loadNotifications: fetchNotifications } = await import('../features/notifications/notifications.js?v=20260814-126');
     const items = await fetchNotifications();
     const unread = items.filter((item) => !item.read).length;
     if (!unread) return;
@@ -211,8 +250,9 @@ async function loadNotifications(app) {
 }
 
 export function renderHome(app) {
-  ensureStoryStyles();
-  app.innerHTML = `<div class="app-shell">${renderTopbar()}<div class="indo-story-row" data-stories></div><main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>${renderNav()}</div>`;
+  ensureHomeStoryStyles();
+  const topbar = app.querySelector('.topbar') ? app.querySelector('.topbar').outerHTML : renderTopbarFallback();
+  app.innerHTML = `<div class="app-shell">${topbar}<div class="indo-story-row" data-stories></div><main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main></div>`;
   loadStories(app);
   loadFeed(app);
   loadNotifications(app);
