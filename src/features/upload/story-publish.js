@@ -41,16 +41,7 @@ export async function publishStory(file, onProgress = () => {}, editor = {}) {
   const response = await fetch(`${apiBase}/api/stories`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.token}` },
-    body: JSON.stringify({
-      publicId: uploaded.public_id,
-      secureUrl: uploaded.secure_url,
-      title: String(editor.title || '').trim().slice(0, 80),
-      crop: String(editor.crop || 'portrait'),
-      stickerDataUrl: String(editor.stickerDataUrl || '').slice(0, 500000),
-      stickerX: Number(editor.stickerX ?? 50),
-      stickerY: Number(editor.stickerY ?? 50),
-      stickerScale: Number(editor.stickerScale ?? 1)
-    })
+    body: JSON.stringify({ publicId: uploaded.public_id, secureUrl: uploaded.secure_url })
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Could not publish story.');
@@ -64,6 +55,12 @@ export async function publishStory(file, onProgress = () => {}, editor = {}) {
       ownerUid: returned.ownerUid || returned.uid || returned.userId || user.uid,
       username: returned.username || user.displayName || user.email?.split('@')[0] || 'User',
       secureUrl: returned.secureUrl || returned.videoUrl || returned.url || uploaded.secure_url,
+      title: String(editor.title || '').trim().slice(0, 80),
+      crop: String(editor.crop || 'portrait'),
+      stickerDataUrl: String(editor.stickerDataUrl || '').slice(0, 500000),
+      stickerX: Number(editor.stickerX ?? 50),
+      stickerY: Number(editor.stickerY ?? 50),
+      stickerScale: Number(editor.stickerScale ?? 1),
       createdAt: returned.createdAt || Date.now()
     };
     localStorage.setItem(LAST_STORY_KEY, JSON.stringify(cachedStory));
