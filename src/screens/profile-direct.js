@@ -7,9 +7,9 @@ function esc(value = '') {
 }
 
 function installStyles() {
-  if (document.getElementById('indo-profile-direct-v8')) return;
+  if (document.getElementById('indo-profile-direct-v9')) return;
   const s = document.createElement('style');
-  s.id = 'indo-profile-direct-v8';
+  s.id = 'indo-profile-direct-v9';
   s.textContent = `
     .profile-direct-shell{width:100%;max-width:520px;min-height:100vh;margin:0 auto;background:#07070a;position:relative;padding-bottom:78px;overflow-x:hidden}
     .profile-direct-page{width:100%;max-width:520px;min-height:calc(100vh - 64px);padding:20px 15px 20px;margin:0 auto;box-sizing:border-box}
@@ -32,10 +32,14 @@ function installStyles() {
     .profile-direct-item{aspect-ratio:1;border:0;padding:0;position:relative;overflow:hidden;background:#111;cursor:pointer}
     .profile-direct-item video{width:100%;height:100%;object-fit:cover;display:block;background:#111}
     .profile-direct-empty{grid-column:1/-1;padding:45px 15px;text-align:center;color:#858591;font-size:13px}
-    .profile-video-viewer{position:fixed;inset:0;z-index:30000;background:rgba(0,0,0,.96);display:grid;place-items:center;padding:12px;touch-action:none}
-    .profile-video-viewer-card{position:relative;width:min(100%,520px);height:min(92vh,820px);background:#000;overflow:hidden;border-radius:14px;display:flex;align-items:center;justify-content:center}
+    .profile-video-viewer{position:fixed;inset:0;z-index:30000;background:#000;display:grid;place-items:center;padding:0;touch-action:none}
+    .profile-video-viewer-card{position:relative;width:min(100%,520px);height:100vh;max-height:100vh;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
     .profile-video-viewer-card video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
-    .profile-video-viewer-close{position:absolute;top:12px;left:12px;z-index:3;width:38px;height:38px;border:0;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;font-size:25px;line-height:1;cursor:pointer}
+    .profile-video-viewer-close{position:absolute;top:12px;left:12px;z-index:5;width:38px;height:38px;border:0;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;font-size:25px;line-height:1;cursor:pointer}
+    .profile-video-viewer-actions{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;justify-content:space-around;gap:8px;padding:10px 12px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.88));}
+    .profile-video-viewer-actions button{min-width:64px;height:44px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-size:25px;cursor:pointer;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+    .profile-video-viewer-actions button span{font-size:11px;font-weight:700}
+    .profile-video-viewer-actions button.active{color:#ff4f8a}
   `;
   document.head.appendChild(s);
 }
@@ -63,6 +67,14 @@ function profileVideoUrl(rawUrl) {
   return `${prefix}f_mp4,vc_h264,ac_aac/${rest}`;
 }
 
+function getActionKey(type, videoId) {
+  return `indo:profile-action:${type}:${String(videoId || '')}`;
+}
+
+function setActionState(button, active) {
+  button?.classList.toggle('active', Boolean(active));
+}
+
 function closeProfileVideoViewer() {
   const viewer = document.querySelector('.profile-video-viewer');
   if (!viewer) return;
@@ -74,20 +86,57 @@ function closeProfileVideoViewer() {
 function openProfileVideoViewer(video) {
   const src = String(video?.currentSrc || video?.src || '').trim();
   const original = String(video?.dataset.originalSrc || '').trim();
+  const videoId = String(video?.closest('.profile-direct-item')?.dataset.videoId || '').trim();
   if (!src && !original) return;
   document.querySelector('.profile-video-viewer')?.remove();
   document.querySelectorAll('.profile-direct-item video').forEach((item) => item.pause());
+
   const viewer = document.createElement('div');
   viewer.className = 'profile-video-viewer';
-  viewer.innerHTML = `<div class="profile-video-viewer-card"><button type="button" class="profile-video-viewer-close" aria-label="Close">×</button><video controls playsinline preload="auto" src="${esc(src || original)}"></video></div>`;
+  viewer.innerHTML = `<div class="profile-video-viewer-card">
+    <button type="button" class="profile-video-viewer-close" aria-label="Close">×</button>
+    <video controls playsinline preload="auto" src="${esc(src || original)}"></video>
+    <div class="profile-video-viewer-actions" aria-label="Video actions">
+      <button type="button" data-viewer-action="like" aria-label="Like">♡<span>Like</span></button>
+      <button type="button" data-viewer-action="share" aria-label="Share">↗<span>Share</span></button>
+      <button type="button" data-viewer-action="save" aria-label="Save">🔖<span>Save</span></button>
+    </div>
+  </div>`;
   document.body.appendChild(viewer);
+
   const player = viewer.querySelector('video');
   const close = () => closeProfileVideoViewer();
   viewer.querySelector('.profile-video-viewer-close')?.addEventListener('click', close);
   viewer.addEventListener('click', (event) => { if (event.target === viewer) close(); });
-  viewer.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
   viewer.setAttribute('tabindex', '-1');
   viewer.focus({ preventScroll: true });
+
+  const likeButton = viewer.querySelector('[data-viewer-action="like"]');
+  const saveButton = viewer.querySelector('[data-viewer-action="save"]');
+  const shareButton = viewer.querySelector('[data-viewer-action="share"]');
+  const likeKey = getActionKey('like', videoId || src);
+  const saveKey = getActionKey('save', videoId || src);
+  setActionState(likeButton, localStorage.getItem(likeKey) === '1');
+  setActionState(saveButton, localStorage.getItem(saveKey) === '1');
+
+  likeButton?.addEventListener('click', () => {
+    const next = localStorage.getItem(likeKey) !== '1';
+    localStorage.setItem(likeKey, next ? '1' : '0');
+    setActionState(likeButton, next);
+  });
+  saveButton?.addEventListener('click', () => {
+    const next = localStorage.getItem(saveKey) !== '1';
+    localStorage.setItem(saveKey, next ? '1' : '0');
+    setActionState(saveButton, next);
+  });
+  shareButton?.addEventListener('click', async () => {
+    const shareData = { title: 'Indo video', text: 'Watch this video on Indo', url: original || src || window.location.href };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(shareData.url); shareButton.querySelector('span').textContent = 'Copied'; setTimeout(() => { if (shareButton.isConnected) shareButton.querySelector('span').textContent = 'Share'; }, 1200); }
+    } catch {}
+  });
+
   player?.addEventListener('error', () => {
     if (original && player.src !== original) {
       player.src = original;
@@ -203,7 +252,7 @@ export async function renderProfile(app, profile = null) {
     grid.innerHTML = videos.length ? videos.map((v) => {
       const raw = v.secureUrl || v.videoUrl || v.url || '';
       const src = profileVideoUrl(raw);
-      return `<button class="profile-direct-item" type="button"><video playsinline preload="metadata" src="${esc(src)}" data-original-src="${esc(raw)}"></video></button>`;
+      return `<button class="profile-direct-item" type="button" data-video-id="${esc(v.id || '')}"><video playsinline preload="metadata" src="${esc(src)}" data-original-src="${esc(raw)}"></video></button>`;
     }).join('') : '<div class="profile-direct-empty">No posts yet.</div>';
     bindProfileVideos(app);
   } catch {
