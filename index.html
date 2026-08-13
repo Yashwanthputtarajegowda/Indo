@@ -7,12 +7,11 @@
   <meta name="application-name" content="Indo" />
   <meta name="apple-mobile-web-app-title" content="Indo" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/styles.css?v=20260813-50" />
-  <link rel="stylesheet" href="./src/auth.css?v=20260813-50" />
-  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-50" />
+  <link rel="stylesheet" href="./src/styles.css?v=20260813-51" />
+  <link rel="stylesheet" href="./src/auth.css?v=20260813-51" />
+  <link rel="stylesheet" href="./src/features/splash/splash.css?v=20260813-51" />
   <style>
     .story-file-name{display:none!important}
-    .story-publish-on-preview{position:absolute!important;right:12px!important;bottom:12px!important;width:calc(100% - 24px)!important;max-width:190px!important;height:48px!important;z-index:22!important;margin:0!important}
   </style>
   <title>Indo</title>
 </head>
@@ -24,7 +23,7 @@
       <div class="splash-spinner" aria-hidden="true"></div>
     </main>
   </div>
-  <script src="./config/runtime-config.js?v=20260813-50"></script>
+  <script src="./config/runtime-config.js?v=20260813-51"></script>
   <script>
     window.addEventListener('error', (event) => {
       const message = String(event.error?.message || event.message || 'Application failed to load.');
@@ -47,7 +46,7 @@
       button.textContent = 'Deleting...';
       try {
         const [{ auth }, { getApp }, { getDatabase, ref, get, remove }] = await Promise.all([
-          import('./src/features/auth/firebase-client.js?v=20260813-50'),
+          import('./src/features/auth/firebase-client.js?v=20260813-51'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js')
         ]);
@@ -75,102 +74,7 @@
         button.textContent = error?.message || 'Could not delete story.';
       }
     }, true);
-
-    const storyEditorObserver = new MutationObserver(() => {
-      const storyPreview = document.querySelector('.story-preview');
-      const storyPublish = document.querySelector('#story-publish-button');
-      const storyAddButton = document.querySelector('#story-add-button');
-      if (storyPreview && storyPublish) {
-        if (storyPublish.parentElement !== storyPreview) storyPreview.appendChild(storyPublish);
-        storyPublish.classList.add('story-publish-on-preview');
-        storyPublish.textContent = 'Your story';
-        storyPublish.title = 'Publish your story';
-      }
-      if (storyAddButton && storyPreview) storyAddButton.style.bottom = '70px';
-
-      const overlay = document.querySelector('.story-viewer-v2');
-      if (overlay && overlay.dataset.editorEnhanced !== '1') {
-        overlay.dataset.editorEnhanced = '1';
-        try {
-          const cached = JSON.parse(localStorage.getItem('indo:last-story') || 'null');
-          const title = String(cached?.title || '').trim();
-          const sticker = String(cached?.stickerDataUrl || '').trim();
-          const crop = String(cached?.crop || 'portrait');
-          const card = overlay.querySelector('.story-viewer-v2-card');
-          const video = overlay.querySelector('video');
-          if (card && video) {
-            if (crop === 'cover' || crop === 'square' || crop === 'landscape') {
-              video.style.objectFit = 'cover';
-              if (crop === 'square') card.style.aspectRatio = '1 / 1';
-              if (crop === 'landscape') card.style.aspectRatio = '16 / 9';
-            }
-            if (title) {
-              const titleNode = document.createElement('div');
-              const x = Number(cached?.titleX ?? 50);
-              const y = Number(cached?.titleY ?? 14);
-              const font = String(cached?.titleFont || 'Arial, sans-serif');
-              titleNode.textContent = title;
-              titleNode.style.cssText = `position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%);z-index:5;max-width:86%;padding:6px 12px;border-radius:8px;background:rgba(0,0,0,.34);color:#fff;font-size:22px;font-weight:900;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.6);pointer-events:none;font-family:${font};`;
-              card.appendChild(titleNode);
-            }
-            if (sticker) {
-              const image = document.createElement('img');
-              image.src = sticker;
-              image.alt = '';
-              const x = Number(cached?.stickerX ?? 50);
-              const y = Number(cached?.stickerY ?? 50);
-              const scale = Number(cached?.stickerScale ?? 1);
-              image.style.cssText = `position:absolute;left:${x}%;top:${y}%;width:${88 * scale}px;height:${88 * scale}px;transform:translate(-50%,-50%);object-fit:contain;z-index:5;pointer-events:none;filter:drop-shadow(0 3px 10px rgba(0,0,0,.45));`;
-              card.appendChild(image);
-            }
-          }
-        } catch {}
-      }
-
-      const picker = document.querySelector('.story-font-picker');
-      if (!picker || picker.hidden || picker.dataset.loaded === '1') return;
-      const fonts = [
-        ['Poppins', '"Poppins", sans-serif'], ['Roboto', '"Roboto", sans-serif'], ['Montserrat', '"Montserrat", sans-serif'], ['Playfair Display', '"Playfair Display", serif'], ['Lora', '"Lora", serif'], ['Merriweather', '"Merriweather", serif'], ['Oswald', '"Oswald", sans-serif'], ['Bebas Neue', '"Bebas Neue", sans-serif'], ['Pacifico', '"Pacifico", cursive'], ['Lobster', '"Lobster", cursive'], ['Comfortaa', '"Comfortaa", sans-serif'], ['Raleway', '"Raleway", sans-serif'], ['Abril Fatface', '"Abril Fatface", cursive'], ['Dancing Script', '"Dancing Script", cursive'], ['Bangers', '"Bangers", cursive'], ['Permanent Marker', '"Permanent Marker", cursive'], ['Anton', '"Anton", sans-serif'], ['Satisfy', '"Satisfy", cursive'], ['Caveat', '"Caveat", cursive'], ['Quicksand', '"Quicksand", sans-serif']
-      ];
-      if (!document.getElementById('indo-story-fonts-v1')) {
-        const link = document.createElement('link');
-        link.id = 'indo-story-fonts-v1';
-        link.rel = 'stylesheet';
-        link.href = 'https://fonts.googleapis.com/css2?family=Anton&family=Abril+Fatface&family=Bangers&family=Bebas+Neue&family=Caveat:wght@400;600;700&family=Comfortaa:wght@400;600;700&family=Dancing+Script:wght@400;600;700&family=Lobster&family=Lora:wght@400;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700;800&family=Oswald:wght@400;500;600;700&family=Pacifico&family=Permanent+Marker&family=Playfair+Display:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&family=Quicksand:wght@400;600;700&family=Raleway:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Satisfy&display=swap';
-        document.head.appendChild(link);
-      }
-      const current = document.querySelector('.story-title-element')?.dataset.font || '"Poppins", sans-serif';
-      picker.innerHTML = '';
-      picker.dataset.loaded = '1';
-      picker.style.maxHeight = '300px';
-      picker.style.overflowY = 'auto';
-      picker.style.overflowX = 'hidden';
-      picker.style.webkitOverflowScrolling = 'touch';
-      picker.style.gridTemplateRows = 'repeat(20, 38px)';
-      fonts.forEach(([name, value]) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = name;
-        button.dataset.font = value;
-        button.style.fontFamily = value;
-        button.style.height = '38px';
-        button.style.flexShrink = '0';
-        button.style.whiteSpace = 'nowrap';
-        button.classList.toggle('active', value === current);
-        button.addEventListener('click', (clickEvent) => {
-          clickEvent.preventDefault();
-          clickEvent.stopPropagation();
-          const target = document.querySelector('.story-title-element');
-          const input = document.querySelector('.story-title-input');
-          if (target) { target.style.fontFamily = value; target.dataset.font = value; }
-          if (input) input.style.fontFamily = value;
-          picker.hidden = true;
-        });
-        picker.appendChild(button);
-      });
-    });
-    storyEditorObserver.observe(document.body, { childList: true, subtree: true });
   </script>
-  <script type="module" src="./src/main.js?v=20260813-50"></script>
+  <script type="module" src="./src/main.js?v=20260813-51"></script>
 </body>
 </html>
