@@ -1,7 +1,7 @@
 import { bindAuthSwitches, bindSignupForm } from './features/auth/auth-controller.js';
 
 const app = document.getElementById('root');
-const ROUTER_VERSION = '20260814-131';
+const ROUTER_VERSION = '20260814-132';
 
 async function render(){
   const { render } = await import(`./router.js?v=${ROUTER_VERSION}`);
