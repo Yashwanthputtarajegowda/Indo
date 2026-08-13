@@ -75,6 +75,18 @@ function bindWatchProgress(videoElement, mediaId) {
   videoElement.addEventListener('ended', sendDelta);
 }
 
+function enforceSingleVideoPlayback() {
+  if (window.__indoSingleVideoPlaybackBound) return;
+  window.__indoSingleVideoPlaybackBound = true;
+  document.addEventListener('play', (event) => {
+    const current = event.target instanceof HTMLVideoElement ? event.target : null;
+    if (!current) return;
+    document.querySelectorAll('video').forEach((video) => {
+      if (video !== current && !video.paused) video.pause();
+    });
+  }, true);
+}
+
 export function renderVideoCard(video) {
   const creatorRaw = String(video.creator || '@indo');
   const creator = escapeHtml(creatorRaw);
@@ -245,6 +257,7 @@ function bindLazyVideo(video, videoId) {
 }
 
 export function bindVideoCards(root) {
+  enforceSingleVideoPlayback();
   root.querySelectorAll('[data-video-id] .post-video[data-video-src]').forEach((video) => {
     const card = video.closest('[data-video-id]');
     if (!card) return;
