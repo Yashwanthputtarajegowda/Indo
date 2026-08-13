@@ -1,7 +1,40 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 
-const VERSION = '20260813-74';
+const VERSION = '20260813-75';
+
+const SCREEN_MODULES = [
+  './screens/home-v2.js',
+  './screens/reels.js',
+  './screens/create.js',
+  './screens/story-create.js',
+  './screens/profile-direct.js',
+  './screens/settings.js',
+  './screens/search.js',
+  './screens/notifications.js',
+  './screens/activity.js',
+  './screens/wallet.js',
+  './screens/blocked-users.js',
+  './features/stories/story-stack-enhancer.js',
+  './features/feed/home-feed.js'
+];
+
+let preloadPromise = null;
+
+export function preloadAppScreens() {
+  if (preloadPromise) return preloadPromise;
+  const load = () => Promise.allSettled(
+    SCREEN_MODULES.map((modulePath) => import(`${modulePath}?v=${VERSION}`))
+  ).then(() => undefined);
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    preloadPromise = new Promise((resolve) => {
+      window.requestIdleCallback(() => load().then(resolve), { timeout: 1200 });
+    });
+  } else {
+    preloadPromise = new Promise((resolve) => setTimeout(() => load().then(resolve), 300));
+  }
+  return preloadPromise;
+}
 
 function renderRouteError(app, error) {
   const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\\\"']/g, '');
