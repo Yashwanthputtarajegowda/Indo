@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 
-const VERSION = '20260813-70';
+const VERSION = '20260813-73';
 
 function renderRouteError(app, error) {
   const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\\\"']/g, '');
