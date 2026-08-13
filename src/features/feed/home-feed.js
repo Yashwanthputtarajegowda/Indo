@@ -47,8 +47,16 @@ function filterAndTakeOnce(videos, limit) {
     if (!id || !seen[id]) fresh.push(video);
     if (fresh.length >= limit) break;
   }
-  markFeedSeen(fresh);
-  return fresh;
+
+  // One-time delivery until the current pool is exhausted. When there is nothing
+  // unseen left, recycle the existing pool so the Home feed never becomes empty.
+  if (fresh.length) {
+    markFeedSeen(fresh);
+    return fresh;
+  }
+  const recycled = all.slice(0, limit);
+  markFeedSeen(recycled);
+  return recycled;
 }
 
 async function fetchVideos(apiBase, headers, query) {
@@ -167,7 +175,7 @@ export function renderVideoCard(video) {
     ? `<img class="avatar small post-avatar-image" src="${creatorAvatar}" alt="${creator}" loading="lazy" style="width:38px;height:38px;min-width:38px;max-width:38px;flex:0 0 38px;margin:0;display:block;border-radius:50%;object-fit:cover;">`
     : `<div class="avatar small" style="width:38px;height:38px;min-width:38px;max-width:38px;flex:0 0 38px;margin:0;display:grid;place-items:center;border-radius:50%;">${initial}</div>`;
   const source = mediaUrl
-    ? `<video class="post-video" muted playsinline preload="none" data-video-src="${escapeHtml(mediaUrl)}"${poster}></video>`
+    ? `<video class="post-video" muted playsinline preload="metadata" data-video-src="${escapeHtml(mediaUrl)}"${poster}></video>`
     : '<div class="post-video video-unavailable">Video unavailable</div>';
   return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}" data-owner-uid="${ownerUid}">
     <div class="post-head">
@@ -273,6 +281,7 @@ function loadVideoSource(video) {
   if (!source) return false;
   video.src = source;
   video.dataset.loaded = '1';
+  video.load();
   return true;
 }
 
@@ -292,19 +301,14 @@ function bindLazyVideo(video, videoId) {
   const pause = () => { if (!video.paused) video.pause(); };
   video.addEventListener('error', hideBrokenCard, { once: true });
   video.addEventListener('abort', hideBrokenCard, { once: true });
-  video.addEventListener('stalled', () => {
-    window.setTimeout(() => {
-      if (video.readyState === 0) hideBrokenCard();
-    }, 3000);
-  }, { once: true });
   video.addEventListener('play', () => maybeRecordVideoView(videoId), { passive: true });
   if ('IntersectionObserver' in window) {
     observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) playIfVisible();
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.45) playIfVisible();
         else pause();
       }
-    }, { threshold: [0, 0.6, 0.9], rootMargin: '0px' });
+    }, { threshold: [0, 0.45, 0.9], rootMargin: '120px 0px' });
     observer.observe(video);
   } else {
     playIfVisible();
