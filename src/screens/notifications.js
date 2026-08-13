@@ -1,5 +1,5 @@
 import { nav } from '../components/nav.js';
-import { loadNotifications, markNotificationRead } from '../features/notifications/notifications.js';
+import { loadNotifications, markNotificationRead, markAllNotificationsRead } from '../features/notifications/notifications.js?v=20260813-28';
 import { respondToFollowRequest } from '../features/social/follow.js';
 
 function escapeHtml(value = '') {
@@ -26,14 +26,22 @@ function renderNotification(item) {
   return `<div class="notice-wrap"><button class="notice ${item.read ? '' : 'unread'}" data-notification-id="${escapeHtml(item.id || '')}" type="button"><div class="avatar small">${initial}</div><p><b>${actor}</b> ${message}<small>${timeAgo(item.createdAt)}</small></p></button>${requestActions}</div>`;
 }
 
-export function renderNotifications(app, mode = 'all') {
+export async function renderNotifications(app, mode = 'all') {
   const isActivity = mode === 'activity';
   app.innerHTML = `<div class="app-shell"><header class="page-head"><button data-screen="home" aria-label="Back">‹</button><h2>${isActivity ? 'Activity' : 'Notifications'}</h2><span></span></header><main class="notifications"><div class="feed-status" data-notification-status>Loading ${isActivity ? 'activity' : 'notifications'}...</div><div data-notifications-list></div></main>${nav('home')}</div>`;
 
   const list = app.querySelector('[data-notifications-list]');
   const status = app.querySelector('[data-notification-status]');
 
-  loadNotifications().then((items) => {
+  try {
+    const items = await loadNotifications();
+
+    // Opening Notifications marks every unread notification as read.
+    // The home badge is therefore cleared the next time Home renders.
+    if (!isActivity) {
+      await markAllNotificationsRead(items);
+    }
+
     const visibleItems = isActivity
       ? items.filter((item) => ['like', 'comment'].includes(item.type))
       : items;
@@ -43,7 +51,8 @@ export function renderNotifications(app, mode = 'all') {
       list.innerHTML = `<div class="feed-status">No ${isActivity ? 'activity' : 'notifications'} yet.</div>`;
       return;
     }
-    list.innerHTML = visibleItems.map(renderNotification).join('');
+    list.innerHTML = visibleItems.map((item) => renderNotification({ ...item, read: true })).join('');
+
     list.querySelectorAll('[data-notification-id]').forEach((item) => {
       item.addEventListener('click', async () => {
         if (!item.classList.contains('unread')) return;
@@ -53,6 +62,7 @@ export function renderNotifications(app, mode = 'all') {
         } catch {}
       });
     });
+
     list.querySelectorAll('[data-follow-response]').forEach((button) => {
       button.addEventListener('click', async (event) => {
         event.stopPropagation();
@@ -68,7 +78,7 @@ export function renderNotifications(app, mode = 'all') {
         }
       });
     });
-  }).catch((error) => {
+  } catch (error) {
     status.textContent = error.message || `Could not load ${isActivity ? 'activity' : 'notifications'}.`;
-  });
+  }
 }
