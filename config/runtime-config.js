@@ -3,8 +3,8 @@
 window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
 
 (function () {
-  if (window.__indoStoryRuntimeV3) return;
-  window.__indoStoryRuntimeV3 = true;
+  if (window.__indoStoryRuntimeV4) return;
+  window.__indoStoryRuntimeV4 = true;
 
   let publishing = false;
 
@@ -40,13 +40,11 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
     }
     publishing = true;
     publish.disabled = true;
-    publish.removeAttribute('disabled');
     publish.textContent = 'Posting...';
     message.textContent = 'Uploading story...';
     try {
       const { publishStory } = await import('../src/features/upload/story-publish.js?v=20260813-62');
-      const editor = collectStoryEditor(preview);
-      await publishStory(file, () => {}, editor);
+      await publishStory(file, () => {}, collectStoryEditor(preview));
       window.__indoStoryDraftFile = null;
       message.textContent = 'Story published successfully.';
       window.setTimeout(() => window.__indoNavigate?.('home'), 350);
@@ -109,9 +107,7 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
         const currentPreview = document.getElementById('story-preview');
         const currentPublish = document.getElementById('story-publish-button');
         const currentMessage = document.getElementById('story-create-message');
-        if (currentPreview && currentPublish && currentMessage) {
-          void directPublish(currentPreview, currentPublish, currentMessage);
-        }
+        if (currentPreview && currentPublish && currentMessage) void directPublish(currentPreview, currentPublish, currentMessage);
       });
       hit.addEventListener('click', (event) => {
         event.preventDefault();
@@ -119,6 +115,7 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
       });
       preview.appendChild(hit);
     }
+
     return true;
   }
 
