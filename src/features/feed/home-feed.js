@@ -75,15 +75,36 @@ function bindWatchProgress(videoElement, mediaId) {
   videoElement.addEventListener('ended', sendDelta);
 }
 
+function stopOtherVideos(current) {
+  document.querySelectorAll('video').forEach((video) => {
+    if (video === current) return;
+    if (!video.paused) {
+      video.pause();
+      try { video.currentTime = video.currentTime; } catch {}
+    }
+  });
+}
+
 function enforceSingleVideoPlayback() {
   if (window.__indoSingleVideoPlaybackBound) return;
   window.__indoSingleVideoPlaybackBound = true;
+
   document.addEventListener('play', (event) => {
     const current = event.target instanceof HTMLVideoElement ? event.target : null;
     if (!current) return;
-    document.querySelectorAll('video').forEach((video) => {
-      if (video !== current && !video.paused) video.pause();
-    });
+    stopOtherVideos(current);
+    window.__indoActiveVideo = current;
+  }, true);
+
+  document.addEventListener('playing', (event) => {
+    const current = event.target instanceof HTMLVideoElement ? event.target : null;
+    if (!current) return;
+    stopOtherVideos(current);
+    window.__indoActiveVideo = current;
+  }, true);
+
+  document.addEventListener('pause', (event) => {
+    if (event.target === window.__indoActiveVideo) window.__indoActiveVideo = null;
   }, true);
 }
 
@@ -218,6 +239,7 @@ function bindLazyVideo(video, videoId) {
   };
   const playIfVisible = () => {
     if (!loadVideoSource(video)) return;
+    stopOtherVideos(video);
     video.muted = true;
     video.play().catch(() => {});
   };
@@ -233,10 +255,10 @@ function bindLazyVideo(video, videoId) {
   if ('IntersectionObserver' in window) {
     observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.35) playIfVisible();
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) playIfVisible();
         else pause();
       }
-    }, { threshold: [0, 0.35, 0.7], rootMargin: '300px 0px' });
+    }, { threshold: [0, 0.6, 0.9], rootMargin: '0px' });
     observer.observe(video);
   } else {
     playIfVisible();
@@ -246,6 +268,7 @@ function bindLazyVideo(video, videoId) {
     event.stopPropagation();
     if (!loadVideoSource(video)) return;
     if (video.paused) {
+      stopOtherVideos(video);
       video.muted = false;
       video.play().catch(() => {});
     } else {
