@@ -8,6 +8,10 @@ const appIcons = {
   bell: '♧'
 };
 
+const storyButtonStyle = 'display:flex;align-items:center;gap:10px;width:max-content;min-width:120px;height:52px;padding:0 6px;text-align:left;flex-direction:row;';
+const storyAvatarStyle = 'width:40px;height:40px;min-width:40px;margin:0;display:grid;place-items:center;border-radius:50%;';
+const storyNameStyle = 'display:block;margin:0;white-space:nowrap;font-size:12px;font-weight:600;color:#d8d8df;';
+
 function renderNav() {
   return `<nav class="bottom-nav">
     <button data-screen="home" class="active">${appIcons.home}<span>Home</span></button>
@@ -48,14 +52,14 @@ function bindNavigation(app) {
 function storyItem(story) {
   const username = story.username || story.userName || story.handle || story.displayName || 'User';
   const initial = username.replace(/^@/, '').charAt(0).toUpperCase() || 'U';
-  return `<button class="story" type="button" data-story-id="${story.id || ''}"><div class="avatar story-avatar">${initial}</div><span>@${username.replace(/^@/, '')}</span></button>`;
+  return `<button class="story" style="${storyButtonStyle}" type="button" data-story-id="${story.id || ''}"><div class="avatar story-avatar" style="${storyAvatarStyle}">${initial}</div><span style="${storyNameStyle}">@${username.replace(/^@/, '')}</span></button>`;
 }
 
 async function loadFeed(app) {
   const feed = app.querySelector('[data-home-feed]');
   const status = app.querySelector('[data-feed-status]');
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-12');
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import('../features/feed/home-feed.js?v=20260813-13');
     const videos = await loadHomeVideos();
     if (!videos.length) {
       status.textContent = 'No videos yet. Upload your first video.';
@@ -73,10 +77,10 @@ async function loadFeed(app) {
 async function loadStoriesSafely(app) {
   const row = app.querySelector('[data-stories]');
   try {
-    const { loadStories } = await import('../features/stories/stories.js?v=20260813-12');
+    const { loadStories } = await import('../features/stories/stories.js?v=20260813-13');
     const stories = await loadStories();
     if (!stories.length) return;
-    row.innerHTML = `<button class="story add-story" type="button"><div class="avatar story-avatar gradient">+</div><span>Your story</span></button>${stories.map(storyItem).join('')}`;
+    row.innerHTML = `<button class="story add-story" style="${storyButtonStyle}" type="button"><div class="avatar story-avatar gradient" style="${storyAvatarStyle}">+</div><span style="${storyNameStyle}">Your story</span></button>${stories.map(storyItem).join('')}`;
   } catch (error) {
     console.warn('Stories unavailable:', error);
   }
@@ -86,7 +90,7 @@ async function loadNotificationsSafely(app) {
   try {
     const button = app.querySelector('[data-screen="notifications"]');
     if (!button) return;
-    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-12');
+    const { loadNotifications } = await import('../features/notifications/notifications.js?v=20260813-13');
     const items = await loadNotifications();
     const unread = items.filter((item) => !item.read).length;
     if (!unread) return;
@@ -109,7 +113,7 @@ export function renderHome(app) {
         <button class="notification-button" data-screen="notifications" aria-label="Notifications">${appIcons.bell}</button>
       </div>
     </header>
-    <div class="stories" data-stories><button class="story add-story" type="button"><div class="avatar story-avatar gradient">+</div><span>Your story</span></button></div>
+    <div class="stories" data-stories><button class="story add-story" style="${storyButtonStyle}" type="button"><div class="avatar story-avatar gradient" style="${storyAvatarStyle}">+</div><span style="${storyNameStyle}">Your story</span></button></div>
     <main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main>
     ${renderNav()}
   </div>`;
