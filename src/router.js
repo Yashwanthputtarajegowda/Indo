@@ -1,8 +1,8 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 
-const VERSION = '20260814-131';
-const NAV_STYLE_ID = 'indo-global-nav-v131';
+const VERSION = '20260814-132';
+const NAV_STYLE_ID = 'indo-global-nav-v132';
 
 function renderRouteError(app, error) {
   const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\"']/g, '');
