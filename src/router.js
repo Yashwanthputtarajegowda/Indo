@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 
-const VERSION = '20260813-53';
+const VERSION = '20260813-55';
 
 function renderRouteError(app, error) {
   const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\\"']/g, '');
@@ -14,9 +14,7 @@ async function renderLazy(app, modulePath, exportName, args = []) {
     const renderer = module[exportName];
     if (typeof renderer !== 'function') throw new Error(`Missing screen renderer: ${exportName}`);
     await renderer(app, ...args);
-    if (modulePath === './screens/story-create.js') {
-      window.__indoFixStoryEditor?.();
-    }
+    if (modulePath === './screens/story-create.js') window.__indoFixStoryEditor?.();
   } catch (error) {
     console.error(`Failed to load ${modulePath}:`, error);
     renderRouteError(app, error);
