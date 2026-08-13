@@ -74,14 +74,16 @@ export function renderVideoCard(video) {
   const poster = video.thumbnailUrl ? ` poster="${escapeHtml(video.thumbnailUrl)}"` : '';
   const initial = escapeHtml(creatorRaw.replace(/^@/, '').charAt(0).toUpperCase() || 'I');
   const avatar = creatorAvatar
-    ? `<img class="avatar small post-avatar-image" src="${creatorAvatar}" alt="${creator}" loading="lazy">`
-    : `<div class="avatar small">${initial}</div>`;
+    ? `<img class="avatar small post-avatar-image" src="${creatorAvatar}" alt="${creator}" loading="lazy" style="width:38px;height:38px;min-width:38px;max-width:38px;flex:0 0 38px;margin:0;display:block;border-radius:50%;object-fit:cover;">`
+    : `<div class="avatar small" style="width:38px;height:38px;min-width:38px;max-width:38px;flex:0 0 38px;margin:0;display:grid;place-items:center;border-radius:50%;">${initial}</div>`;
   const source = mediaUrl
     ? `<video class="post-video" autoplay playsinline preload="metadata"${poster} src="${escapeHtml(mediaUrl)}"></video>`
     : '<div class="post-video video-unavailable">Video unavailable</div>';
   return `<article class="post-card video-post" data-video-id="${escapeHtml(video.id)}" data-owner-uid="${escapeHtml(video.ownerUid || '')}">
     <div class="post-head">
-      <button class="post-creator" type="button" data-profile-username="${usernameKey}" aria-label="Open ${creator} profile">${avatar}<span class="post-creator-name">${creator}</span></button>
+      <button class="post-creator" type="button" data-profile-username="${usernameKey}" aria-label="Open ${creator} profile" style="display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:9px;width:auto;min-width:0;height:100%;margin:0;padding:0;text-align:left;white-space:nowrap;">
+        ${avatar}<span class="post-creator-name" style="display:block;margin:0;padding:0;font-size:13px;font-weight:700;line-height:1;white-space:nowrap;">${creator}</span>
+      </button>
       <button class="icon-btn post-more" type="button" data-feed-more aria-label="More options">⋯</button>
     </div>
     ${source}
