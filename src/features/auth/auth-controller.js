@@ -1,7 +1,7 @@
 import { state } from '../../state.js';
 import { submitSignup } from './signup-form.js';
 
-const ROUTER_VERSION = '20260814-143';
+const ROUTER_VERSION = '20260814-146';
 
 function getRoot() {
   return document.getElementById('root');
