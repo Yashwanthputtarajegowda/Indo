@@ -7,21 +7,29 @@ function installUserIdBehavior(app) {
   const message = app.querySelector('#user-id-message');
   if (!input || input.dataset.userIdBound === '1') return;
   input.dataset.userIdBound = '1';
+
   let timer;
 
-  const normalizeDisplay = () => {
-    const raw = String(input.value || '').trim().replace(/^@+/, '');
-    input.value = raw ? `@${raw}` : '';
-    if (raw) input.setSelectionRange(input.value.length, input.value.length);
+  const getRawUserId = () => String(input.value || '').trim().replace(/^@+/, '').toLowerCase();
+
+  const updatePreview = () => {
+    const raw = getRawUserId();
+    if (!raw) {
+      if (message) message.textContent = 'Choose any User ID. @ will be added automatically.';
+      return raw;
+    }
+    if (message) message.textContent = `Your Indo ID will be @${raw}`;
     return raw;
   };
 
   const checkAvailability = async () => {
-    const raw = String(input.value || '').trim().replace(/^@+/, '').toLowerCase();
+    const raw = getRawUserId();
     if (!raw) {
-      if (message) message.textContent = 'Type your User ID. Indo will add @ automatically.';
+      input.setCustomValidity('');
+      updatePreview();
       return;
     }
+
     if (message) message.textContent = 'Checking User ID...';
     try {
       const apiBase = window.INDO_API_BASE || '';
@@ -32,24 +40,30 @@ function installUserIdBehavior(app) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Could not check User ID.');
-      if (message) message.textContent = data.available
-        ? `@${raw} is available.`
-        : `@${raw} is already taken. Choose another User ID.`;
-      input.setCustomValidity(data.available ? '' : 'This User ID is already taken.');
+
+      if (data.available) {
+        input.setCustomValidity('');
+        if (message) message.textContent = `@${raw} is available. @ will be added automatically.`;
+      } else {
+        input.setCustomValidity('This User ID is already taken.');
+        if (message) message.textContent = `@${raw} is already taken. Choose another User ID.`;
+      }
     } catch (error) {
       input.setCustomValidity('');
-      if (message) message.textContent = 'Availability will be confirmed when you create the account.';
+      if (message) message.textContent = 'User ID will be checked when you create the account.';
     }
   };
 
   input.addEventListener('input', () => {
-    normalizeDisplay();
     input.setCustomValidity('');
+    updatePreview();
     clearTimeout(timer);
     timer = setTimeout(checkAvailability, 350);
   });
+
   input.addEventListener('blur', () => {
-    normalizeDisplay();
+    const raw = getRawUserId();
+    input.value = raw;
     clearTimeout(timer);
     timer = setTimeout(checkAvailability, 0);
   });
@@ -57,7 +71,7 @@ function installUserIdBehavior(app) {
 
 export function renderLogin(app) {
   app.innerHTML = `
-    <main class="auth-page indo-auth-v146">
+    <main class="auth-page indo-auth-v147">
       <div class="auth-ambient" aria-hidden="true">
         <span class="auth-orbit auth-orbit-a"></span><span class="auth-orbit auth-orbit-b"></span>
         <span class="auth-star auth-star-a">✦</span><span class="auth-star auth-star-b">•</span>
@@ -73,8 +87,8 @@ export function renderLogin(app) {
         <section class="auth-card auth-login-card">
           <div class="auth-welcome"><h1>Welcome back!</h1><p>Login to continue your journey</p></div>
           <form id="login-form" class="auth-form">
-            <label class="auth-field"><span>${authIcon('✉')}Email ID</span><div class="auth-input-wrap"><input id="login-email" type="email" placeholder="Email ID" autocomplete="email" required><b aria-hidden="true">✉</b></div></label>
-            <label class="auth-field"><span>${authIcon('♙')}Password</span><div class="auth-input-wrap"><input id="login-password" type="password" placeholder="Password" autocomplete="current-password" required><button class="auth-eye" id="login-password-toggle" type="button" aria-label="Show password">◉</button></div></label>
+            <label class="auth-field"><span>${authIcon('✉')}Email ID</span><div class="auth-input-wrap"><input id="login-email" type="email" placeholder="Enter your email" autocomplete="email" required><b aria-hidden="true">✉</b></div></label>
+            <label class="auth-field"><span>${authIcon('♙')}Password</span><div class="auth-input-wrap"><input id="login-password" type="password" placeholder="Enter your password" autocomplete="current-password" required><button class="auth-eye" id="login-password-toggle" type="button" aria-label="Show password">◉</button></div></label>
             <div class="auth-options"><label class="auth-check"><input id="login-remember" type="checkbox" checked><span></span>Remember me</label><button class="forgot-btn" data-password-reset type="button">Forgot Password?</button></div>
             <p id="login-message" class="auth-message" aria-live="polite"></p>
             <button class="auth-submit" type="submit"><span>Login</span><b>→</b></button>
@@ -96,6 +110,7 @@ export function renderLogin(app) {
     toggle.textContent = showing ? '◉' : '◌';
     toggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
   });
+
   app.querySelectorAll('[data-auth-provider]').forEach((button) => {
     button.addEventListener('click', () => {
       const message = app.querySelector('#login-message');
@@ -106,7 +121,7 @@ export function renderLogin(app) {
 
 export function renderSignup(app) {
   app.innerHTML = `
-    <main class="auth-page indo-auth-v146">
+    <main class="auth-page indo-auth-v147">
       <div class="auth-ambient" aria-hidden="true">
         <span class="auth-orbit auth-orbit-a"></span><span class="auth-orbit auth-orbit-b"></span>
         <span class="auth-star auth-star-a">✦</span><span class="auth-star auth-star-b">•</span>
@@ -120,13 +135,13 @@ export function renderSignup(app) {
           <div class="auth-center-badge auth-user-badge" aria-hidden="true">♙<b>+</b></div>
         </header>
         <section class="auth-card auth-signup-card">
-          <div class="auth-welcome"><h1>Create your account</h1><p>Join Indo and start <b>connecting</b></p></div>
+          <div class="auth-welcome"><h1>Create your account</h1><p>Choose your Indo identity and start <b>sharing</b></p></div>
           <form id="signup-form" class="auth-form">
-            <label class="auth-field"><span>${authIcon('♙')}Username</span><div class="auth-input-wrap"><input id="signup-username" placeholder="Username" autocomplete="nickname" required></div></label>
-            <label class="auth-field"><span>${authIcon('@')}User ID</span><div class="auth-input-wrap"><input id="signup-user-id" placeholder="Choose your User ID" autocomplete="username" required></div><small id="user-id-message" class="auth-hint">Type your User ID — Indo will automatically add @.</small></label>
-            <label class="auth-field"><span>${authIcon('⌕')}Mobile Number</span><div class="auth-input-wrap"><input id="signup-mobile" type="tel" placeholder="Mobile Number" autocomplete="tel" required></div></label>
-            <label class="auth-field"><span>${authIcon('✉')}Email ID</span><div class="auth-input-wrap"><input id="signup-email" type="email" placeholder="Email ID" autocomplete="email" required></div></label>
-            <label class="auth-field"><span>${authIcon('♙')}Password</span><div class="auth-input-wrap"><input id="signup-password" type="password" placeholder="Password" autocomplete="new-password" minlength="8" required><button class="auth-eye" id="signup-password-toggle" type="button" aria-label="Show password">◉</button></div></label>
+            <label class="auth-field"><span>${authIcon('♙')}Your name</span><div class="auth-input-wrap"><input id="signup-username" placeholder="Your name" autocomplete="name" required></div></label>
+            <label class="auth-field"><span>${authIcon('@')}User ID</span><div class="auth-input-wrap"><input id="signup-user-id" placeholder="Choose your User ID" autocomplete="username" autocapitalize="none" spellcheck="false" required></div><small id="user-id-message" class="auth-hint">Choose any User ID. @ will be added automatically.</small></label>
+            <label class="auth-field"><span>${authIcon('⌕')}Mobile Number</span><div class="auth-input-wrap"><input id="signup-mobile" type="tel" placeholder="Mobile number" autocomplete="tel" required></div></label>
+            <label class="auth-field"><span>${authIcon('✉')}Email ID</span><div class="auth-input-wrap"><input id="signup-email" type="email" placeholder="Email address" autocomplete="email" required></div></label>
+            <label class="auth-field"><span>${authIcon('♙')}Password</span><div class="auth-input-wrap"><input id="signup-password" type="password" placeholder="Create a password" autocomplete="new-password" minlength="8" required><button class="auth-eye" id="signup-password-toggle" type="button" aria-label="Show password">◉</button></div></label>
             <label class="auth-terms"><input id="signup-terms" type="checkbox" required><span></span><b>I agree to the <em>Terms of Service</em> and <em>Privacy Policy</em></b></label>
             <p id="signup-message" class="auth-message" aria-live="polite"></p>
             <button class="auth-submit" type="submit"><span>Create Account</span><b>→</b></button>
@@ -148,5 +163,6 @@ export function renderSignup(app) {
     toggle.textContent = showing ? '◉' : '◌';
     toggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
   });
+
   installUserIdBehavior(app);
 }
