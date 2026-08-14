@@ -1,15 +1,15 @@
 export function normalizeUserId(value) {
-  // User IDs are chosen by the user. Keep the value readable and preserve
-  // whatever spelling/case the user entered; only trim outer whitespace and
-  // add the conventional @ prefix for display/storage compatibility.
   const raw = String(value ?? '').trim();
   if (!raw) return '';
-  return raw.startsWith('@') ? raw : `@${raw}`;
+  return raw;
 }
 
 export function validateUserId(value) {
   const userId = normalizeUserId(value);
   if (!userId) return { valid: false, error: 'User ID is required.' };
+  if (!userId.startsWith('@') || userId.length === 1) {
+    return { valid: false, error: 'User ID must start with @.' };
+  }
   return { valid: true, userId };
 }
 
