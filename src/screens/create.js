@@ -1,7 +1,6 @@
 import { icons } from '../data.js';
 import { nav } from '../components/nav.js';
 import { uploadVideo } from '../features/feed/create-video.js';
-import { publishStory } from '../features/upload/story-publish.js';
 
 export function renderCreate(app) {
   app.innerHTML = `
@@ -17,7 +16,7 @@ export function renderCreate(app) {
           <div class="create-icon">▣</div>
           <div class="create-copy">
             <b>Upload Video</b>
-            <small>Choose a video, add a caption and publish it.</small>
+            <small>Choose a video, add a title and caption, then publish.</small>
           </div>
           <input id="video-file" type="file" accept="video/*" hidden>
           <button class="primary-btn create-select" type="button" data-select-video>Select</button>
@@ -33,9 +32,7 @@ export function renderCreate(app) {
             <textarea id="video-caption" maxlength="500" rows="4" placeholder="Write a caption"></textarea>
           </label>
           <div id="selected-video" class="selected-video">No video selected.</div>
-          <div class="upload-progress">
-            <div id="upload-progress-bar" class="upload-progress-bar"></div>
-          </div>
+          <div class="upload-progress"><div id="upload-progress-bar" class="upload-progress-bar"></div></div>
           <p id="upload-message" class="upload-message" aria-live="polite"></p>
           <button class="primary-btn" type="submit">Publish Video</button>
         </form>
@@ -48,18 +45,18 @@ export function renderCreate(app) {
           </div>
         </button>
 
-        <section class="create-card">
+        <section class="create-card story-create-entry">
           <span class="create-icon blue">◉</span>
           <div class="create-copy">
             <b>Story</b>
-            <small>Video story that expires after 24 hours.</small>
+            <small>Open the new Story Lab editor before publishing.</small>
           </div>
           <input id="story-file" type="file" accept="video/*" hidden>
           <button class="primary-btn create-story-select" type="button">Select</button>
         </section>
 
         <p id="story-message" class="upload-message" aria-live="polite"></p>
-        <div class="upload-note">Published videos appear in Home and on your profile. Stories expire automatically after 24 hours.</div>
+        <div class="upload-note">Stories open in Story Lab with preview, text, stickers, effects, audio preview, trim and publish controls. Published stories still use the existing secure Cloudinary publishing API.</div>
       </main>
 
       ${nav('create')}
@@ -87,7 +84,6 @@ export function renderCreate(app) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const file = fileInput.files?.[0];
-
     if (!file) {
       message.textContent = 'Please select a video first.';
       return;
@@ -95,7 +91,6 @@ export function renderCreate(app) {
 
     const submit = form.querySelector('button[type="submit"]');
     submit.disabled = true;
-
     try {
       await uploadVideo(file, {
         title: app.querySelector('#video-title').value.trim(),
@@ -105,15 +100,10 @@ export function renderCreate(app) {
           message.textContent = text;
         }
       });
-
       message.textContent = 'Video published successfully.';
       form.reset();
       selected.textContent = 'No video selected.';
-
-      window.setTimeout(() => {
-        window.location.hash = '#home';
-        window.location.reload();
-      }, 800);
+      window.setTimeout(() => window.__indoNavigate?.('home'), 650);
     } catch (error) {
       message.textContent = error?.message || 'Upload failed. Please try again.';
       submit.disabled = false;
@@ -129,18 +119,12 @@ export function renderCreate(app) {
   storyInput.addEventListener('change', async () => {
     const file = storyInput.files?.[0];
     if (!file) return;
-
-    storyMessage.textContent = 'Preparing your story...';
-
+    window.__indoStoryDraftFile = file;
+    storyMessage.textContent = 'Opening Story Lab preview...';
     try {
-      await publishStory(file, (_percent, text) => {
-        storyMessage.textContent = text;
-      });
-      storyMessage.textContent = 'Story published successfully. It expires in 24 hours.';
-      storyInput.value = '';
+      await window.__indoNavigate?.('story-create');
     } catch (error) {
-      storyMessage.textContent = error?.message || 'Story upload failed. Please try again.';
-      storyInput.value = '';
+      storyMessage.textContent = error?.message || 'Could not open Story Lab.';
     }
   });
 }
