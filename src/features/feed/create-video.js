@@ -42,6 +42,7 @@ async function uploadToStorage(file, config) {
 
 async function saveVideo(uploaded, formValues, token) {
   const apiBase = window.INDO_API_BASE || '';
+  const description = String(formValues.description ?? formValues.caption ?? '').trim().slice(0, 500);
   try {
     const response = await fetch(`${apiBase}/api/media/videos`, {
       method: 'POST',
@@ -51,7 +52,8 @@ async function saveVideo(uploaded, formValues, token) {
         publicId: uploaded.public_id,
         secureUrl: uploaded.secure_url,
         title: formValues.title,
-        caption: formValues.caption,
+        description,
+        caption: description,
         duration: uploaded.duration,
         width: uploaded.width,
         height: uploaded.height,
@@ -68,7 +70,7 @@ async function saveVideo(uploaded, formValues, token) {
   }
 }
 
-export async function uploadVideo(file, { title = '', caption = '', onProgress = () => {} } = {}) {
+export async function uploadVideo(file, { title = '', caption = '', description = '', onProgress = () => {} } = {}) {
   if (!(file instanceof File)) throw new Error('Select a video file.');
   if (!file.type.startsWith('video/')) throw new Error('Please select a valid video file.');
 
@@ -77,7 +79,7 @@ export async function uploadVideo(file, { title = '', caption = '', onProgress =
   onProgress(15, 'Uploading your video...');
   const uploaded = await uploadToStorage(file, config);
   onProgress(85, 'Finishing your video...');
-  const video = await saveVideo(uploaded, { title, caption }, config.token);
+  const video = await saveVideo(uploaded, { title, caption, description }, config.token);
   onProgress(100, 'Published successfully.');
   return video;
 }
