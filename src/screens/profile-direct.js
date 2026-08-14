@@ -1,4 +1,5 @@
 import { auth } from '../features/auth/firebase-client.js';
+import { renderIndoBrandTopbar } from '../components/indo-brand-topbar.js';
 import '../features/feed/cloudinary-video-fix.js';
 import '../features/feed/cloudinary-playback-hardener.js';
 
@@ -7,23 +8,19 @@ function esc(value = '') {
 }
 
 function installStyles() {
-  if (document.getElementById('indo-profile-direct-v10')) return;
+  if (document.getElementById('indo-profile-direct-v11')) return;
   const s = document.createElement('style');
-  s.id = 'indo-profile-direct-v10';
+  s.id = 'indo-profile-direct-v11';
   s.textContent = `
     .profile-direct-shell{width:100%;max-width:520px;min-height:100vh;margin:0 auto;background:#07070a;position:relative;padding-bottom:78px;overflow-x:hidden}
-    .profile-direct-page{width:100%;max-width:520px;min-height:calc(100vh - 64px);padding:20px 15px 20px;margin:0 auto;box-sizing:border-box}
-    .profile-direct-head{width:100%;max-width:520px;height:64px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 18px;margin:0 auto;border-bottom:1px solid #18181e;background:rgba(7,7,10,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(16px)}
-    .profile-direct-head button{width:40px;height:40px;border:0;background:none;color:#fff;font-size:30px;line-height:1;display:grid;place-items:center;padding:0;cursor:pointer}
-    .profile-direct-head h2{font-size:17px;line-height:1;margin:0;font-weight:800;color:#fff}
-    .profile-direct-head>span{width:40px;text-align:right;font-size:20px}
-    .profile-direct-row{display:flex;align-items:center;gap:24px;width:100%;margin:0 0 18px}
-    .profile-direct-avatar{width:70px;height:70px;min-width:70px;flex:0 0 70px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#333,#121217);color:#fff;font-size:23px;font-weight:800}
-    .profile-direct-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
-    .profile-direct-username{font-size:15px;font-weight:800;line-height:1.15;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .profile-direct-page{width:100%;max-width:520px;min-height:calc(100vh - 58px);padding:20px 15px 20px;margin:0 auto;box-sizing:border-box}
+    .profile-direct-name{font-size:15px;font-weight:800;line-height:1.15;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .profile-direct-follow{width:100%;height:38px;border:1px solid #303039;border-radius:7px;background:#17171d;color:#fff;font-weight:700;cursor:pointer}
     .profile-direct-follow.following{background:#2a2a31}
     .profile-direct-follow:disabled{opacity:.65}
+    .profile-direct-row{display:flex;align-items:center;gap:24px;width:100%;margin:0 0 18px}
+    .profile-direct-avatar{width:70px;height:70px;min-width:70px;flex:0 0 70px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#333,#121217);color:#fff;font-size:23px;font-weight:800}
+    .profile-direct-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
     .profile-direct-stats{display:flex;justify-content:space-between;gap:14px;margin:0 0 20px;text-align:center}
     .profile-direct-stat{flex:1;border:0;background:transparent;color:#fff;padding:4px 0;cursor:pointer;font:inherit}
     .profile-direct-stat b{display:block;font-size:16px;line-height:1.1}.profile-direct-stat span{display:block;font-size:10px;color:#8e8e98;margin:0}
@@ -117,8 +114,8 @@ async function openRelationViewer(targetUid, relation) {
     if(!response.ok) throw new Error(data.error||`Could not load ${relation}.`);
     const items=Array.isArray(data.items)?data.items:[];
     if(!items.length){list.innerHTML='<div class="profile-relation-empty">No users yet.</div>';return;}
-    list.innerHTML=items.map((item)=>{const userId=String(item.userId||'').replace(/^@/,'');const initial=(String(item.name||userId||'U').trim().charAt(0)||'U').toUpperCase();return `<button class="profile-relation-row" type="button" data-relation-profile="${esc(userId)}" data-relation-uid="${esc(item.uid||'')}"><div class="profile-relation-avatar">${esc(initial)}</div><div class="profile-relation-meta"><div class="profile-relation-user">@${esc(userId||'user')}</div><div class="profile-relation-name">${esc(item.name||'Indo User')}</div></div></button>`;}).join('');
-    list.querySelectorAll('[data-relation-profile]').forEach((button)=>button.addEventListener('click',async()=>{const username=button.dataset.relationProfile||'';const uid=button.dataset.relationUid||'';closeRelationViewer();if(window.__indoNavigate){await window.__indoNavigate('profile');}const {state}=await import('../state.js');state.profile={username,uid,ownerUid:uid};state.screen='profile';await window.__indoNavigate('profile');}));
+    list.innerHTML=items.map((item)=>{const userId=String(item.userId||'').replace(/^@/,'');const initial=(String(item.name||userId||'U').trim().charAt(0)||'U').toUpperCase();return `<button class="profile-relation-row" type="button" data-relation-profile="${esc(userId)}" data-relation-uid="${esc(item.uid||'')}"><div class="profile-relation-avatar">${esc(initial)}</div><div class="profile-relation-meta"><div class="profile-relation-user">${esc(item.name||'Indo User')}</div><div class="profile-relation-name">${userId ? '@'+esc(userId) : ''}</div></div></button>`;}).join('');
+    list.querySelectorAll('[data-relation-profile]').forEach((button)=>button.addEventListener('click',async()=>{const username=button.dataset.relationProfile||'';const uid=button.dataset.relationUid||'';closeRelationViewer();const {state}=await import('../state.js');state.profile={username,uid,ownerUid:uid};state.screen='profile';await window.__indoNavigate?.('profile');}));
   } catch(error) { list.innerHTML=`<div class="profile-relation-empty">${esc(error?.message||'Could not load list.')}</div>`; }
 }
 
@@ -130,11 +127,15 @@ async function loadTargetVideos(targetUid) {
 export async function renderProfile(app, profile=null) {
   installStyles();
   const currentUid=String(auth.currentUser?.uid||'').trim(); const requestedUid=String(profile?.uid||profile?.userId||profile?.ownerUid||'').trim(); const targetUid=requestedUid||currentUid; const own=!!currentUid&&!!targetUid&&currentUid===targetUid;
-  const fallbackUsername=String(auth.currentUser?.displayName||auth.currentUser?.email?.split('@')[0]||currentUid.slice(0,8)||'user').replace(/^@/,''); const username=String(profile?.username||(own?fallbackUsername:'user')).replace(/^@/,''); const initial=username.charAt(0).toUpperCase()||'U';
+  const fallbackUsername=String(auth.currentUser?.displayName||auth.currentUser?.email?.split('@')[0]||currentUid.slice(0,8)||'user').replace(/^@/,'');
+  const username=String(profile?.username||(own?fallbackUsername:'user')).replace(/^@/,'');
+  let displayName=String(profile?.name||auth.currentUser?.displayName||username||'Indo User').trim()||'Indo User';
+  const initial=(displayName.charAt(0)||'I').toUpperCase();
   let followers=Number(profile?.followersCount||0), following=Number(profile?.followingCount||0);
-  if(targetUid){try{const apiBase=window.INDO_API_BASE||'';const response=await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(username)}`,{headers:{Authorization:`Bearer ${await auth.currentUser.getIdToken()}`}});const data=await response.json().catch(()=>({}));if(response.ok&&data.profile){followers=Number(data.profile.followersCount||0);following=Number(data.profile.followingCount||0);profile={...(profile||{}),...data.profile};}}catch{}}
+  if(targetUid){try{const apiBase=window.INDO_API_BASE||'';const response=await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(username)}`,{headers:{Authorization:`Bearer ${await auth.currentUser.getIdToken()}`}});const data=await response.json().catch(()=>({}));if(response.ok&&data.profile){followers=Number(data.profile.followersCount||0);following=Number(data.profile.followingCount||0);profile={...(profile||{}),...data.profile};displayName=String(data.profile.name||displayName).trim()||displayName;}}catch{}}
+  const profileTopbar=renderIndoBrandTopbar({rightLabel:'Profile actions',rightHtml:own?'<button type="button" data-screen="settings" aria-label="Settings">⚙</button>':''});
 
-  app.innerHTML=`<div class="profile-direct-shell"><header class="profile-direct-head"><button type="button" data-screen="home" aria-label="Back">‹</button><h2>${esc(username)}</h2><span>${own?'⚙':''}</span></header><main class="profile-direct-page"><section class="profile-direct-row"><div class="profile-direct-avatar">${esc(initial)}</div><div class="profile-direct-info"><div class="profile-direct-username">@${esc(username)}</div>${own?'': '<button class="profile-direct-follow" type="button" data-follow>Follow</button>'}</div></section><section class="profile-direct-stats"><button class="profile-direct-stat" type="button" data-relation="posts"><b data-posts>0</b><span>Posts</span></button><button class="profile-direct-stat" type="button" data-relation="followers"><b data-followers-count>${followers}</b><span>Followers</span></button><button class="profile-direct-stat" type="button" data-relation="following"><b data-following-count>${following}</b><span>Following</span></button></section>${own?'<button class="profile-direct-edit" type="button" data-screen="settings">Edit Profile</button>':''}<div class="profile-direct-grid" data-grid><div class="profile-direct-empty">Loading posts...</div></div></main></div><nav class="bottom-nav" aria-label="Primary navigation"><button data-screen="home">⌂<span>Home</span></button><button data-screen="search">⌕<span>Search</span></button><button data-screen="reels">▶<span>Reels</span></button><button data-screen="create">＋<span>Create</span></button><button data-screen="profile" class="active">●<span>Profile</span></button></nav>`;
+  app.innerHTML=`<div class="profile-direct-shell">${profileTopbar}<main class="profile-direct-page"><section class="profile-direct-row"><div class="profile-direct-avatar">${esc(initial)}</div><div class="profile-direct-info"><div class="profile-direct-name">${esc(displayName)}</div>${own?'': '<button class="profile-direct-follow" type="button" data-follow>Follow</button>'}</div></section><section class="profile-direct-stats"><button class="profile-direct-stat" type="button" data-relation="posts"><b data-posts>0</b><span>Posts</span></button><button class="profile-direct-stat" type="button" data-relation="followers"><b data-followers-count>${followers}</b><span>Followers</span></button><button class="profile-direct-stat" type="button" data-relation="following"><b data-following-count>${following}</b><span>Following</span></button></section>${own?'<button class="profile-direct-edit" type="button" data-screen="settings">Edit Profile</button>':''}<div class="profile-direct-grid" data-grid><div class="profile-direct-empty">Loading posts...</div></div></main></div><nav class="bottom-nav" aria-label="Primary navigation"><button data-screen="home">⌂<span>Home</span></button><button data-screen="search">⌕<span>Search</span></button><button data-screen="reels">▶<span>Reels</span></button><button data-screen="create">＋<span>Create</span></button><button data-screen="profile" class="active">●<span>Profile</span></button></nav>`;
 
   const followersButton=app.querySelector('[data-relation="followers"]'),followingButton=app.querySelector('[data-relation="following"]');
   followersButton?.addEventListener('click',()=>openRelationViewer(targetUid,'followers')); followingButton?.addEventListener('click',()=>openRelationViewer(targetUid,'following'));
