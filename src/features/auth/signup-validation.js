@@ -1,14 +1,16 @@
 export function normalizeUserId(value) {
-  return String(value || '').trim().toLowerCase().replace(/^@/, '');
+  // User IDs are chosen by the user. Keep the value readable and preserve
+  // whatever spelling/case the user entered; only trim outer whitespace and
+  // add the conventional @ prefix for display/storage compatibility.
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  return raw.startsWith('@') ? raw : `@${raw}`;
 }
 
 export function validateUserId(value) {
   const userId = normalizeUserId(value);
   if (!userId) return { valid: false, error: 'User ID is required.' };
-  if (!/^[a-z0-9._-]{1,50}$/.test(userId)) {
-    return { valid: false, error: 'Use only letters, numbers, dots, underscores, and hyphens.' };
-  }
-  return { valid: true, userId: `@${userId}` };
+  return { valid: true, userId };
 }
 
 export function validateSignup({ username, userId, mobile, email, password }) {
