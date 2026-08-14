@@ -13,7 +13,7 @@ function renderTransitionError(app, error) {
     </main>`;
 }
 
-export function startSplash(app, nextScreen, delay = 1800) {
+export function startSplash(app, nextScreen, delay = 2500) {
   renderSplash(app);
   let transitioned = false;
 
