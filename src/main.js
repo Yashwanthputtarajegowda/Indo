@@ -1,5 +1,5 @@
-import { bindAuthSwitches, bindLoginForm, bindSignupForm } from './features/auth/auth-controller.js?v=217';
-const app=document.getElementById('root');const ROUTER_VERSION='217';let navigationBusy=false;
+import { bindAuthSwitches, bindLoginForm, bindSignupForm } from './features/auth/auth-controller.js?v=218';
+const app=document.getElementById('root');const ROUTER_VERSION='218';let navigationBusy=false;
 async function navigate(screen){const target=String(screen||'').trim();if(!target||navigationBusy)return;navigationBusy=true;try{const {state}=await import('./state.js');if(state.screen===target)return;state.screen=target;await render();window.scrollTo({top:0,behavior:'auto'})}finally{navigationBusy=false}}
 function installNavigationClicks(){if(window.__indoNavigationClicksInstalled)return;window.__indoNavigationClicksInstalled=true;document.addEventListener('click',(event)=>{const element=event.target instanceof Element?event.target:null;const button=element?.closest('[data-screen]');if(!button)return;const surface=button.closest('.indo-global-bottom-nav,.indo-option5-topbar,.indo-brand-topbar,.bottom-nav,.page-head,.reels-top');if(!surface)return;const screen=button.getAttribute('data-screen');if(!screen)return;event.preventDefault();event.stopPropagation();navigate(screen).catch((error)=>console.error('Indo navigation failed:',error))},true)}
 async function render(){const {render}=await import(`./router.js?v=${ROUTER_VERSION}`);await render(app);bindAuthSwitches();bindLoginForm();bindSignupForm()}
