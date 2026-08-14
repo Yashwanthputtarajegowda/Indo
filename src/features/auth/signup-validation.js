@@ -1,15 +1,12 @@
 export function normalizeUserId(value) {
-  const raw = String(value ?? '').trim();
+  const raw = String(value ?? '').trim().replace(/^@+/, '');
   if (!raw) return '';
-  return raw;
+  return `@${raw}`;
 }
 
 export function validateUserId(value) {
   const userId = normalizeUserId(value);
   if (!userId) return { valid: false, error: 'User ID is required.' };
-  if (!userId.startsWith('@') || userId.length === 1) {
-    return { valid: false, error: 'User ID must start with @.' };
-  }
   return { valid: true, userId };
 }
 
