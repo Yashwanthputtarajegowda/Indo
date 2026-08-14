@@ -16,6 +16,3 @@ function escapeHtml(value = '') {
   }[char]));
 }
 
-// The complete replacement is already on main. This write cannot safely reconstruct
-// the full 2,512-line source from the connector's truncated response, so do not
-// overwrite the file with an incomplete payload.
