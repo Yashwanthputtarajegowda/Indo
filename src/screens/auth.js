@@ -1,6 +1,6 @@
 export function renderLogin(app) {
   app.innerHTML = `
-    <main class="auth-page indo-auth-v143">
+    <main class="auth-page indo-auth-v144">
       <div class="auth-ambient" aria-hidden="true">
         <span class="auth-orb auth-orb-a"></span>
         <span class="auth-orb auth-orb-b"></span>
@@ -31,22 +31,13 @@ export function renderLogin(app) {
           <form id="login-form" class="auth-form">
             <label class="auth-field">
               <span><i aria-hidden="true">✉</i>Email ID</span>
-              <div class="auth-input-wrap">
-                <input id="login-email" type="email" placeholder="Enter your email" autocomplete="email" required>
-                <b aria-hidden="true">✉</b>
-              </div>
+              <div class="auth-input-wrap"><input id="login-email" type="email" placeholder="Enter your email" autocomplete="email" required><b aria-hidden="true">✉</b></div>
             </label>
             <label class="auth-field">
               <span><i aria-hidden="true">♙</i>Password</span>
-              <div class="auth-input-wrap">
-                <input id="login-password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
-                <button class="auth-eye" id="login-password-toggle" type="button" aria-label="Show password">◉</button>
-              </div>
+              <div class="auth-input-wrap"><input id="login-password" type="password" placeholder="Enter your password" autocomplete="current-password" required><button class="auth-eye" id="login-password-toggle" type="button" aria-label="Show password">◉</button></div>
             </label>
-            <div class="auth-options">
-              <label class="auth-check"><input id="login-remember" type="checkbox"><span></span>Remember me</label>
-              <button class="forgot-btn" data-password-reset type="button">Forgot Password?</button>
-            </div>
+            <div class="auth-options"><label class="auth-check"><input id="login-remember" type="checkbox"><span></span>Remember me</label><button class="forgot-btn" data-password-reset type="button">Forgot Password?</button></div>
             <p id="login-message" class="auth-message" aria-live="polite"></p>
             <button class="auth-submit" type="submit"><span>Login</span><b>→</b></button>
           </form>
@@ -83,12 +74,10 @@ export function renderLogin(app) {
 
 export function renderSignup(app) {
   app.innerHTML = `
-    <main class="auth-page indo-auth-v143">
+    <main class="auth-page indo-auth-v144">
       <div class="auth-ambient" aria-hidden="true">
-        <span class="auth-orb auth-orb-a"></span>
-        <span class="auth-orb auth-orb-b"></span>
-        <span class="auth-spark auth-spark-a">✦</span>
-        <span class="auth-spark auth-spark-b">✦</span>
+        <span class="auth-orb auth-orb-a"></span><span class="auth-orb auth-orb-b"></span>
+        <span class="auth-spark auth-spark-a">✦</span><span class="auth-spark auth-spark-b">✦</span>
       </div>
       <section class="auth-login-stage auth-signup-stage">
         <div class="auth-hero-brand auth-hero-compact">
@@ -96,44 +85,13 @@ export function renderSignup(app) {
           <div class="auth-tagline">Create your <b>Indo</b> journey.</div>
         </div>
         <section class="auth-card">
-          <div class="auth-welcome">
-            <div class="auth-wave">✨</div>
-            <h1>Create account</h1>
-            <p>Choose your Indo identity and start sharing.</p>
-          </div>
+          <div class="auth-welcome"><div class="auth-wave">✨</div><h1>Create account</h1><p>Choose your Indo identity and start sharing.</p></div>
           <form id="signup-form" class="auth-form">
-            <label class="auth-field">
-              <span>Username</span>
-              <div class="auth-input-wrap">
-                <input id="signup-username" placeholder="Your name" autocomplete="nickname" required>
-              </div>
-            </label>
-            <label class="auth-field">
-              <span>User ID</span>
-              <div class="auth-input-wrap">
-                <input id="signup-user-id" placeholder="Choose any User ID you like" autocomplete="username" required>
-              </div>
-              <small id="user-id-message" class="auth-hint">Choose any unique User ID you want. No special format is required.</small>
-            </label>
-            <label class="auth-field">
-              <span>Mobile Number</span>
-              <div class="auth-input-wrap">
-                <input id="signup-mobile" type="tel" placeholder="Mobile number" autocomplete="tel" required>
-              </div>
-            </label>
-            <label class="auth-field">
-              <span>Email ID</span>
-              <div class="auth-input-wrap">
-                <input id="signup-email" type="email" placeholder="Email address" autocomplete="email" required>
-              </div>
-            </label>
-            <label class="auth-field">
-              <span>Password</span>
-              <div class="auth-input-wrap">
-                <input id="signup-password" type="password" placeholder="Create a password" autocomplete="new-password" minlength="8" required>
-                <button class="auth-eye" id="signup-password-toggle" type="button" aria-label="Show password">◉</button>
-              </div>
-            </label>
+            <label class="auth-field"><span>Username</span><div class="auth-input-wrap"><input id="signup-username" placeholder="Your name" autocomplete="nickname" required></div></label>
+            <label class="auth-field"><span>User ID</span><div class="auth-input-wrap"><input id="signup-user-id" placeholder="@yourid" autocomplete="username" required></div><small id="user-id-message" class="auth-hint">@ is required. After @, choose any User ID you want.</small></label>
+            <label class="auth-field"><span>Mobile Number</span><div class="auth-input-wrap"><input id="signup-mobile" type="tel" placeholder="Mobile number" autocomplete="tel" required></div></label>
+            <label class="auth-field"><span>Email ID</span><div class="auth-input-wrap"><input id="signup-email" type="email" placeholder="Email address" autocomplete="email" required></div></label>
+            <label class="auth-field"><span>Password</span><div class="auth-input-wrap"><input id="signup-password" type="password" placeholder="Create a password" autocomplete="new-password" minlength="8" required><button class="auth-eye" id="signup-password-toggle" type="button" aria-label="Show password">◉</button></div></label>
             <p id="signup-message" class="auth-message" aria-live="polite"></p>
             <button class="auth-submit" type="submit"><span>Create Account</span><b>→</b></button>
           </form>
