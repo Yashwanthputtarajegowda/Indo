@@ -26,12 +26,8 @@ async function uploadToStorage(file, config) {
   form.append('timestamp', String(config.timestamp));
   form.append('signature', config.signature);
   form.append('folder', config.folder || 'indo/videos');
-
   try {
-    const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`, {
-      method: 'POST',
-      body: form
-    });
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`, { method: 'POST', body: form });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error('Video upload is temporarily unavailable.');
     return data;
@@ -43,6 +39,7 @@ async function uploadToStorage(file, config) {
 async function saveVideo(uploaded, formValues, token) {
   const apiBase = window.INDO_API_BASE || '';
   const description = String(formValues.description ?? formValues.caption ?? '').trim().slice(0, 500);
+  const tags = Array.isArray(formValues.tags) ? formValues.tags.map((t)=>String(t).trim().replace(/^#/,'')).filter(Boolean).slice(0,20) : [];
   try {
     const response = await fetch(`${apiBase}/api/media/videos`, {
       method: 'POST',
@@ -54,6 +51,12 @@ async function saveVideo(uploaded, formValues, token) {
         title: formValues.title,
         description,
         caption: description,
+        privacy: formValues.privacy || 'public',
+        allowComments: formValues.allowComments !== false,
+        allowDuet: formValues.allowDuet !== false,
+        category: String(formValues.category || '').trim().slice(0, 60),
+        tags,
+        location: String(formValues.location || '').trim().slice(0, 120),
         duration: uploaded.duration,
         width: uploaded.width,
         height: uploaded.height,
@@ -70,16 +73,15 @@ async function saveVideo(uploaded, formValues, token) {
   }
 }
 
-export async function uploadVideo(file, { title = '', caption = '', description = '', onProgress = () => {} } = {}) {
+export async function uploadVideo(file, { title = '', caption = '', description = '', privacy = 'public', allowComments = true, allowDuet = true, category = '', tags = [], location = '', onProgress = () => {} } = {}) {
   if (!(file instanceof File)) throw new Error('Select a video file.');
   if (!file.type.startsWith('video/')) throw new Error('Please select a valid video file.');
-
   onProgress(5, 'Preparing your upload...');
   const config = await getUploadSignature();
   onProgress(15, 'Uploading your video...');
   const uploaded = await uploadToStorage(file, config);
   onProgress(85, 'Finishing your video...');
-  const video = await saveVideo(uploaded, { title, caption, description }, config.token);
+  const video = await saveVideo(uploaded, { title, caption, description, privacy, allowComments, allowDuet, category, tags, location }, config.token);
   onProgress(100, 'Published successfully.');
   return video;
 }
