@@ -1,6 +1,6 @@
 import { nav } from '../components/nav.js';
 import { renderIndoBrandTopbar } from '../components/indo-brand-topbar.js';
-import { loadNotifications, markNotificationRead, markAllNotificationsRead } from '../features/notifications/notifications.js?v=20260813-28';
+import { loadNotifications, markNotificationRead } from '../features/notifications/notifications.js?v=20260815-227';
 import { respondToFollowRequest } from '../features/social/follow.js';
 
 function escapeHtml(value = '') {
@@ -19,22 +19,71 @@ function renderNotification(item) {
   const actor = escapeHtml(item.actorUserId || '@user');
   const message = escapeHtml(item.text || 'You have a new notification.');
   const initial = escapeHtml((item.actorName || actor.replace(/^@/, 'I')).charAt(0).toUpperCase() || 'I');
+  const unread = item.read ? '' : ' unread';
   const requestActions = item.type === 'follow-request' ? `<div class="notice-actions"><button data-follow-response="accept" data-requester-uid="${escapeHtml(item.actorUid || '')}">Accept</button><button data-follow-response="reject" data-requester-uid="${escapeHtml(item.actorUid || '')}">Reject</button></div>` : '';
-  return `<div class="notice-wrap"><button class="notice ${item.read ? '' : 'unread'}" data-notification-id="${escapeHtml(item.id || '')}" type="button"><div class="avatar small">${initial}</div><p><b>${actor}</b> ${message}<small>${timeAgo(item.createdAt)}</small></p></button>${requestActions}</div>`;
+  return `<div class="notice-wrap"><button class="notice${unread}" data-notification-id="${escapeHtml(item.id || '')}" type="button"><div class="avatar small">${initial}</div><p><b>${actor}</b> ${message}<small>${timeAgo(item.createdAt)}</small></p></button>${requestActions}</div>`;
 }
+
 export async function renderNotifications(app, mode = 'all') {
   const isActivity = mode === 'activity';
   app.innerHTML = `<div class="app-shell">${renderIndoBrandTopbar()}<main class="notifications"><div class="feed-status" data-notification-status>Loading ${isActivity ? 'activity' : 'notifications'}...</div><div data-notifications-list></div></main>${nav('home')}</div>`;
   const list = app.querySelector('[data-notifications-list]');
   const status = app.querySelector('[data-notification-status]');
-  try {
-    const items = await loadNotifications();
-    if (!isActivity) await markAllNotificationsRead(items);
-    const visibleItems = isActivity ? items.filter((item) => ['like', 'comment'].includes(item.type)) : items;
-    status.remove();
-    if (!visibleItems.length) { list.innerHTML = `<div class="feed-status">No ${isActivity ? 'activity' : 'notifications'} yet.</div>`; return; }
-    list.innerHTML = visibleItems.map((item) => renderNotification({ ...item, read: true })).join('');
-    list.querySelectorAll('[data-notification-id]').forEach((item) => item.addEventListener('click', async () => { if (!item.classList.contains('unread')) return; try { await markNotificationRead(item.dataset.notificationId); item.classList.remove('unread'); } catch {} }));
-    list.querySelectorAll('[data-follow-response]').forEach((button) => button.addEventListener('click', async (event) => { event.stopPropagation(); const requesterUid = button.dataset.requesterUid; const accept = button.dataset.followResponse === 'accept'; button.disabled = true; try { await respondToFollowRequest(requesterUid, accept); button.closest('.notice-wrap')?.remove(); } catch (error) { button.title = error.message || 'Could not respond to request.'; button.disabled = false; } }));
-  } catch (error) { status.textContent = error.message || `Could not load ${isActivity ? 'activity' : 'notifications'}.`; }
+  let stopped = false;
+  let timer = null;
+
+  const attachActions = () => {
+    list.querySelectorAll('[data-notification-id]').forEach((item) => {
+      if (item.dataset.bound === '1') return;
+      item.dataset.bound = '1';
+      item.addEventListener('click', async () => {
+        if (!item.classList.contains('unread')) return;
+        try {
+          await markNotificationRead(item.dataset.notificationId);
+          item.classList.remove('unread');
+        } catch {}
+      });
+    });
+    list.querySelectorAll('[data-follow-response]').forEach((button) => {
+      if (button.dataset.bound === '1') return;
+      button.dataset.bound = '1';
+      button.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        const requesterUid = button.dataset.requesterUid;
+        const accept = button.dataset.followResponse === 'accept';
+        button.disabled = true;
+        try {
+          await respondToFollowRequest(requesterUid, accept);
+          button.closest('.notice-wrap')?.remove();
+        } catch (error) {
+          button.title = error.message || 'Could not respond to request.';
+          button.disabled = false;
+        }
+      });
+    });
+  };
+
+  const refresh = async (silent = false) => {
+    try {
+      const items = await loadNotifications();
+      const visibleItems = isActivity ? items.filter((item) => ['like', 'comment'].includes(item.type)) : items;
+      list.innerHTML = visibleItems.length
+        ? visibleItems.map(renderNotification).join('')
+        : `<div class="feed-status">No ${isActivity ? 'activity' : 'notifications'} yet.</div>`;
+      if (!silent) status.remove();
+      attachActions();
+    } catch (error) {
+      if (!silent) status.textContent = error.message || `Could not load ${isActivity ? 'activity' : 'notifications'}.`;
+    }
+  };
+
+  await refresh(false);
+  timer = window.setInterval(() => {
+    if (!stopped) refresh(true);
+  }, 2500);
+
+  window.addEventListener('beforeunload', () => {
+    stopped = true;
+    if (timer) window.clearInterval(timer);
+  }, { once: true });
 }
