@@ -22,3 +22,5 @@ jobs:
         run: |
           node --check src/main.js
           node --check server.js
+
+# Keep push-based workflows active so GitHub Pages deploys the latest main commit.
