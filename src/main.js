@@ -1,7 +1,7 @@
 import { bindAuthSwitches, bindSignupForm } from './features/auth/auth-controller.js';
 
 const app = document.getElementById('root');
-const ROUTER_VERSION = '20260814-139';
+const ROUTER_VERSION = '20260814-140';
 let navigationBusy = false;
 
 async function navigate(screen){
@@ -33,7 +33,9 @@ function installNavigationClicks(){
 }
 async function render(){
   const {render}=await import(`./router.js?v=${ROUTER_VERSION}`);
-  await render(app);bindAuthSwitches();bindSignupForm();
+  await render(app);
+  bindAuthSwitches();
+  bindSignupForm();
 }
 async function start(){
   installNavigationClicks();
