@@ -1,6 +1,6 @@
 import { state } from '../../state.js';
 import { submitSignup } from './signup-form.js';
-const ROUTER_VERSION='20260814-151';
+const ROUTER_VERSION='20260814-152';
 function getRoot(){return document.getElementById('root')}
 async function goTo(screen){if(typeof window.__indoNavigate==='function'){await window.__indoNavigate(screen);return}state.screen=screen;const {render}=await import(`../../router.js?v=${ROUTER_VERSION}`);await render(getRoot())}
 function bindSignupForm(){const form=getRoot()?.querySelector('#signup-form');if(!form||form.dataset.authControllerBound==='1')return;form.dataset.authControllerBound='1';form.addEventListener('submit',async(event)=>{event.preventDefault();const button=form.querySelector('.auth-submit');const message=form.querySelector('#signup-message');if(button)button.disabled=true;if(message)message.textContent='Creating account...';try{await submitSignup(form);state.authenticated=true;state.screen='home';state.profile=null;await goTo('home')}catch(error){console.error('Signup failed:',error);const code=error?.code||'';const text=code==='auth/email-already-in-use'?'This email ID is already registered.':code==='auth/weak-password'?'Password must be at least 8 characters.':code==='auth/invalid-email'?'Enter a valid email ID.':(error?.message||'Could not create account. Please try again.');if(message)message.textContent=text;if(button)button.disabled=false}})}
