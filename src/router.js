@@ -2,8 +2,8 @@ import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js';
 import './features/ui/feed-follow-button.js';
 
-const VERSION = '20260814-139';
-const NAV_STYLE_ID = 'indo-global-nav-v139';
+const VERSION = '20260814-140';
+const NAV_STYLE_ID = 'indo-global-nav-v140';
 
 function renderRouteError(app, error) {
   const message = String(error?.message || error || 'Unable to open this screen.').replace(/[&<>\"']/g, '');
