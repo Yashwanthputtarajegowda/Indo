@@ -2,11 +2,10 @@ import { state } from '../../state.js';
 import { auth, signInWithEmailAndPassword, sendPasswordResetEmail } from './firebase-client.js';
 import { submitSignup } from './signup-form.js';
 
-const ROUTER_VERSION='20260815-210';
+const ROUTER_VERSION='20260815-211';
 function getRoot(){return document.getElementById('root')}
 
 async function goTo(screen){
-  if(typeof window.__indoNavigate==='function'){await window.__indoNavigate(screen);return}
   state.screen=screen;
   const {render}=await import(`../../router.js?v=${ROUTER_VERSION}`);
   await render(getRoot());
@@ -43,7 +42,6 @@ function bindLoginForm(){
     try{
       await signInWithEmailAndPassword(auth,email,password);
       state.authenticated=true;
-      state.screen='home';
       state.profile=null;
       await goTo('home');
     }catch(error){
@@ -83,7 +81,6 @@ function bindSignupForm(){
     try{
       await submitSignup(form);
       state.authenticated=true;
-      state.screen='home';
       state.profile=null;
       await goTo('home');
     }catch(error){
