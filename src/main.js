@@ -1,7 +1,7 @@
 import { bindAuthSwitches, bindSignupForm } from './features/auth/auth-controller.js';
 
 const app = document.getElementById('root');
-const ROUTER_VERSION = '20260814-134';
+const ROUTER_VERSION = '20260814-136';
 let navigationBusy = false;
 
 async function navigate(screen){
