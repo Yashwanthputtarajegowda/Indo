@@ -1,7 +1,40 @@
 import { bindAuthSwitches, bindSignupForm } from './features/auth/auth-controller.js';
 
 const app = document.getElementById('root');
-const ROUTER_VERSION = '20260814-133';
+const ROUTER_VERSION = '20260814-134';
+let navigationBusy = false;
+
+async function navigate(screen){
+  const target = String(screen || '').trim();
+  if(!target || navigationBusy) return;
+  navigationBusy = true;
+  try{
+    const { state } = await import('./state.js');
+    if(state.screen === target) return;
+    state.screen = target;
+    await render();
+    window.scrollTo({top:0,behavior:'auto'});
+  }finally{
+    navigationBusy = false;
+  }
+}
+
+function installNavigationClicks(){
+  if(window.__indoNavigationClicksInstalled) return;
+  window.__indoNavigationClicksInstalled = true;
+  document.addEventListener('click',(event)=>{
+    const element = event.target instanceof Element ? event.target : null;
+    const button = element?.closest('[data-screen]');
+    if(!button) return;
+    const navigationSurface = button.closest('.indo-global-bottom-nav,.indo-option5-topbar,.bottom-nav,.page-head,.reels-top');
+    if(!navigationSurface) return;
+    const screen = button.getAttribute('data-screen');
+    if(!screen) return;
+    event.preventDefault();
+    event.stopPropagation();
+    navigate(screen).catch((error)=>console.error('Indo navigation failed:',error));
+  },true);
+}
 
 async function render(){
   const { render } = await import(`./router.js?v=${ROUTER_VERSION}`);
@@ -11,6 +44,7 @@ async function render(){
 }
 
 async function start(){
+  installNavigationClicks();
   try{
     const { auth } = await import('./features/auth/firebase-client.js');
     const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js');
@@ -27,5 +61,5 @@ async function start(){
   }
 }
 
-window.__indoNavigate = async (screen)=>{ const { state } = await import('./state.js'); state.screen = screen; await render(); };
+window.__indoNavigate = navigate;
 start();
