@@ -22,14 +22,13 @@ const SCREEN_MODULES = {
   "edit-profile": ["./screens/edit-profile.js", "renderEditProfile"],
   "watch-video": ["./screens/watch-video.js", "renderWatchVideo"],
   "upload-video": ["./screens/upload-video.js", "renderUploadVideo"],
-  "story-create": ["./screens/story-create.js", "renderStoryCreate"],
   wallet: ["./screens/wallet.js", "renderWallet"],
   "blocked-users": ["./screens/blocked-users.js", "renderBlockedUsers"],
   report: ["./screens/report.js", "renderReport"],
 };
 
 const HIGH_PRIORITY = ["messages", "reels", "video", "search", "profile", "notifications"];
-const SECONDARY_PRIORITY = ["create", "reel-create", "settings", "profile-relation", "edit-profile", "watch-video", "upload-video", "story-create", "wallet", "blocked-users", "report"];
+const SECONDARY_PRIORITY = ["create", "reel-create", "settings", "profile-relation", "edit-profile", "watch-video", "upload-video", "wallet", "blocked-users", "report"];
 const AUTH_SCREENS = new Set(["auth-login", "auth-signup"]);
 
 function fail(app, error) {
@@ -82,6 +81,19 @@ function ensureHomeTopbar(app) {
   w.innerHTML = renderHomeTopbar();
   const node = w.firstElementChild;
   if (node) app.querySelector(".app-shell")?.prepend(node);
+}
+
+function removeStoryUi(app) {
+  if (!app) return;
+  app.querySelectorAll(
+    "[data-stories], .indo-story-row, .indo-story-card, .indo-story-viewer, .indo-story-card-viewer, [data-story-id], [data-story-add], .story-section, .stories-section"
+  ).forEach((node) => node.remove());
+  app.querySelectorAll("[data-screen=story-create]").forEach((node) => node.remove());
+  document.querySelectorAll(".indo-story-viewer, .indo-story-card-viewer").forEach((node) => node.remove());
+  try {
+    delete window.__indoStoryDraftFile;
+    localStorage.removeItem("indo:last-story");
+  } catch {}
 }
 
 async function loadScreenModule(screen, path) {
@@ -165,8 +177,10 @@ export async function render(app) {
       case "auth-signup": return renderSignup(app);
       case "home":
         await lazy(app, "home", "./screens/home-v2.js", "renderHome");
+        removeStoryUi(app);
         ensureHomeTopbar(app);
         await installHomeReels(app);
+        removeStoryUi(app);
         preloadAppSections();
         break;
       case "messages": await lazy(app, "messages", SCREEN_MODULES.messages[0], SCREEN_MODULES.messages[1]); break;
@@ -176,7 +190,6 @@ export async function render(app) {
       case "create": await lazy(app, "create", SCREEN_MODULES.create[0], SCREEN_MODULES.create[1]); break;
       case "reel-create": await lazy(app, "reel-create", SCREEN_MODULES["reel-create"][0], SCREEN_MODULES["reel-create"][1]); break;
       case "upload-video": await lazy(app, "upload-video", SCREEN_MODULES["upload-video"][0], SCREEN_MODULES["upload-video"][1]); break;
-      case "story-create": await lazy(app, "story-create", SCREEN_MODULES["story-create"][0], SCREEN_MODULES["story-create"][1], [window.__indoStoryDraftFile instanceof File ? window.__indoStoryDraftFile : null]); break;
       case "profile": await lazy(app, "profile", SCREEN_MODULES.profile[0], SCREEN_MODULES.profile[1], [state.profile]); break;
       case "profile-relation": await lazy(app, "profile-relation", SCREEN_MODULES["profile-relation"][0], SCREEN_MODULES["profile-relation"][1]); break;
       case "edit-profile": await lazy(app, "edit-profile", SCREEN_MODULES["edit-profile"][0], SCREEN_MODULES["edit-profile"][1], [state.profile]); break;
@@ -186,11 +199,19 @@ export async function render(app) {
       case "wallet": await lazy(app, "wallet", SCREEN_MODULES.wallet[0], SCREEN_MODULES.wallet[1]); break;
       case "blocked-users": await lazy(app, "blocked-users", SCREEN_MODULES["blocked-users"][0], SCREEN_MODULES["blocked-users"][1]); break;
       case "report": await lazy(app, "report", SCREEN_MODULES.report[0], SCREEN_MODULES.report[1]); break;
+      case "story-create":
+        state.screen = "home";
+        await lazy(app, "home", "./screens/home-v2.js", "renderHome");
+        removeStoryUi(app);
+        ensureHomeTopbar(app);
+        break;
       default:
         state.screen = "home";
         await lazy(app, "home", "./screens/home-v2.js", "renderHome");
+        removeStoryUi(app);
         ensureHomeTopbar(app);
         await installHomeReels(app);
+        removeStoryUi(app);
         preloadAppSections();
     }
     ensureUniversalNav(app);
