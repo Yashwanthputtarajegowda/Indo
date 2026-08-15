@@ -7,11 +7,11 @@ import {
 import {
   enhanceProfileIdentity,
   installProfileIdentityEnhancer,
-} from "./features/profile/profile-identity.js";
+} from "./features/profile/profile-identity.js?v=20260815-profile-identity-v2";
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
-import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v6";
+import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v7";
 
 const app = document.getElementById("root");
 let busy = false;
