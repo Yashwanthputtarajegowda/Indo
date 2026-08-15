@@ -1,5 +1,5 @@
-export const DEFAULT_ACCOUNT_TYPE = 'public';
+export const DEFAULT_ACCOUNT_TYPE = "public";
 
 export function normalizeAccountType(value) {
-  return value === 'private' ? 'private' : 'public';
+  return value === "private" ? "private" : "public";
 }

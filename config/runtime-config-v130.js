@@ -1,11 +1,12 @@
-window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-41b1.up.railway.app';
+window.INDO_API_BASE =
+  window.INDO_API_BASE || "https://indo-backend-production-41b1.up.railway.app";
 
 (function installRuntimeConfig() {
   if (window.__indoRuntimeV130) return;
   window.__indoRuntimeV130 = true;
 
-  const style = document.createElement('style');
-  style.id = 'indo-runtime-v130';
+  const style = document.createElement("style");
+  style.id = "indo-runtime-v130";
   style.textContent = `
     html,body{width:100%;min-height:100%;-webkit-text-size-adjust:100%}
     body{overflow-x:hidden;overflow-y:auto}
@@ -20,41 +21,55 @@ window.INDO_API_BASE = window.INDO_API_BASE || 'https://indo-backend-production-
   document.head.appendChild(style);
 
   function installStoryControls() {
-    const preview = document.getElementById('story-preview');
-    const publish = document.getElementById('story-publish-button');
-    const add = document.getElementById('story-add-button');
-    if (!preview || !publish || !add || preview.dataset.runtimeControls === '1') return;
-    preview.dataset.runtimeControls = '1';
-    publish.style.setProperty('display', 'none', 'important');
-    publish.style.setProperty('visibility', 'hidden', 'important');
-    publish.style.setProperty('pointer-events', 'none', 'important');
-    add.style.setProperty('position', 'absolute', 'important');
-    add.style.setProperty('right', '14px', 'important');
-    add.style.setProperty('bottom', '62px', 'important');
+    const preview = document.getElementById("story-preview");
+    const publish = document.getElementById("story-publish-button");
+    const add = document.getElementById("story-add-button");
+    if (!preview || !publish || !add || preview.dataset.runtimeControls === "1")
+      return;
+    preview.dataset.runtimeControls = "1";
+    publish.style.setProperty("display", "none", "important");
+    publish.style.setProperty("visibility", "hidden", "important");
+    publish.style.setProperty("pointer-events", "none", "important");
+    add.style.setProperty("position", "absolute", "important");
+    add.style.setProperty("right", "14px", "important");
+    add.style.setProperty("bottom", "62px", "important");
 
-    const done = document.createElement('button');
-    done.id = 'indo-story-done-hit';
-    done.type = 'button';
-    done.textContent = 'Done';
-    done.setAttribute('aria-label', 'Done');
-    done.addEventListener('pointerup', (event) => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (done.disabled) return;
-      done.disabled = true;
-      done.textContent = 'Posting...';
-      publish.disabled = false;
-      publish.removeAttribute('disabled');
-      try { publish.click(); } catch { done.disabled = false; done.textContent = 'Done'; }
-    }, true);
-    done.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }, true);
+    const done = document.createElement("button");
+    done.id = "indo-story-done-hit";
+    done.type = "button";
+    done.textContent = "Done";
+    done.setAttribute("aria-label", "Done");
+    done.addEventListener(
+      "pointerup",
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (done.disabled) return;
+        done.disabled = true;
+        done.textContent = "Posting...";
+        publish.disabled = false;
+        publish.removeAttribute("disabled");
+        try {
+          publish.click();
+        } catch {
+          done.disabled = false;
+          done.textContent = "Done";
+        }
+      },
+      true,
+    );
+    done.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      },
+      true,
+    );
     preview.appendChild(done);
   }
 
-  const root = document.getElementById('root') || document.body;
+  const root = document.getElementById("root") || document.body;
   const observer = new MutationObserver(() => installStoryControls());
   observer.observe(root, { childList: true, subtree: true });
   installStoryControls();

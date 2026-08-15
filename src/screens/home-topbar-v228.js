@@ -1,46 +1,67 @@
-import { auth } from '../features/auth/firebase-client.js';
+import { auth } from "../features/auth/firebase-client.js";
 
-const BADGE_STYLE_ID='indo-home-topbar-badge-v228';
-let unreadPollTimer=null;
-let unreadPollBusy=false;
+const BADGE_STYLE_ID = "indo-home-topbar-badge-v228";
+let unreadPollTimer = null;
+let unreadPollBusy = false;
 
-async function loadUnreadCount(){
-  const user=auth.currentUser;
-  if(!user) return 0;
-  try{
-    const token=await user.getIdToken();
-    const response=await fetch(`${window.INDO_API_BASE||''}/api/notifications`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
-    if(!response.ok) return 0;
-    const data=await response.json().catch(()=>({}));
-    return Array.isArray(data.notifications)?data.notifications.filter(item=>item && item.read!==true).length:0;
-  }catch{return 0;}
+async function loadUnreadCount() {
+  const user = auth.currentUser;
+  if (!user) return 0;
+  try {
+    const token = await user.getIdToken();
+    const response = await fetch(
+      `${window.INDO_API_BASE || ""}/api/notifications`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+    );
+    if (!response.ok) return 0;
+    const data = await response.json().catch(() => ({}));
+    return Array.isArray(data.notifications)
+      ? data.notifications.filter((item) => item && item.read !== true).length
+      : 0;
+  } catch {
+    return 0;
+  }
 }
 
-function paintUnreadBadge(count){
-  const button=document.querySelector('.indo-option5-topbar .notification-button');
-  if(!button)return;
-  let badge=button.querySelector('.indo-notification-badge');
-  const n=Math.max(0,Number(count)||0);
-  if(n<=0){badge?.remove();button.removeAttribute('data-unread-count');return;}
-  if(!badge){badge=document.createElement('span');badge.className='indo-notification-badge';button.appendChild(badge)}
-  badge.textContent=n>99?'99+':String(n);
-  button.setAttribute('data-unread-count',String(n));
-  button.setAttribute('aria-label',`Notifications, ${n} unread`);
+function paintUnreadBadge(count) {
+  const button = document.querySelector(
+    ".indo-option5-topbar .notification-button",
+  );
+  if (!button) return;
+  let badge = button.querySelector(".indo-notification-badge");
+  const n = Math.max(0, Number(count) || 0);
+  if (n <= 0) {
+    badge?.remove();
+    button.removeAttribute("data-unread-count");
+    return;
+  }
+  if (!badge) {
+    badge = document.createElement("span");
+    badge.className = "indo-notification-badge";
+    button.appendChild(badge);
+  }
+  badge.textContent = n > 99 ? "99+" : String(n);
+  button.setAttribute("data-unread-count", String(n));
+  button.setAttribute("aria-label", `Notifications, ${n} unread`);
 }
 
-async function refreshUnreadBadge(){
-  if(unreadPollBusy)return;
-  unreadPollBusy=true;
-  try{paintUnreadBadge(await loadUnreadCount())}finally{unreadPollBusy=false}
+async function refreshUnreadBadge() {
+  if (unreadPollBusy) return;
+  unreadPollBusy = true;
+  try {
+    paintUnreadBadge(await loadUnreadCount());
+  } finally {
+    unreadPollBusy = false;
+  }
 }
 
-function installUnreadPolling(){
-  if(unreadPollTimer)clearInterval(unreadPollTimer);
+function installUnreadPolling() {
+  if (unreadPollTimer) clearInterval(unreadPollTimer);
   refreshUnreadBadge();
-  unreadPollTimer=setInterval(refreshUnreadBadge,2500);
+  unreadPollTimer = setInterval(refreshUnreadBadge, 2500);
 }
 
-export function renderHomeTopbar(){
+export function renderHomeTopbar() {
   installUnreadPolling();
   return `
     <header class="topbar indo-option5-topbar">
@@ -62,11 +83,11 @@ export function renderHomeTopbar(){
     </header>`;
 }
 
-export function installHomeTopbarStyles(){
-  if(document.getElementById(BADGE_STYLE_ID))return;
-  const style=document.createElement('style');
-  style.id=BADGE_STYLE_ID;
-  style.textContent=`
+export function installHomeTopbarStyles() {
+  if (document.getElementById(BADGE_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = BADGE_STYLE_ID;
+  style.textContent = `
     .indo-option5-topbar{position:sticky;top:0;z-index:20;width:100%;height:58px;min-height:58px;box-sizing:border-box;padding:0 12px 0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;overflow:hidden;background:radial-gradient(circle at 72% 115%,rgba(255,42,181,.13),transparent 28%),linear-gradient(115deg,#09080e 0%,#100a17 55%,#07070c 100%);border-bottom:1px solid rgba(143,66,255,.18);box-shadow:0 7px 22px rgba(0,0,0,.32);backdrop-filter:blur(14px)}
     .indo-option5-topbar::before{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent 0%,#8f36ff 38%,#ff2eaa 62%,transparent 100%);opacity:.72;pointer-events:none}
     .indo-option5-topbar::after{content:'';position:absolute;width:180px;height:1px;right:62px;bottom:1px;background:linear-gradient(90deg,transparent,#ff3ab8,#873eff,transparent);box-shadow:0 0 8px rgba(255,48,183,.8);transform:rotate(-5deg);opacity:.8;pointer-events:none}

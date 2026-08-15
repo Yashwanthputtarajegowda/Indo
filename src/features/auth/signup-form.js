@@ -1,14 +1,14 @@
-import { createUserWithEmailAndPassword, auth } from './firebase-client.js';
-import { validateSignup } from './signup-validation.js';
-import { saveAccountContact } from './save-contact.js';
+import { createUserWithEmailAndPassword, auth } from "./firebase-client.js";
+import { validateSignup } from "./signup-validation.js";
+import { saveAccountContact } from "./save-contact.js";
 
 export async function submitSignup(form) {
   const values = {
-    username: form.querySelector('#signup-username')?.value,
-    userId: form.querySelector('#signup-user-id')?.value,
-    mobile: form.querySelector('#signup-mobile')?.value,
-    email: form.querySelector('#signup-email')?.value,
-    password: form.querySelector('#signup-password')?.value
+    username: form.querySelector("#signup-username")?.value,
+    userId: form.querySelector("#signup-user-id")?.value,
+    mobile: form.querySelector("#signup-mobile")?.value,
+    email: form.querySelector("#signup-email")?.value,
+    password: form.querySelector("#signup-password")?.value,
   };
 
   const validation = validateSignup(values);
@@ -23,24 +23,24 @@ export async function submitSignup(form) {
     values.password,
   );
   const token = await credential.user.getIdToken(true);
-  const apiBase = window.INDO_API_BASE || '';
+  const apiBase = window.INDO_API_BASE || "";
 
   try {
     const response = await fetch(`${apiBase}/api/account/claim-user-id`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         userId: validation.userId,
         name: values.username.trim(),
-        accountType: 'public',
+        accountType: "public",
       }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.error || 'Could not create the Indo profile.');
+      throw new Error(data.error || "Could not create the Indo profile.");
     }
 
     await saveAccountContact({
@@ -52,7 +52,7 @@ export async function submitSignup(form) {
     try {
       const cleanupToken = await credential.user.getIdToken(true);
       await fetch(`${apiBase}/api/account/delete`, {
-        method: 'POST',
+        method: "POST",
         headers: { Authorization: `Bearer ${cleanupToken}` },
       });
     } catch {}

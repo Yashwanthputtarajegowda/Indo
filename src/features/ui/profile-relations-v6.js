@@ -1,16 +1,26 @@
-import { state } from '../../state.js';
-import { auth } from '../auth/firebase-client.js';
+import { state } from "../../state.js";
+import { auth } from "../auth/firebase-client.js";
 
-const KEY = Symbol.for('indo.profileRelationsV7');
+const KEY = Symbol.for("indo.profileRelationsV7");
 
-function esc(value = '') {
-  return String(value).replace(/[&<>\"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#039;' }[c]));
+function esc(value = "") {
+  return String(value).replace(
+    /[&<>\"']/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '\"': "&quot;",
+        "'": "&#039;",
+      })[c],
+  );
 }
 
 function styleOnce() {
-  if (document.getElementById('indo-profile-relations-v7-style')) return;
-  const style = document.createElement('style');
-  style.id = 'indo-profile-relations-v7-style';
+  if (document.getElementById("indo-profile-relations-v7-style")) return;
+  const style = document.createElement("style");
+  style.id = "indo-profile-relations-v7-style";
   style.textContent = `
     .indo-rel-v7{position:fixed;inset:0;z-index:35000;background:rgba(0,0,0,.78);display:grid;place-items:center;padding:14px}
     .indo-rel-v7-card{width:min(100%,520px);height:min(80vh,640px);background:#101016;border:1px solid #282830;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 60px rgba(0,0,0,.65)}
@@ -22,87 +32,128 @@ function styleOnce() {
   document.head.appendChild(style);
 }
 
-function closeList() { document.querySelector('.indo-rel-v7')?.remove(); }
+function closeList() {
+  document.querySelector(".indo-rel-v7")?.remove();
+}
 
 async function authRequest(path) {
   const user = auth.currentUser;
-  if (!user) throw new Error('Please login first.');
+  if (!user) throw new Error("Please login first.");
   const token = await user.getIdToken();
-  const apiBase = window.INDO_API_BASE || '';
-  return fetch(`${apiBase}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  const apiBase = window.INDO_API_BASE || "";
+  return fetch(`${apiBase}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
 
 function getTargetUid() {
   const profile = state.profile || {};
-  return String(profile.uid || profile.ownerUid || profile.userId || auth.currentUser?.uid || '').trim();
+  return String(
+    profile.uid ||
+      profile.ownerUid ||
+      profile.userId ||
+      auth.currentUser?.uid ||
+      "",
+  ).trim();
 }
 
 async function fetchRelation(targetUid, relation) {
-  const response = await authRequest(`/api/social/${encodeURIComponent(relation)}/${encodeURIComponent(targetUid)}`);
+  const response = await authRequest(
+    `/api/social/${encodeURIComponent(relation)}/${encodeURIComponent(targetUid)}`,
+  );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Could not load ${relation}.`);
+  if (!response.ok)
+    throw new Error(data.error || `Could not load ${relation}.`);
   const items = Array.isArray(data.items) ? data.items : [];
-  return { count: Number.isFinite(Number(data.count)) ? Number(data.count) : items.length, items };
+  return {
+    count: Number.isFinite(Number(data.count))
+      ? Number(data.count)
+      : items.length,
+    items,
+  };
 }
 
-async function refreshStats(root = document.getElementById('root')) {
+async function refreshStats(root = document.getElementById("root")) {
   if (!root) return;
-  const followersButton = root.querySelector('.profile-direct-stat[data-relation="followers"]');
-  const followingButton = root.querySelector('.profile-direct-stat[data-relation="following"]');
+  const followersButton = root.querySelector(
+    '.profile-direct-stat[data-relation="followers"]',
+  );
+  const followingButton = root.querySelector(
+    '.profile-direct-stat[data-relation="following"]',
+  );
   if (!followersButton && !followingButton) return;
   const targetUid = getTargetUid();
   if (!targetUid || root.dataset.profileRelationsV7Uid === targetUid) return;
   root.dataset.profileRelationsV7Uid = targetUid;
   try {
     const [followers, following] = await Promise.all([
-      fetchRelation(targetUid, 'followers'),
-      fetchRelation(targetUid, 'following'),
+      fetchRelation(targetUid, "followers"),
+      fetchRelation(targetUid, "following"),
     ]);
-    const followersCount = followersButton?.querySelector('[data-followers-count]');
-    const followingCount = followingButton?.querySelector('[data-following-count]');
+    const followersCount = followersButton?.querySelector(
+      "[data-followers-count]",
+    );
+    const followingCount = followingButton?.querySelector(
+      "[data-following-count]",
+    );
     if (followersCount) followersCount.textContent = String(followers.count);
     if (followingCount) followingCount.textContent = String(following.count);
-    followersButton?.setAttribute('aria-label', `${followers.count} Followers`);
-    followingButton?.setAttribute('aria-label', `${following.count} Following`);
+    followersButton?.setAttribute("aria-label", `${followers.count} Followers`);
+    followingButton?.setAttribute("aria-label", `${following.count} Following`);
   } catch (error) {
     delete root.dataset.profileRelationsV7Uid;
-    console.warn('Profile relation count refresh failed:', error);
+    console.warn("Profile relation count refresh failed:", error);
   }
 }
 
 async function openRelation(targetUid, relation) {
   closeList();
   styleOnce();
-  const modal = document.createElement('div');
-  modal.className = 'indo-rel-v7';
-  modal.innerHTML = `<section class="indo-rel-v7-card"><header class="indo-rel-v7-head"><strong>${relation === 'followers' ? 'Followers' : 'Following'}</strong><button class="indo-rel-v7-close" type="button" aria-label="Close">×</button></header><div class="indo-rel-v7-list"><div class="indo-rel-v7-empty">Loading...</div></div></section>`;
+  const modal = document.createElement("div");
+  modal.className = "indo-rel-v7";
+  modal.innerHTML = `<section class="indo-rel-v7-card"><header class="indo-rel-v7-head"><strong>${relation === "followers" ? "Followers" : "Following"}</strong><button class="indo-rel-v7-close" type="button" aria-label="Close">×</button></header><div class="indo-rel-v7-list"><div class="indo-rel-v7-empty">Loading...</div></div></section>`;
   document.body.appendChild(modal);
-  modal.querySelector('.indo-rel-v7-close')?.addEventListener('click', closeList);
-  modal.addEventListener('click', (event) => { if (event.target === modal) closeList(); });
-  const list = modal.querySelector('.indo-rel-v7-list');
+  modal
+    .querySelector(".indo-rel-v7-close")
+    ?.addEventListener("click", closeList);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeList();
+  });
+  const list = modal.querySelector(".indo-rel-v7-list");
   try {
     const result = await fetchRelation(targetUid, relation);
     if (!result.items.length) {
       list.innerHTML = '<div class="indo-rel-v7-empty">No users yet.</div>';
       return;
     }
-    list.innerHTML = result.items.map((item) => {
-      const uid = String(item.uid || '').trim();
-      const userId = String(item.userId || item.username || '').replace(/^@/, '');
-      const name = String(item.name || 'Indo User');
-      const initial = (name.trim().charAt(0) || userId.charAt(0) || 'U').toUpperCase();
-      return `<button class="indo-rel-v7-row" type="button" data-rel-uid="${esc(uid)}" data-rel-user="${esc(userId)}"><div class="indo-rel-v7-avatar">${esc(initial)}</div><div><div class="indo-rel-v7-name">${esc(name)}</div><div class="indo-rel-v7-id">@${esc(userId || 'user')}</div></div></button>`;
-    }).join('');
-    list.querySelectorAll('[data-rel-uid]').forEach((button) => button.addEventListener('click', async () => {
-      const uid = button.dataset.relUid || '';
-      const username = button.dataset.relUser || '';
-      closeList();
-      state.profile = { uid, ownerUid: uid, username };
-      state.screen = 'profile';
-      if (window.__indoNavigate) await window.__indoNavigate('profile');
-    }));
+    list.innerHTML = result.items
+      .map((item) => {
+        const uid = String(item.uid || "").trim();
+        const userId = String(item.userId || item.username || "").replace(
+          /^@/,
+          "",
+        );
+        const name = String(item.name || "Indo User");
+        const initial = (
+          name.trim().charAt(0) ||
+          userId.charAt(0) ||
+          "U"
+        ).toUpperCase();
+        return `<button class="indo-rel-v7-row" type="button" data-rel-uid="${esc(uid)}" data-rel-user="${esc(userId)}"><div class="indo-rel-v7-avatar">${esc(initial)}</div><div><div class="indo-rel-v7-name">${esc(name)}</div><div class="indo-rel-v7-id">@${esc(userId || "user")}</div></div></button>`;
+      })
+      .join("");
+    list.querySelectorAll("[data-rel-uid]").forEach((button) =>
+      button.addEventListener("click", async () => {
+        const uid = button.dataset.relUid || "";
+        const username = button.dataset.relUser || "";
+        closeList();
+        state.profile = { uid, ownerUid: uid, username };
+        state.screen = "profile";
+        if (window.__indoNavigate) await window.__indoNavigate("profile");
+      }),
+    );
   } catch (error) {
-    list.innerHTML = `<div class="indo-rel-v7-empty">${esc(error?.message || 'Could not load list.')}</div>`;
+    list.innerHTML = `<div class="indo-rel-v7-empty">${esc(error?.message || "Could not load list.")}</div>`;
   }
 }
 
@@ -110,20 +161,27 @@ function install() {
   if (globalThis[KEY]) return;
   globalThis[KEY] = true;
   styleOnce();
-  document.addEventListener('click', (event) => {
-    const target = event.target instanceof Element ? event.target.closest('.profile-direct-stat[data-relation]') : null;
-    if (!target) return;
-    const relation = target.dataset.relation;
-    if (relation !== 'followers' && relation !== 'following') return;
-    const root = document.getElementById('root');
-    if (!root?.contains(target)) return;
-    const targetUid = getTargetUid();
-    if (!targetUid) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    openRelation(targetUid, relation);
-  }, true);
-  const root = document.getElementById('root') || document.body;
+  document.addEventListener(
+    "click",
+    (event) => {
+      const target =
+        event.target instanceof Element
+          ? event.target.closest(".profile-direct-stat[data-relation]")
+          : null;
+      if (!target) return;
+      const relation = target.dataset.relation;
+      if (relation !== "followers" && relation !== "following") return;
+      const root = document.getElementById("root");
+      if (!root?.contains(target)) return;
+      const targetUid = getTargetUid();
+      if (!targetUid) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openRelation(targetUid, relation);
+    },
+    true,
+  );
+  const root = document.getElementById("root") || document.body;
   const observer = new MutationObserver(() => refreshStats());
   observer.observe(root, { childList: true, subtree: true });
   setTimeout(() => refreshStats(), 0);

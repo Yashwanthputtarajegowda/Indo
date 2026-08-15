@@ -1,12 +1,12 @@
-import { auth } from '../auth/firebase-client.js';
+import { auth } from "../auth/firebase-client.js";
 
 export async function loadMyProfile() {
   const user = auth.currentUser;
   if (!user) return null;
-  const apiBase = window.INDO_API_BASE || '';
+  const apiBase = window.INDO_API_BASE || "";
   const token = await user.getIdToken();
   const response = await fetch(`${apiBase}/api/account/me`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) return null;
   const data = await response.json();

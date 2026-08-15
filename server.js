@@ -1,6 +1,6 @@
-import express from 'express';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,8 +9,8 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
 
-app.get('/{*splat}', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+app.get("/{*splat}", (_req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.listen(port, () => {

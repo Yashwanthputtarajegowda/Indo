@@ -1,18 +1,35 @@
-import { nav } from '../components/nav.js';
-import { renderHomeTopbar, installHomeTopbarStyles } from './home-topbar-v230.js?v=230';
-import { loadNotifications, markNotificationRead, markAllNotificationsRead } from '../features/notifications/notifications.js?v=230';
-import { respondToFollowRequest } from '../features/social/follow.js';
+import { nav } from "../components/nav.js";
+import {
+  renderHomeTopbar,
+  installHomeTopbarStyles,
+} from "./home-topbar-v230.js?v=230";
+import {
+  loadNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from "../features/notifications/notifications.js?v=230";
+import { respondToFollowRequest } from "../features/social/follow.js";
 
-const STYLE_ID = 'indo-notifications-screen-v231';
+const STYLE_ID = "indo-notifications-screen-v231";
 
-function escapeHtml(value = '') {
-  return String(value).replace(/[&<>\"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' }[char]));
+function escapeHtml(value = "") {
+  return String(value).replace(
+    /[&<>\"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '\"': "&quot;",
+        "'": "&#039;",
+      })[char],
+  );
 }
 
 function timeAgo(timestamp) {
   const diff = Math.max(0, Date.now() - Number(timestamp || Date.now()));
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'now';
+  if (mins < 1) return "now";
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
@@ -20,35 +37,43 @@ function timeAgo(timestamp) {
 }
 
 function notificationKind(item) {
-  if (item?.type === 'follow-request' || item?.type === 'follow') return 'follow';
-  if (item?.type === 'comment') return 'comment';
-  if (item?.type === 'like') return 'like';
-  if (item?.type === 'save') return 'save';
-  return 'default';
+  if (item?.type === "follow-request" || item?.type === "follow")
+    return "follow";
+  if (item?.type === "comment") return "comment";
+  if (item?.type === "like") return "like";
+  if (item?.type === "save") return "save";
+  return "default";
 }
 
 function renderKindBadge(kind) {
   const icons = {
-    follow: '♟',
-    comment: '▢',
-    like: '♥',
-    save: '⌑',
-    default: '•',
+    follow: "♟",
+    comment: "▢",
+    like: "♥",
+    save: "⌑",
+    default: "•",
   };
   return `<span class="indo-notice-kind indo-notice-kind-${kind}" aria-hidden="true">${icons[kind] || icons.default}</span>`;
 }
 
 function renderNotification(item) {
-  const actor = escapeHtml(item.actorUserId || '@user');
-  const actorName = escapeHtml(item.actorName || actor.replace(/^@/, '') || 'Indo User');
-  const initial = escapeHtml((item.actorName || actor.replace(/^@/, 'I')).charAt(0).toUpperCase() || 'I');
-  const message = escapeHtml(item.text || 'sent you a notification.');
+  const actor = escapeHtml(item.actorUserId || "@user");
+  const actorName = escapeHtml(
+    item.actorName || actor.replace(/^@/, "") || "Indo User",
+  );
+  const initial = escapeHtml(
+    (item.actorName || actor.replace(/^@/, "I")).charAt(0).toUpperCase() || "I",
+  );
+  const message = escapeHtml(item.text || "sent you a notification.");
   const kind = notificationKind(item);
   const unread = item.read !== true;
-  const requesterUid = escapeHtml(item.actorUid || '');
-  const followAction = kind === 'follow' ? `<button class="indo-notice-action" type="button" data-follow-response="accept" data-requester-uid="${requesterUid}">Follow back</button>` : '';
+  const requesterUid = escapeHtml(item.actorUid || "");
+  const followAction =
+    kind === "follow"
+      ? `<button class="indo-notice-action" type="button" data-follow-response="accept" data-requester-uid="${requesterUid}">Follow back</button>`
+      : "";
   return `
-    <article class="indo-notice-card ${unread ? 'is-unread' : 'is-read'}" data-notification-id="${escapeHtml(item.id || '')}">
+    <article class="indo-notice-card ${unread ? "is-unread" : "is-read"}" data-notification-id="${escapeHtml(item.id || "")}">
       <span class="indo-notice-unread-dot" aria-hidden="true"></span>
       <div class="indo-notice-avatar" aria-hidden="true"><span>${initial}</span>${renderKindBadge(kind)}</div>
       <div class="indo-notice-copy">
@@ -61,7 +86,7 @@ function renderNotification(item) {
 
 function installStyles() {
   if (document.getElementById(STYLE_ID)) return;
-  const style = document.createElement('style');
+  const style = document.createElement("style");
   style.id = STYLE_ID;
   style.textContent = `
     .indo-notifications-shell{min-height:100vh;background:#030307;color:#f7f4fb;display:flex;flex-direction:column;}
@@ -107,42 +132,42 @@ function installStyles() {
   document.head.appendChild(style);
 }
 
-export async function renderNotifications(app, mode = 'all') {
+export async function renderNotifications(app, mode = "all") {
   installStyles();
   installHomeTopbarStyles();
-  const isActivity = mode === 'activity';
-  app.innerHTML = `<div class="indo-notifications-shell">${renderHomeTopbar()}<main class="indo-notifications-main"><section class="indo-notifications-heading"><h1 class="indo-notifications-title">${isActivity ? 'Activity' : 'Notifications'}</h1><button class="indo-notifications-readall" type="button" data-mark-all>✓ Mark all as read</button></section><div class="indo-notifications-list" data-notifications-list><div class="indo-notifications-status">Loading...</div></div></main>${nav('home')}</div>`;
-  const list = app.querySelector('[data-notifications-list]');
-  const readAllButton = app.querySelector('[data-mark-all]');
+  const isActivity = mode === "activity";
+  app.innerHTML = `<div class="indo-notifications-shell">${renderHomeTopbar()}<main class="indo-notifications-main"><section class="indo-notifications-heading"><h1 class="indo-notifications-title">${isActivity ? "Activity" : "Notifications"}</h1><button class="indo-notifications-readall" type="button" data-mark-all>✓ Mark all as read</button></section><div class="indo-notifications-list" data-notifications-list><div class="indo-notifications-status">Loading...</div></div></main>${nav("home")}</div>`;
+  const list = app.querySelector("[data-notifications-list]");
+  const readAllButton = app.querySelector("[data-mark-all]");
 
   const attachEvents = () => {
-    list.querySelectorAll('[data-notification-id]').forEach((card) => {
-      if (card.dataset.bound === '1') return;
-      card.dataset.bound = '1';
-      card.addEventListener('click', async (event) => {
-        if (event.target.closest('[data-follow-response]')) return;
-        if (!card.classList.contains('is-unread')) return;
+    list.querySelectorAll("[data-notification-id]").forEach((card) => {
+      if (card.dataset.bound === "1") return;
+      card.dataset.bound = "1";
+      card.addEventListener("click", async (event) => {
+        if (event.target.closest("[data-follow-response]")) return;
+        if (!card.classList.contains("is-unread")) return;
         try {
           await markNotificationRead(card.dataset.notificationId);
-          card.classList.remove('is-unread');
-          card.classList.add('is-read');
-          window.dispatchEvent(new CustomEvent('indo:notifications-read'));
+          card.classList.remove("is-unread");
+          card.classList.add("is-read");
+          window.dispatchEvent(new CustomEvent("indo:notifications-read"));
         } catch {}
       });
     });
-    list.querySelectorAll('[data-follow-response]').forEach((button) => {
-      if (button.dataset.bound === '1') return;
-      button.dataset.bound = '1';
-      button.addEventListener('click', async (event) => {
+    list.querySelectorAll("[data-follow-response]").forEach((button) => {
+      if (button.dataset.bound === "1") return;
+      button.dataset.bound = "1";
+      button.addEventListener("click", async (event) => {
         event.stopPropagation();
         const requesterUid = button.dataset.requesterUid;
         button.disabled = true;
         try {
           await respondToFollowRequest(requesterUid, true);
-          button.textContent = 'Following';
+          button.textContent = "Following";
         } catch (error) {
           button.disabled = false;
-          button.title = error?.message || 'Could not follow back.';
+          button.title = error?.message || "Could not follow back.";
         }
       });
     });
@@ -151,11 +176,15 @@ export async function renderNotifications(app, mode = 'all') {
   const refresh = async () => {
     try {
       const items = await loadNotifications();
-      const visible = isActivity ? items.filter((item) => ['like', 'comment'].includes(item.type)) : items;
-      list.innerHTML = visible.length ? visible.map(renderNotification).join('') : `<div class="indo-notifications-empty">No ${isActivity ? 'activity' : 'notifications'} yet.</div>`;
+      const visible = isActivity
+        ? items.filter((item) => ["like", "comment"].includes(item.type))
+        : items;
+      list.innerHTML = visible.length
+        ? visible.map(renderNotification).join("")
+        : `<div class="indo-notifications-empty">No ${isActivity ? "activity" : "notifications"} yet.</div>`;
       attachEvents();
     } catch (error) {
-      list.innerHTML = `<div class="indo-notifications-empty">${escapeHtml(error?.message || 'Could not load notifications.')}</div>`;
+      list.innerHTML = `<div class="indo-notifications-empty">${escapeHtml(error?.message || "Could not load notifications.")}</div>`;
     }
   };
 
@@ -164,16 +193,22 @@ export async function renderNotifications(app, mode = 'all') {
   if (!isActivity) {
     try {
       await markAllNotificationsRead();
-      app.querySelectorAll('.indo-notice-card.is-unread').forEach((card) => { card.classList.remove('is-unread'); card.classList.add('is-read'); });
-      window.dispatchEvent(new CustomEvent('indo:notifications-read'));
+      app.querySelectorAll(".indo-notice-card.is-unread").forEach((card) => {
+        card.classList.remove("is-unread");
+        card.classList.add("is-read");
+      });
+      window.dispatchEvent(new CustomEvent("indo:notifications-read"));
     } catch {}
   }
 
-  readAllButton.addEventListener('click', async () => {
+  readAllButton.addEventListener("click", async () => {
     try {
       await markAllNotificationsRead();
-      app.querySelectorAll('.indo-notice-card.is-unread').forEach((card) => { card.classList.remove('is-unread'); card.classList.add('is-read'); });
-      window.dispatchEvent(new CustomEvent('indo:notifications-read'));
+      app.querySelectorAll(".indo-notice-card.is-unread").forEach((card) => {
+        card.classList.remove("is-unread");
+        card.classList.add("is-read");
+      });
+      window.dispatchEvent(new CustomEvent("indo:notifications-read"));
     } catch {}
   });
 }

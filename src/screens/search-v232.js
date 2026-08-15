@@ -1,44 +1,75 @@
-import { nav } from '../components/nav.js';
-import { renderHomeTopbar, installHomeTopbarStyles } from './home-topbar-v230.js';
-import { loadFollowStatus, toggleFollow } from '../features/social/follow.js';
-import { state } from '../state.js';
+import { nav } from "../components/nav.js";
+import {
+  renderHomeTopbar,
+  installHomeTopbarStyles,
+} from "./home-topbar-v230.js";
+import { loadFollowStatus, toggleFollow } from "../features/social/follow.js";
+import { state } from "../state.js";
 
-const VERSION = '232';
+const VERSION = "232";
 
-function escapeHtml(value = '') {
-  return String(value).replace(/[&<>\"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' }[char]));
+function escapeHtml(value = "") {
+  return String(value).replace(
+    /[&<>\"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '\"': "&quot;",
+        "'": "&#039;",
+      })[char],
+  );
 }
 
 function formatCount(value) {
   const n = Number(value) || 0;
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}K`;
   return String(n);
 }
 
 function initials(name, userId) {
-  return escapeHtml((String(name || userId || 'I').replace(/^@/, '').trim().charAt(0) || 'I').toUpperCase());
+  return escapeHtml(
+    (
+      String(name || userId || "I")
+        .replace(/^@/, "")
+        .trim()
+        .charAt(0) || "I"
+    ).toUpperCase(),
+  );
 }
 
 async function searchUsers(query) {
-  const value = String(query || '').trim().replace(/^@+/, '').toLowerCase();
+  const value = String(query || "")
+    .trim()
+    .replace(/^@+/, "")
+    .toLowerCase();
   if (!value) return [];
-  const apiBase = window.INDO_API_BASE || '';
-  const response = await fetch(`${apiBase}/api/account/search-users?q=${encodeURIComponent(value)}`, { cache: 'no-store' });
+  const apiBase = window.INDO_API_BASE || "";
+  const response = await fetch(
+    `${apiBase}/api/account/search-users?q=${encodeURIComponent(value)}`,
+    { cache: "no-store" },
+  );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Could not search users.');
+  if (!response.ok) throw new Error(data.error || "Could not search users.");
   return Array.isArray(data.users) ? data.users : [];
 }
 
 async function openUserProfile(username) {
-  const apiBase = window.INDO_API_BASE || '';
-  const clean = String(username || '').replace(/^@/, '');
-  const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(clean)}`, { cache: 'no-store' });
+  const apiBase = window.INDO_API_BASE || "";
+  const clean = String(username || "").replace(/^@/, "");
+  const response = await fetch(
+    `${apiBase}/api/account/profile/${encodeURIComponent(clean)}`,
+    { cache: "no-store" },
+  );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data?.ok) throw new Error(data.error || 'Could not open profile.');
+  if (!response.ok || !data?.ok)
+    throw new Error(data.error || "Could not open profile.");
   state.profile = { ...data.profile, stats: data.stats, social: data.social };
-  state.screen = 'profile';
-  if (typeof window.__indoNavigate === 'function') await window.__indoNavigate('profile');
+  state.screen = "profile";
+  if (typeof window.__indoNavigate === "function")
+    await window.__indoNavigate("profile");
 }
 
 function renderCard(user) {
@@ -49,7 +80,7 @@ function renderCard(user) {
     <button class="search-profile-main" type="button" data-open-profile="${escapeHtml(user.userId)}">
       ${avatar}
       <span class="search-profile-copy">
-        <span class="search-profile-name">${escapeHtml(user.name)}${user.isVerified ? '<span class="search-verified">✓</span>' : ''}</span>
+        <span class="search-profile-name">${escapeHtml(user.name)}${user.isVerified ? '<span class="search-verified">✓</span>' : ""}</span>
         <span class="search-profile-id">${escapeHtml(user.userId)}</span>
         <span class="search-profile-stats"><b>${formatCount(user.postsCount)}</b> Posts <i></i> <b>${formatCount(user.followersCount)}</b> Followers</span>
       </span>
@@ -59,9 +90,9 @@ function renderCard(user) {
 }
 
 function injectStyles() {
-  const id = 'indo-search-v232';
+  const id = "indo-search-v232";
   if (document.getElementById(id)) return;
-  const style = document.createElement('style');
+  const style = document.createElement("style");
   style.id = id;
   style.textContent = `
     .search-v232{max-width:720px;margin:0 auto;padding:18px 16px 88px;box-sizing:border-box}
@@ -93,70 +124,92 @@ function injectStyles() {
 export async function renderSearch(app) {
   installHomeTopbarStyles();
   injectStyles();
-  app.innerHTML = `<div class="app-shell">${renderHomeTopbar()}<main class="search-v232"><div class="search-v232-box"><span aria-hidden="true">⌕</span><input id="user-search-input-v232" autocomplete="off" placeholder="Search @User ID..." aria-label="Search User ID"><button class="search-v232-clear" id="search-clear-v232" type="button" aria-label="Clear search">×</button></div><h4 class="search-v232-users-title">Users</h4><div class="search-v232-results" id="search-results-v232"><div class="search-v232-empty">Search a User ID to see matching profiles.</div></div></main>${nav('search')}</div>`;
+  app.innerHTML = `<div class="app-shell">${renderHomeTopbar()}<main class="search-v232"><div class="search-v232-box"><span aria-hidden="true">⌕</span><input id="user-search-input-v232" autocomplete="off" placeholder="Search @User ID..." aria-label="Search User ID"><button class="search-v232-clear" id="search-clear-v232" type="button" aria-label="Clear search">×</button></div><h4 class="search-v232-users-title">Users</h4><div class="search-v232-results" id="search-results-v232"><div class="search-v232-empty">Search a User ID to see matching profiles.</div></div></main>${nav("search")}</div>`;
 
-  const input = app.querySelector('#user-search-input-v232');
-  const clear = app.querySelector('#search-clear-v232');
-  const results = app.querySelector('#search-results-v232');
+  const input = app.querySelector("#user-search-input-v232");
+  const clear = app.querySelector("#search-clear-v232");
+  const results = app.querySelector("#search-results-v232");
   let timer = null;
   let requestId = 0;
 
   const bindFollowButtons = () => {
-    results.querySelectorAll('[data-follow-user]').forEach(async (button) => {
-      if (button.dataset.bound === '1') return;
-      button.dataset.bound = '1';
+    results.querySelectorAll("[data-follow-user]").forEach(async (button) => {
+      if (button.dataset.bound === "1") return;
+      button.dataset.bound = "1";
       const targetUid = button.dataset.followUser;
       try {
         const status = await loadFollowStatus(targetUid);
         const following = Boolean(status?.following);
-        button.dataset.following = following ? '1' : '0';
-        button.textContent = status?.requested ? 'Requested' : (following ? 'Following' : 'Follow');
+        button.dataset.following = following ? "1" : "0";
+        button.textContent = status?.requested
+          ? "Requested"
+          : following
+            ? "Following"
+            : "Follow";
       } catch {}
-      button.addEventListener('click', async (event) => {
+      button.addEventListener("click", async (event) => {
         event.stopPropagation();
-        const following = button.dataset.following === '1';
+        const following = button.dataset.following === "1";
         button.disabled = true;
         try {
           const data = await toggleFollow(targetUid, !following);
-          button.dataset.following = data?.following ? '1' : '0';
-          button.textContent = data?.requested ? 'Requested' : (data?.following ? 'Following' : 'Follow');
+          button.dataset.following = data?.following ? "1" : "0";
+          button.textContent = data?.requested
+            ? "Requested"
+            : data?.following
+              ? "Following"
+              : "Follow";
         } catch (error) {
-          button.title = error.message || 'Could not update follow status.';
-        } finally { button.disabled = false; }
+          button.title = error.message || "Could not update follow status.";
+        } finally {
+          button.disabled = false;
+        }
       });
     });
   };
 
-  results.addEventListener('click', (event) => {
+  results.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
-    const cardButton = target?.closest('[data-open-profile]');
+    const cardButton = target?.closest("[data-open-profile]");
     if (!cardButton) return;
-    openUserProfile(cardButton.dataset.openProfile).catch((error) => { results.insertAdjacentHTML('afterbegin', `<div class="search-v232-empty">${escapeHtml(error.message || 'Could not open profile.')}</div>`); });
+    openUserProfile(cardButton.dataset.openProfile).catch((error) => {
+      results.insertAdjacentHTML(
+        "afterbegin",
+        `<div class="search-v232-empty">${escapeHtml(error.message || "Could not open profile.")}</div>`,
+      );
+    });
   });
 
   const runSearch = async () => {
     const value = input.value.trim();
-    clear.style.display = value ? 'block' : 'none';
+    clear.style.display = value ? "block" : "none";
     const current = ++requestId;
     if (!value) {
-      results.innerHTML = '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>';
+      results.innerHTML =
+        '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>';
       return;
     }
     results.innerHTML = '<div class="search-v232-empty">Searching...</div>';
     try {
       const users = await searchUsers(value);
       if (current !== requestId) return;
-      results.innerHTML = users.length ? users.map(renderCard).join('') : '<div class="search-v232-empty">No matching users found.</div>';
+      results.innerHTML = users.length
+        ? users.map(renderCard).join("")
+        : '<div class="search-v232-empty">No matching users found.</div>';
       bindFollowButtons();
     } catch (error) {
       if (current !== requestId) return;
-      results.innerHTML = `<div class="search-v232-empty">${escapeHtml(error.message || 'Could not search users.')}</div>`;
+      results.innerHTML = `<div class="search-v232-empty">${escapeHtml(error.message || "Could not search users.")}</div>`;
     }
   };
 
-  input.addEventListener('input', () => {
+  input.addEventListener("input", () => {
     clearTimeout(timer);
     timer = setTimeout(runSearch, 180);
   });
-  clear.addEventListener('click', () => { input.value = ''; input.focus(); runSearch(); });
+  clear.addEventListener("click", () => {
+    input.value = "";
+    input.focus();
+    runSearch();
+  });
 }

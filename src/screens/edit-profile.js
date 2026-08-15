@@ -1,29 +1,46 @@
-import { auth } from '../features/auth/firebase-client.js';
-import { updateProfile } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
+import { auth } from "../features/auth/firebase-client.js";
+import { updateProfile } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-const API_BASE = () => window.INDO_API_BASE || '';
-const STYLE_ID = 'indo-edit-profile-canonical-v2';
-const esc = (value = '') => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
+const API_BASE = () => window.INDO_API_BASE || "";
+const STYLE_ID = "indo-edit-profile-canonical-v2";
+const esc = (value = "") =>
+  String(value).replace(
+    /[&<>"']/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      })[c],
+  );
 
 async function token() {
   const user = auth.currentUser;
-  if (!user) throw new Error('Please login first.');
+  if (!user) throw new Error("Please login first.");
   return user.getIdToken(false);
 }
 
 async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
-  if (options.body !== undefined && !(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+  if (options.body !== undefined && !(options.body instanceof FormData))
+    headers["Content-Type"] = "application/json";
   headers.Authorization = `Bearer ${await token()}`;
-  const response = await fetch(`${API_BASE()}${path}`, { ...options, headers, cache: 'no-store' });
+  const response = await fetch(`${API_BASE()}${path}`, {
+    ...options,
+    headers,
+    cache: "no-store",
+  });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Request failed (${response.status}).`);
+  if (!response.ok)
+    throw new Error(data.error || `Request failed (${response.status}).`);
   return data;
 }
 
 function installStyles() {
   if (document.getElementById(STYLE_ID)) return;
-  const style = document.createElement('style');
+  const style = document.createElement("style");
   style.id = STYLE_ID;
   style.textContent = `
     .indo-edit{width:min(100%,520px);min-height:100vh;margin:0 auto;background:#05070d;color:#f7f8ff;padding-bottom:30px}
@@ -36,61 +53,134 @@ function installStyles() {
 }
 
 async function loadProfile() {
-  const data = await api('/api/account/me');
+  const data = await api("/api/account/me");
   return data?.profile || {};
 }
 
 async function uploadAvatar(file) {
-  if (file.size > 5 * 1024 * 1024) throw new Error('Profile photo must be 5MB or smaller.');
-  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) throw new Error('Use PNG, JPG or WebP for profile photo.');
-  const signature = await api('/api/account/profile/avatar-signature', { method: 'POST', body: JSON.stringify({ contentType: file.type }) });
+  if (file.size > 5 * 1024 * 1024)
+    throw new Error("Profile photo must be 5MB or smaller.");
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type))
+    throw new Error("Use PNG, JPG or WebP for profile photo.");
+  const signature = await api("/api/account/profile/avatar-signature", {
+    method: "POST",
+    body: JSON.stringify({ contentType: file.type }),
+  });
   const form = new FormData();
-  form.append('file', file); form.append('api_key', signature.apiKey); form.append('timestamp', String(signature.timestamp)); form.append('folder', signature.folder); form.append('signature', signature.signature);
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(signature.cloudName)}/image/upload`, { method: 'POST', body: form });
+  form.append("file", file);
+  form.append("api_key", signature.apiKey);
+  form.append("timestamp", String(signature.timestamp));
+  form.append("folder", signature.folder);
+  form.append("signature", signature.signature);
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${encodeURIComponent(signature.cloudName)}/image/upload`,
+    { method: "POST", body: form },
+  );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data.secure_url) throw new Error(data.error?.message || 'Profile photo upload failed.');
+  if (!response.ok || !data.secure_url)
+    throw new Error(data.error?.message || "Profile photo upload failed.");
   return data.secure_url;
 }
 
 export async function renderEditProfile(app) {
   installStyles();
   const user = auth.currentUser;
-  if (!user) { app.innerHTML = '<div class="indo-edit"><main class="indo-edit-main">Please login first.</main></div>'; return; }
+  if (!user) {
+    app.innerHTML =
+      '<div class="indo-edit"><main class="indo-edit-main">Please login first.</main></div>';
+    return;
+  }
 
   let profile = {};
-  try { profile = await loadProfile(); } catch {}
-  const name = String(user.displayName || profile.name || profile.displayName || '').trim();
-  const id = String(profile.userId || profile.username || '').replace(/^@/, '');
-  const avatar = String(profile.avatarUrl || profile.photoURL || profile.photoUrl || user.photoURL || '').trim();
-  const initial = (name || id || 'I').charAt(0).toUpperCase();
-  const bio = String(profile.bio || '');
-  const location = String(profile.location || '');
-  const website = String(profile.website || '');
-  const role = String(profile.role || 'Content Creator');
-  const interests = String(profile.interests || '');
-  const language = String(profile.language || 'English');
-  const visibility = String(profile.accountType || profile.visibility || 'public').toLowerCase() === 'private' ? 'private' : 'public';
+  try {
+    profile = await loadProfile();
+  } catch {}
+  const name = String(
+    user.displayName || profile.name || profile.displayName || "",
+  ).trim();
+  const id = String(profile.userId || profile.username || "").replace(/^@/, "");
+  const avatar = String(
+    profile.avatarUrl ||
+      profile.photoURL ||
+      profile.photoUrl ||
+      user.photoURL ||
+      "",
+  ).trim();
+  const initial = (name || id || "I").charAt(0).toUpperCase();
+  const bio = String(profile.bio || "");
+  const location = String(profile.location || "");
+  const website = String(profile.website || "");
+  const role = String(profile.role || "Content Creator");
+  const interests = String(profile.interests || "");
+  const language = String(profile.language || "English");
+  const visibility =
+    String(
+      profile.accountType || profile.visibility || "public",
+    ).toLowerCase() === "private"
+      ? "private"
+      : "public";
 
-  app.innerHTML = `<div class="indo-edit"><header class="indo-edit-head"><button type="button" data-screen="profile">‹</button><div class="indo-edit-title">Edit Profile</div><button class="indo-edit-top-save" type="button" data-save-top>Save</button></header><main class="indo-edit-main"><section class="indo-edit-photo"><div class="indo-edit-avatar" data-avatar>${avatar ? `<img src="${esc(avatar)}" alt="Profile">` : esc(initial)}</div><label>Change Profile Photo<input type="file" accept="image/png,image/jpeg,image/webp" data-photo hidden></label><div class="indo-edit-help">Your profile photo is visible across Indo.</div></section><div class="indo-edit-group"><label class="indo-edit-label">Name</label><div class="indo-edit-card"><input class="indo-edit-input" name="name" value="${esc(name)}" maxlength="80"></div></div><div class="indo-edit-group"><label class="indo-edit-label">User ID</label><div class="indo-edit-card indo-edit-locked"><span>@${esc(id)}</span><span class="indo-edit-lock">Locked</span></div></div><div class="indo-edit-group"><label class="indo-edit-label">Bio</label><div class="indo-edit-card"><textarea class="indo-edit-area" name="bio" maxlength="160">${esc(bio)}</textarea></div></div><div class="indo-edit-group"><label class="indo-edit-label">Location</label><div class="indo-edit-card"><input class="indo-edit-input" name="location" value="${esc(location)}" maxlength="100" placeholder="Add location"></div></div><div class="indo-edit-group"><label class="indo-edit-label">Website / Link</label><div class="indo-edit-card"><input class="indo-edit-input" name="website" value="${esc(website)}" maxlength="200" placeholder="https://example.com"></div></div><div class="indo-edit-grid"><div class="indo-edit-group"><label class="indo-edit-label">Creator Role</label><div class="indo-edit-card"><select class="indo-edit-select" name="role"><option ${role==='Content Creator'?'selected':''}>Content Creator</option><option ${role==='Video Creator'?'selected':''}>Video Creator</option><option ${role==='Photographer'?'selected':''}>Photographer</option><option ${role==='Artist'?'selected':''}>Artist</option><option ${role==='Influencer'?'selected':''}>Influencer</option><option ${role==='Business'?'selected':''}>Business</option></select></div></div><div class="indo-edit-group"><label class="indo-edit-label">Language</label><div class="indo-edit-card"><select class="indo-edit-select" name="language"><option ${language==='English'?'selected':''}>English</option><option ${language==='Kannada'?'selected':''}>Kannada</option><option ${language==='Hindi'?'selected':''}>Hindi</option><option ${language==='Telugu'?'selected':''}>Telugu</option><option ${language==='Tamil'?'selected':''}>Tamil</option><option ${language==='Malayalam'?'selected':''}>Malayalam</option></select></div></div></div><div class="indo-edit-group"><label class="indo-edit-label">Interests</label><div class="indo-edit-card"><input class="indo-edit-input" name="interests" value="${esc(interests)}" maxlength="240"></div></div><div class="indo-edit-group"><label class="indo-edit-label">Profile Visibility</label><div class="indo-edit-card"><select class="indo-edit-select" name="visibility"><option value="public" ${visibility==='public'?'selected':''}>Public</option><option value="private" ${visibility==='private'?'selected':''}>Private</option></select></div></div><div class="indo-edit-actions"><button type="button" data-save>Save Changes</button><div class="indo-edit-msg" data-msg></div></div></main></div>`;
+  app.innerHTML = `<div class="indo-edit"><header class="indo-edit-head"><button type="button" data-screen="profile">‹</button><div class="indo-edit-title">Edit Profile</div><button class="indo-edit-top-save" type="button" data-save-top>Save</button></header><main class="indo-edit-main"><section class="indo-edit-photo"><div class="indo-edit-avatar" data-avatar>${avatar ? `<img src="${esc(avatar)}" alt="Profile">` : esc(initial)}</div><label>Change Profile Photo<input type="file" accept="image/png,image/jpeg,image/webp" data-photo hidden></label><div class="indo-edit-help">Your profile photo is visible across Indo.</div></section><div class="indo-edit-group"><label class="indo-edit-label">Name</label><div class="indo-edit-card"><input class="indo-edit-input" name="name" value="${esc(name)}" maxlength="80"></div></div><div class="indo-edit-group"><label class="indo-edit-label">User ID</label><div class="indo-edit-card indo-edit-locked"><span>@${esc(id)}</span><span class="indo-edit-lock">Locked</span></div></div><div class="indo-edit-group"><label class="indo-edit-label">Bio</label><div class="indo-edit-card"><textarea class="indo-edit-area" name="bio" maxlength="160">${esc(bio)}</textarea></div></div><div class="indo-edit-group"><label class="indo-edit-label">Location</label><div class="indo-edit-card"><input class="indo-edit-input" name="location" value="${esc(location)}" maxlength="100" placeholder="Add location"></div></div><div class="indo-edit-group"><label class="indo-edit-label">Website / Link</label><div class="indo-edit-card"><input class="indo-edit-input" name="website" value="${esc(website)}" maxlength="200" placeholder="https://example.com"></div></div><div class="indo-edit-grid"><div class="indo-edit-group"><label class="indo-edit-label">Creator Role</label><div class="indo-edit-card"><select class="indo-edit-select" name="role"><option ${role === "Content Creator" ? "selected" : ""}>Content Creator</option><option ${role === "Video Creator" ? "selected" : ""}>Video Creator</option><option ${role === "Photographer" ? "selected" : ""}>Photographer</option><option ${role === "Artist" ? "selected" : ""}>Artist</option><option ${role === "Influencer" ? "selected" : ""}>Influencer</option><option ${role === "Business" ? "selected" : ""}>Business</option></select></div></div><div class="indo-edit-group"><label class="indo-edit-label">Language</label><div class="indo-edit-card"><select class="indo-edit-select" name="language"><option ${language === "English" ? "selected" : ""}>English</option><option ${language === "Kannada" ? "selected" : ""}>Kannada</option><option ${language === "Hindi" ? "selected" : ""}>Hindi</option><option ${language === "Telugu" ? "selected" : ""}>Telugu</option><option ${language === "Tamil" ? "selected" : ""}>Tamil</option><option ${language === "Malayalam" ? "selected" : ""}>Malayalam</option></select></div></div></div><div class="indo-edit-group"><label class="indo-edit-label">Interests</label><div class="indo-edit-card"><input class="indo-edit-input" name="interests" value="${esc(interests)}" maxlength="240"></div></div><div class="indo-edit-group"><label class="indo-edit-label">Profile Visibility</label><div class="indo-edit-card"><select class="indo-edit-select" name="visibility"><option value="public" ${visibility === "public" ? "selected" : ""}>Public</option><option value="private" ${visibility === "private" ? "selected" : ""}>Private</option></select></div></div><div class="indo-edit-actions"><button type="button" data-save>Save Changes</button><div class="indo-edit-msg" data-msg></div></div></main></div>`;
 
-  const message = app.querySelector('[data-msg]');
-  const photoInput = app.querySelector('[data-photo]');
-  photoInput?.addEventListener('change', event => { const file = event.target.files?.[0]; if (!file) return; const localUrl = URL.createObjectURL(file); app.querySelector('[data-avatar]').innerHTML = `<img src="${esc(localUrl)}" alt="Profile">`; message.textContent = 'Photo selected. Save to publish it everywhere.'; message.className = 'indo-edit-msg'; });
+  const message = app.querySelector("[data-msg]");
+  const photoInput = app.querySelector("[data-photo]");
+  photoInput?.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const localUrl = URL.createObjectURL(file);
+    app.querySelector("[data-avatar]").innerHTML =
+      `<img src="${esc(localUrl)}" alt="Profile">`;
+    message.textContent = "Photo selected. Save to publish it everywhere.";
+    message.className = "indo-edit-msg";
+  });
 
   const save = async () => {
-    const top = app.querySelector('[data-save-top]'); const button = app.querySelector('[data-save]'); top.disabled = button.disabled = true; message.textContent = 'Saving...'; message.className = 'indo-edit-msg';
+    const top = app.querySelector("[data-save-top]");
+    const button = app.querySelector("[data-save]");
+    top.disabled = button.disabled = true;
+    message.textContent = "Saving...";
+    message.className = "indo-edit-msg";
     try {
-      const payload = { name: app.querySelector('[name=name]').value.trim(), bio: app.querySelector('[name=bio]').value.trim(), location: app.querySelector('[name=location]').value.trim(), website: app.querySelector('[name=website]').value.trim(), role: app.querySelector('[name=role]').value, interests: app.querySelector('[name=interests]').value.trim(), language: app.querySelector('[name=language]').value, visibility: app.querySelector('[name=visibility]').value };
-      if (!payload.name) throw new Error('Name is required.');
+      const payload = {
+        name: app.querySelector("[name=name]").value.trim(),
+        bio: app.querySelector("[name=bio]").value.trim(),
+        location: app.querySelector("[name=location]").value.trim(),
+        website: app.querySelector("[name=website]").value.trim(),
+        role: app.querySelector("[name=role]").value,
+        interests: app.querySelector("[name=interests]").value.trim(),
+        language: app.querySelector("[name=language]").value,
+        visibility: app.querySelector("[name=visibility]").value,
+      };
+      if (!payload.name) throw new Error("Name is required.");
       const selectedPhoto = photoInput?.files?.[0];
-      if (selectedPhoto) { message.textContent = 'Uploading profile photo...'; payload.avatarUrl = await uploadAvatar(selectedPhoto); payload.photoURL = payload.avatarUrl; }
-      const result = await api('/api/account/profile', { method: 'PATCH', body: JSON.stringify(payload) });
-      await updateProfile(user, { displayName: payload.name, ...(payload.avatarUrl ? { photoURL: payload.avatarUrl } : {}) });
-      window.dispatchEvent(new CustomEvent('indo:profile-updated', { detail: { uid: user.uid, userId: id, profile: result.profile } }));
-      message.textContent = 'Profile saved everywhere.'; message.className = 'indo-edit-msg indo-edit-ok';
-      setTimeout(() => window.__indoNavigate?.('profile'), 350);
-    } catch (error) { message.textContent = error?.message || 'Could not save profile.'; message.className = 'indo-edit-msg indo-edit-err'; }
-    finally { top.disabled = button.disabled = false; }
+      if (selectedPhoto) {
+        message.textContent = "Uploading profile photo...";
+        payload.avatarUrl = await uploadAvatar(selectedPhoto);
+        payload.photoURL = payload.avatarUrl;
+      }
+      const result = await api("/api/account/profile", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      await updateProfile(user, {
+        displayName: payload.name,
+        ...(payload.avatarUrl ? { photoURL: payload.avatarUrl } : {}),
+      });
+      window.dispatchEvent(
+        new CustomEvent("indo:profile-updated", {
+          detail: { uid: user.uid, userId: id, profile: result.profile },
+        }),
+      );
+      message.textContent = "Profile saved everywhere.";
+      message.className = "indo-edit-msg indo-edit-ok";
+      setTimeout(() => window.__indoNavigate?.("profile"), 350);
+    } catch (error) {
+      message.textContent = error?.message || "Could not save profile.";
+      message.className = "indo-edit-msg indo-edit-err";
+    } finally {
+      top.disabled = button.disabled = false;
+    }
   };
-  app.querySelector('[data-save]')?.addEventListener('click', save); app.querySelector('[data-save-top]')?.addEventListener('click', save);
+  app.querySelector("[data-save]")?.addEventListener("click", save);
+  app.querySelector("[data-save-top]")?.addEventListener("click", save);
 }

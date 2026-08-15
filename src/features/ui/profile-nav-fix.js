@@ -1,9 +1,9 @@
-const STYLE_ID = 'indo-profile-nav-fix-v1';
+const STYLE_ID = "indo-profile-nav-fix-v1";
 
 function apply() {
   let style = document.getElementById(STYLE_ID);
   if (!style) {
-    style = document.createElement('style');
+    style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
       .profile-direct-nav {
@@ -48,27 +48,30 @@ function apply() {
     document.head.appendChild(style);
   }
 
-  document.querySelectorAll('.profile-direct-nav').forEach((nav) => {
-    nav.style.setProperty('position', 'fixed', 'important');
-    nav.style.setProperty('left', '50%', 'important');
-    nav.style.setProperty('right', 'auto', 'important');
-    nav.style.setProperty('top', 'auto', 'important');
-    nav.style.setProperty('bottom', '0', 'important');
-    nav.style.setProperty('transform', 'translateX(-50%)', 'important');
-    nav.style.setProperty('width', 'min(520px, 100vw)', 'important');
-    nav.style.setProperty('height', '70px', 'important');
-    nav.style.setProperty('visibility', 'visible', 'important');
-    nav.style.setProperty('opacity', '1', 'important');
-    nav.style.setProperty('z-index', '2147483000', 'important');
+  document.querySelectorAll(".profile-direct-nav").forEach((nav) => {
+    nav.style.setProperty("position", "fixed", "important");
+    nav.style.setProperty("left", "50%", "important");
+    nav.style.setProperty("right", "auto", "important");
+    nav.style.setProperty("top", "auto", "important");
+    nav.style.setProperty("bottom", "0", "important");
+    nav.style.setProperty("transform", "translateX(-50%)", "important");
+    nav.style.setProperty("width", "min(520px, 100vw)", "important");
+    nav.style.setProperty("height", "70px", "important");
+    nav.style.setProperty("visibility", "visible", "important");
+    nav.style.setProperty("opacity", "1", "important");
+    nav.style.setProperty("z-index", "2147483000", "important");
   });
 }
 
 apply();
 if (!globalThis.__indoProfileNavFixBound) {
   globalThis.__indoProfileNavFixBound = true;
-  new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true });
-  window.addEventListener('resize', apply, { passive: true });
-  window.addEventListener('scroll', apply, { passive: true });
+  new MutationObserver(apply).observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
+  window.addEventListener("resize", apply, { passive: true });
+  window.addEventListener("scroll", apply, { passive: true });
 }
 
 export { apply };

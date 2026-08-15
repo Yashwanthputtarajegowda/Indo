@@ -1,9 +1,9 @@
-const KEY = Symbol.for('indo.profileVideoNativeControlsHidden');
+const KEY = Symbol.for("indo.profileVideoNativeControlsHidden");
 
 if (!globalThis[KEY]) {
   globalThis[KEY] = true;
-  const style = document.createElement('style');
-  style.id = 'indo-profile-video-native-controls-hidden';
+  const style = document.createElement("style");
+  style.id = "indo-profile-video-native-controls-hidden";
   style.textContent = `
     .profile-video-viewer video::-webkit-media-controls,
     .profile-video-viewer video::-webkit-media-controls-enclosure,
