@@ -11,7 +11,7 @@ import {
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
-import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v8";
+import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v9";
 
 const app = document.getElementById("root");
 let busy = false;
@@ -22,7 +22,10 @@ function scheduleProfileEnhancement(root, id) {
   const run = () => {
     if (id !== renderId) return;
     enhanceProfileIdentity(root).catch((error) => {
-      console.warn("Profile identity enhancement failed:", error);
+      console.warn(
+        "Profile identity enhancement failed:",
+        error,
+      );
     });
   };
 
@@ -53,7 +56,10 @@ function scheduleLiveAvatarInstaller() {
       { timeout: 1600 },
     );
   } else {
-    window.setTimeout(() => run().catch(() => {}), 80);
+    window.setTimeout(
+      () => run().catch(() => {}),
+      80,
+    );
   }
 }
 
