@@ -23,7 +23,8 @@ async function navigate(screen) {
   navigationBusy = true;
   try {
     const { state } = await import('./state.js');
-    if (state.screen === target && target !== 'profile') return;
+    if (target === 'profile') state.profile = null;
+    if (state.screen === target && target !== 'profile' && target !== 'settings') return;
     state.screen = target;
     window.__indoRecommendationScreen = target;
     await render();
@@ -40,7 +41,7 @@ function installNavigationClicks() {
     const element = event.target instanceof Element ? event.target : null;
     const button = element?.closest('[data-screen]');
     if (!button) return;
-    const surface = button.closest('.indo-option5-topbar,.indo-global-bottom-nav,.indo-brand-topbar,.bottom-nav,.page-head,.reels-top,.profile-v240-shell');
+    const surface = button.closest('.indo-option5-topbar,.indo-global-bottom-nav,.indo-brand-topbar,.bottom-nav,.page-head,.reels-top,.profile-v241-shell');
     if (!surface) return;
     const screen = button.getAttribute('data-screen');
     if (!screen) return;
