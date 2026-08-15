@@ -29,8 +29,9 @@ function activeNavScreen() {
 }
 
 function installGlobalBottomNav(app) {
-  if (!app || state.screen === 'auth-login' || state.screen === 'auth-signup' || state.screen === 'watch-video' || state.screen === 'profile') return;
+  if (!app || state.screen === 'auth-login' || state.screen === 'auth-signup' || state.screen === 'watch-video') return;
   ensureGlobalNavStyle();
+  // Every app screen, including Profile, uses this exact same navigation renderer.
   app.querySelectorAll('.bottom-nav,.indo-global-bottom-nav').forEach((node) => node.remove());
   const active = activeNavScreen();
   const nav = document.createElement('nav');
