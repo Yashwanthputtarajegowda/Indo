@@ -1,9 +1,10 @@
 import { nav } from '../components/nav.js';
 import { renderHomeTopbar, installHomeTopbarStyles } from './home-topbar-v230.js';
 import { loadFollowStatus, toggleFollow } from '../features/social/follow.js';
+import { auth } from '../features/auth/firebase-client.js';
 import { state } from '../state.js';
 
-const VERSION = '233';
+const VERSION = '20260815-search-v7';
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>\"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' }[char]));
@@ -20,6 +21,15 @@ function initials(name, userId) {
   return escapeHtml((String(name || userId || 'I').replace(/^@/, '').trim().charAt(0) || 'I').toUpperCase());
 }
 
+function avatarMarkup(user) {
+  const avatar = String(user?.avatarUrl || user?.photoURL || user?.photoUrl || '').trim();
+  const identity = escapeHtml(user?.userId || user?.username || '');
+  if (avatar) {
+    return `<span class="search-avatar" data-profile-username="${identity}" data-profile-uid="${escapeHtml(user?.uid || '')}"><img src="${escapeHtml(avatar)}" alt="${escapeHtml(user?.name || user?.userId || 'Profile')}" loading="lazy"></span>`;
+  }
+  return `<span class="search-avatar search-avatar-initial" data-profile-username="${identity}" data-profile-uid="${escapeHtml(user?.uid || '')}">${initials(user?.name, user?.userId)}</span>`;
+}
+
 async function searchUsers(query) {
   const value = String(query || '').trim().replace(/^@+/, '').toLowerCase();
   if (!value) return [];
@@ -33,33 +43,32 @@ async function searchUsers(query) {
 async function openUserProfile(username) {
   const apiBase = window.INDO_API_BASE || '';
   const clean = String(username || '').replace(/^@/, '');
-  const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(clean)}`, { cache: 'no-store' });
+  const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(clean)}?t=${Date.now()}`, { cache: 'no-store' });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data?.ok) throw new Error(data.error || 'Could not open profile.');
-  state.profile = { ...data.profile, stats: data.stats, social: data.social };
+  state.profile = { ...data.profile, stats: data.stats || {}, social: data.social || {} };
   state.screen = 'profile';
   if (typeof window.__indoNavigate === 'function') await window.__indoNavigate('profile');
 }
 
 function renderCard(user) {
-  const avatar = user.avatarUrl
-    ? `<img class="search-profile-avatar" data-profile-username="${escapeHtml(user.userId)}" src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(user.name)}" loading="lazy">`
-    : `<div class="search-profile-avatar search-profile-initial" data-profile-username="${escapeHtml(user.userId)}">${initials(user.name, user.userId)}</div>`;
-  return `<article class="search-profile-card" data-profile-user="${escapeHtml(user.userId)}" data-profile-uid="${escapeHtml(user.uid || '')}">
-    <button class="search-profile-main" type="button" data-open-profile="${escapeHtml(user.userId)}">
-      ${avatar}
+  const uid = String(user?.uid || '').trim();
+  const userId = String(user?.userId || user?.username || '').replace(/^@/, '');
+  return `<article class="search-profile-card" data-profile-user="${escapeHtml(userId)}" data-profile-uid="${escapeHtml(uid)}">
+    <button class="search-profile-main" type="button" data-open-profile="${escapeHtml(userId)}">
+      ${avatarMarkup({ ...user, userId })}
       <span class="search-profile-copy">
-        <span class="search-profile-name">${escapeHtml(user.name)}${user.isVerified ? '<span class="search-verified">✓</span>' : ''}</span>
-        <span class="search-profile-id">${escapeHtml(user.userId)}</span>
-        <span class="search-profile-stats"><b>${formatCount(user.postsCount)}</b> Posts <i></i> <b>${formatCount(user.followersCount)}</b> Followers</span>
+        <span class="search-profile-name">${escapeHtml(user?.name || userId || 'Profile')}${user?.isVerified ? '<span class="search-verified">✓</span>' : ''}</span>
+        <span class="search-profile-id">@${escapeHtml(userId)}</span>
+        <span class="search-profile-stats"><b>${formatCount(user?.postsCount)}</b> Posts <i></i> <b>${formatCount(user?.followersCount)}</b> Followers</span>
       </span>
     </button>
-    <button class="search-follow-button" type="button" data-follow-user="${escapeHtml(user.uid)}" data-following="0">Follow</button>
+    <button class="search-follow-button" type="button" data-follow-user="${escapeHtml(uid)}" data-following="0">Follow</button>
   </article>`;
 }
 
 function injectStyles() {
-  const id = 'indo-search-v233';
+  const id = 'indo-search-v7-style';
   if (document.getElementById(id)) return;
   const style = document.createElement('style');
   style.id = id;
@@ -69,12 +78,30 @@ function injectStyles() {
     .search-v232-box svg{width:20px;height:20px;color:#fff;flex:0 0 auto}.search-v232-box input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#fff;font:600 16px/1.2 Arial,sans-serif}.search-v232-box input::placeholder{color:#8c8995}
     .search-v232-clear{display:none;width:28px;height:28px;border:0;background:transparent;color:#fff;font-size:22px;cursor:pointer}.search-v232-users-title{margin:22px 0 10px;color:#ff45ba;font:800 16px/1 Arial,sans-serif;letter-spacing:.3px;text-transform:uppercase}
     .search-v232-results{display:grid;gap:10px}.search-profile-card{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid rgba(174,65,255,.45);border-radius:16px;background:linear-gradient(115deg,rgba(17,12,25,.96),rgba(8,8,13,.98));box-shadow:inset 0 0 30px rgba(159,54,255,.03)}
-    .search-profile-main{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;border:0;background:transparent;color:inherit;padding:0;cursor:pointer}.search-profile-avatar{width:68px;height:68px;flex:0 0 68px;border-radius:50%;object-fit:cover;background:#242734;display:grid;place-items:center;color:#fff;font:900 24px/1 Arial,sans-serif;overflow:hidden}.search-profile-copy{min-width:0;display:flex;flex-direction:column;gap:5px}
+    .search-profile-main{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;border:0;background:transparent;color:inherit;padding:0;cursor:pointer}.search-avatar{width:68px;height:68px;flex:0 0 68px;border-radius:50%;object-fit:cover;background:#242734;display:grid;place-items:center;color:#fff;font:900 24px/1 Arial,sans-serif;overflow:hidden}.search-avatar img{width:100%;height:100%;object-fit:cover;display:block}.search-profile-copy{min-width:0;display:flex;flex-direction:column;gap:5px}
     .search-profile-name{display:flex;align-items:center;gap:7px;color:#fff;font:800 18px/1.15 Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.search-profile-id{color:#a7a4ae;font:600 14px/1 Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.search-profile-stats{color:#aaa7b2;font:500 12px/1.2 Arial,sans-serif;white-space:nowrap}.search-profile-stats b{color:#eee;font-weight:800}.search-profile-stats i{display:inline-block;width:4px;height:4px;border-radius:50%;background:#ff43b6;margin:0 8px 2px}
-    .search-verified{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#ff3eaf;color:#fff;font:900 12px/1 Arial,sans-serif}.search-follow-button{width:88px;min-width:88px;height:38px;border:1px solid #ff36af;border-radius:10px;background:transparent;color:#ff47b8;font:800 13px/1 Arial,sans-serif;cursor:pointer}.search-follow-button[data-following="1"]{border-color:#7d54ff;color:#fff;background:linear-gradient(135deg,#7c38ff,#df2bb4)}.search-follow-button:disabled{opacity:.6;cursor:wait}.search-v232-empty{padding:28px 10px;text-align:center;color:#8f8b96;font:600 14px/1.4 Arial,sans-serif}
-    @media(max-width:420px){.search-v232{padding-left:9px;padding-right:9px}.search-profile-card{padding:10px}.search-profile-avatar{width:58px;height:58px;flex-basis:58px}.search-profile-name{font-size:16px}.search-profile-id{font-size:13px}.search-profile-stats{font-size:11px}.search-follow-button{width:80px;min-width:80px;height:36px}}
+    .search-verified{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#ff3eaf;color:#fff;font:900 12px/1 Arial,sans-serif}.search-follow-button{width:88px;min-width:88px;height:38px;border:1px solid #ff36af;border-radius:10px;background:transparent;color:#ff47b8;font:800 13px/1 Arial,sans-serif;cursor:pointer}.search-follow-button[data-following="1"]{border-color:#7d54ff;color:#fff;background:linear-gradient(135deg,#7c38ff,#df2bb4)}.search-follow-button:disabled{opacity:.6;cursor:wait}.search-v232-empty{padding:28px 10px;text-align:center;color:#8f8b96;font:600 14px/1.4 Arial,sans-serif}.search-auth-warning{display:none!important}
+    @media(max-width:420px){.search-v232{padding-left:9px;padding-right:9px}.search-profile-card{padding:10px}.search-avatar{width:58px;height:58px;flex-basis:58px}.search-profile-name{font-size:16px}.search-profile-id{font-size:13px}.search-profile-stats{font-size:11px}.search-follow-button{width:80px;min-width:80px;height:36px}}
   `;
   document.head.appendChild(style);
+}
+
+function currentAuthReady() {
+  if (auth.currentUser) return Promise.resolve(auth.currentUser);
+  return new Promise((resolve) => {
+    let unsubscribe = null;
+    const timer = setTimeout(() => { try { unsubscribe?.(); } catch {} resolve(auth.currentUser || null); }, 2500);
+    import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js').then(({ onAuthStateChanged }) => {
+      unsubscribe = onAuthStateChanged(auth, (user) => { clearTimeout(timer); try { unsubscribe?.(); } catch {} resolve(user || null); });
+    }).catch(() => { clearTimeout(timer); resolve(auth.currentUser || null); });
+  });
+}
+
+function removeStrayAuthMessages(root) {
+  root.querySelectorAll('.search-v232-results .search-v232-empty, .search-v232-results [class*="auth"]').forEach((node) => {
+    const text = String(node.textContent || '').trim().toLowerCase();
+    if (text === 'authentication required.' || text === 'authentication required') node.remove();
+  });
 }
 
 export async function renderSearch(app) {
@@ -87,17 +114,68 @@ export async function renderSearch(app) {
   const results = app.querySelector('#search-results-v232');
   let timer = null;
   let requestId = 0;
+
+  await currentAuthReady();
+
   const bindFollowButtons = () => {
-    results.querySelectorAll('[data-follow-user]').forEach(async (button) => {
+    results.querySelectorAll('[data-follow-user]').forEach((button) => {
       if (button.dataset.bound === '1') return;
       button.dataset.bound = '1';
-      const targetUid = button.dataset.followUser;
-      try { const status = await loadFollowStatus(targetUid); const following = Boolean(status?.following); button.dataset.following = following ? '1' : '0'; button.textContent = status?.requested ? 'Requested' : (following ? 'Following' : 'Follow'); } catch {}
-      button.addEventListener('click', async (event) => { event.stopPropagation(); const following = button.dataset.following === '1'; button.disabled = true; try { const data = await toggleFollow(targetUid, !following); button.dataset.following = data?.following ? '1' : '0'; button.textContent = data?.requested ? 'Requested' : (data?.following ? 'Following' : 'Follow'); } catch (error) { button.title = error.message || 'Could not update follow status.'; } finally { button.disabled = false; } });
+      const targetUid = String(button.dataset.followUser || '').trim();
+      if (!targetUid || !auth.currentUser) {
+        button.dataset.following = '0';
+        button.textContent = 'Follow';
+      } else {
+        loadFollowStatus(targetUid).then((status) => {
+          const following = Boolean(status?.following);
+          button.dataset.following = following ? '1' : '0';
+          button.textContent = status?.requested ? 'Requested' : (following ? 'Following' : 'Follow');
+        }).catch(() => {});
+      }
+      button.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        if (!auth.currentUser) { button.title = 'Login required'; return; }
+        const following = button.dataset.following === '1';
+        button.disabled = true;
+        try {
+          const data = await toggleFollow(targetUid, !following);
+          button.dataset.following = data?.following ? '1' : '0';
+          button.textContent = data?.requested ? 'Requested' : (data?.following ? 'Following' : 'Follow');
+        } catch (error) {
+          button.title = error.message || 'Could not update follow status.';
+        } finally { button.disabled = false; }
+      });
     });
   };
-  results.addEventListener('click', (event) => { const target = event.target instanceof Element ? event.target : null; const cardButton = target?.closest('[data-open-profile]'); if (!cardButton) return; openUserProfile(cardButton.dataset.openProfile).catch((error) => { results.insertAdjacentHTML('afterbegin', `<div class="search-v232-empty">${escapeHtml(error.message || 'Could not open profile.')}</div>`); }); });
-  const runSearch = async () => { const value = input.value.trim(); clear.style.display = value ? 'block' : 'none'; const current = ++requestId; if (!value) { results.innerHTML = '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>'; return; } results.innerHTML = '<div class="search-v232-empty">Searching...</div>'; try { const users = await searchUsers(value); if (current !== requestId) return; results.innerHTML = users.length ? users.map(renderCard).join('') : '<div class="search-v232-empty">No matching users found.</div>'; bindFollowButtons(); } catch (error) { if (current !== requestId) return; results.innerHTML = `<div class="search-v232-empty">${escapeHtml(error.message || 'Could not search users.')}</div>`; } };
+
+  results.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const cardButton = target?.closest('[data-open-profile]');
+    if (!cardButton) return;
+    openUserProfile(cardButton.dataset.openProfile).catch((error) => {
+      const existing = results.querySelector('.search-profile-error');
+      if (!existing) results.insertAdjacentHTML('afterbegin', `<div class="search-v232-empty search-profile-error">${escapeHtml(error.message || 'Could not open profile.')}</div>`);
+    });
+  });
+
+  const runSearch = async () => {
+    const value = input.value.trim();
+    clear.style.display = value ? 'block' : 'none';
+    const current = ++requestId;
+    if (!value) { results.innerHTML = '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>'; return; }
+    results.innerHTML = '<div class="search-v232-empty">Searching...</div>';
+    try {
+      const users = await searchUsers(value);
+      if (current !== requestId) return;
+      results.innerHTML = users.length ? users.map(renderCard).join('') : '<div class="search-v232-empty">No matching users found.</div>';
+      removeStrayAuthMessages(app);
+      bindFollowButtons();
+    } catch (error) {
+      if (current !== requestId) return;
+      results.innerHTML = `<div class="search-v232-empty">${escapeHtml(error.message || 'Could not search users.')}</div>`;
+    }
+  };
+
   input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(runSearch, 180); });
   clear.addEventListener('click', () => { input.value = ''; input.focus(); runSearch(); });
 }
