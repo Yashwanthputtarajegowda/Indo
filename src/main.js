@@ -7,12 +7,12 @@ import {
 import {
   enhanceProfileIdentity,
   installProfileIdentityEnhancer,
-} from "./features/profile/profile-identity.js?v=20260815-profile-identity-v4";
+} from "./features/profile/profile-identity.js?v=20260815-profile-identity-v5";
+import { applyIndoPinkThunderTheme } from "./features/ui/indo-pink-thunder-theme.js?v=20260815-pink-thunder-v1";
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
-import "./features/ui/thunder-theme.js?v=20260815-thunder-v1";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
-import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v9";
+import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v10";
 
 const app = document.getElementById("root");
 let busy = false;
@@ -41,7 +41,7 @@ function scheduleLiveAvatarInstaller() {
   const run = async () => {
     try {
       await import(
-        "./features/profile/profile-avatar-live.js?v=20260815-avatar-v7"
+        "./features/profile/profile-avatar-live.js?v=20260815-avatar-v8"
       );
     } catch (error) {
       console.warn(
@@ -69,10 +69,11 @@ async function render() {
   installCloudinaryVideoCompatibility();
 
   const { render } = await import(
-    "./router.js?v=20260815-nav-preload-v2"
+    "./router.js?v=20260815-nav-preload-v3"
   );
 
   await render(app);
+  applyIndoPinkThunderTheme();
   scheduleProfileEnhancement(app, currentRender);
   scheduleLiveAvatarInstaller();
 
@@ -171,7 +172,7 @@ async function start() {
       auth,
       authPersistenceReady,
     } = await import(
-      "./features/auth/firebase-client.js?v=20260815-auth-v5"
+      "./features/auth/firebase-client.js?v=20260815-auth-v6"
     );
     const {
       signOut,
