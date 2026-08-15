@@ -15,8 +15,8 @@ const SCREEN_MODULES = {
   search: ["./screens/search.js?v=20260815-search-v7", "renderSearch"],
   profile: ["./screens/profile.js", "renderProfile"],
   notifications: ["./screens/notifications.js", "renderNotifications"],
-  create: ["./screens/create.js?v=20260815-create-reel-v1", "renderCreate"],
-  "reel-create": ["./screens/reel-create.js?v=20260815-reel-create-v2", "renderReelCreate"],
+  create: ["./screens/create.js?v=20260815-create-reel-v2", "renderCreate"],
+  "reel-create": ["./screens/reel-create.js?v=20260815-reel-create-v3", "renderReelCreate"],
   settings: ["./screens/settings.js", "renderSettings"],
   "profile-relation": ["./screens/profile-relation.js", "renderProfileRelation"],
   "edit-profile": ["./screens/edit-profile.js", "renderEditProfile"],
@@ -86,11 +86,18 @@ async function loadScreenModule(screen, path) {
 async function preloadScreen(screen) {
   const config = SCREEN_MODULES[screen];
   if (!config) return;
-  try { await loadScreenModule(screen, config[0]); } catch (error) { console.warn(`Background preload failed for ${screen}:`, error); }
+  try {
+    await loadScreenModule(screen, config[0]);
+  } catch (error) {
+    console.warn(`Background preload failed for ${screen}:`, error);
+  }
 }
 
 function scheduleIdle(task) {
-  if (typeof window.requestIdleCallback === "function") { window.requestIdleCallback(task, { timeout: 1200 }); return; }
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(task, { timeout: 1200 });
+    return;
+  }
   window.setTimeout(task, 60);
 }
 
@@ -99,15 +106,23 @@ export function preloadAppSections() {
   preloadStarted = true;
   let highIndex = 0;
   let secondaryIndex = 0;
+
   const warmNext = async () => {
     const batch = HIGH_PRIORITY.slice(highIndex, highIndex + 2);
-    if (batch.length) { highIndex += batch.length; await Promise.allSettled(batch.map(preloadScreen)); scheduleIdle(warmNext); return; }
+    if (batch.length) {
+      highIndex += batch.length;
+      await Promise.allSettled(batch.map(preloadScreen));
+      scheduleIdle(warmNext);
+      return;
+    }
+
     const secondary = SECONDARY_PRIORITY.slice(secondaryIndex, secondaryIndex + 2);
     if (!secondary.length) return;
     secondaryIndex += secondary.length;
     await Promise.allSettled(secondary.map(preloadScreen));
     scheduleIdle(warmNext);
   };
+
   scheduleIdle(warmNext);
 }
 
@@ -116,13 +131,15 @@ async function lazy(app, screen, path, name, args = []) {
     const m = await loadScreenModule(screen, path);
     if (typeof m[name] !== "function") throw new Error(`Missing screen renderer: ${name}`);
     await m[name](app, ...args);
-  } catch (e) { fail(app, e); }
+  } catch (e) {
+    fail(app, e);
+  }
 }
 
 async function installHomeReels(app) {
   if (state.screen !== "home") return;
   try {
-    const { installHomeReelsBridge } = await import("./features/feed/home-reels-bridge.js?v=20260815-home-reels-v1");
+    const { installHomeReelsBridge } = await import("./features/feed/home-reels-bridge.js?v=20260815-home-reels-v2");
     await installHomeReelsBridge(app);
   } catch (error) {
     console.warn("Home reels bridge failed:", error);
@@ -165,5 +182,7 @@ export async function render(app) {
         preloadAppSections();
     }
     ensureUniversalNav(app);
-  } catch (e) { fail(app, e); }
+  } catch (e) {
+    fail(app, e);
+  }
 }
