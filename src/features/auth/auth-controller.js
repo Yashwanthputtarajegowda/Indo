@@ -1,9 +1,16 @@
 import { state } from '../../state.js';
-import { auth, signInWithEmailAndPassword, sendPasswordResetEmail } from './firebase-client.js';
+import { auth, authPersistenceReady, signInWithEmailAndPassword, sendPasswordResetEmail } from './firebase-client.js';
 import { submitSignup } from './signup-form.js';
 
 const ROUTER_VERSION='20260815-211';
+const LOCAL_SESSION_KEY='indo:auth-session-v1';
 function getRoot(){return document.getElementById('root')}
+function saveLocalSession(user){
+  try{localStorage.setItem(LOCAL_SESSION_KEY,JSON.stringify({uid:user?.uid||'',email:user?.email||'',savedAt:Date.now()}));}catch{}
+}
+export function hasLocalSession(){
+  try{return Boolean(JSON.parse(localStorage.getItem(LOCAL_SESSION_KEY)||'null')?.uid)}catch{return false}
+}
 
 async function goTo(screen){
   state.screen=screen;
@@ -40,7 +47,9 @@ function bindLoginForm(){
     if(button)button.disabled=true;
     if(message)message.textContent='Logging in...';
     try{
-      await signInWithEmailAndPassword(auth,email,password);
+      await authPersistenceReady;
+      const credential=await signInWithEmailAndPassword(auth,email,password);
+      saveLocalSession(credential.user);
       state.authenticated=true;
       state.profile=null;
       await goTo('home');
@@ -79,7 +88,9 @@ function bindSignupForm(){
     if(button)button.disabled=true;
     if(message)message.textContent='Creating account...';
     try{
-      await submitSignup(form);
+      await authPersistenceReady;
+      const user=await submitSignup(form);
+      saveLocalSession(user||auth.currentUser);
       state.authenticated=true;
       state.profile=null;
       await goTo('home');
