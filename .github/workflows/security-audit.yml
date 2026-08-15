@@ -1,6 +1,7 @@
 name: Frontend Security Audit
 
 on:
+  workflow_dispatch:
   push:
     branches: ["main"]
     paths:
@@ -28,7 +29,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Require lockfile
         run: test -s package-lock.json
