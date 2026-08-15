@@ -41,7 +41,7 @@ function scheduleLiveAvatarInstaller() {
 async function render() {
   const currentRender = ++renderId;
   installCloudinaryVideoCompatibility();
-  const { render } = await import("./router.js?v=20260815-router-reel-flow-v1");
+  const { render } = await import("./router.js?v=20260815-router-reel-flow-v2");
   await render(app);
   applyIndoPinkThunderTheme();
   installHomeFeedDesign();
