@@ -84,7 +84,7 @@ export async function renderEditProfile(app) {
       if (!payload.name) throw new Error('Name is required.');
       const selectedPhoto = photoInput?.files?.[0];
       if (selectedPhoto) { message.textContent = 'Uploading profile photo...'; payload.avatarUrl = await uploadAvatar(selectedPhoto); payload.photoURL = payload.avatarUrl; }
-      const result = await api('/api/account/profile-canonical-save', { method: 'PATCH', body: JSON.stringify(payload) });
+      const result = await api('/api/account/profile', { method: 'PATCH', body: JSON.stringify(payload) });
       await updateProfile(user, { displayName: payload.name, ...(payload.avatarUrl ? { photoURL: payload.avatarUrl } : {}) });
       window.dispatchEvent(new CustomEvent('indo:profile-updated', { detail: { uid: user.uid, userId: id, profile: result.profile } }));
       message.textContent = 'Profile saved everywhere.'; message.className = 'indo-edit-msg indo-edit-ok';
