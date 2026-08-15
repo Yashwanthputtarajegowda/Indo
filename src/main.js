@@ -7,38 +7,68 @@ import {
 import {
   enhanceProfileIdentity,
   installProfileIdentityEnhancer,
-} from "./features/profile/profile-identity.js?v=20260815-profile-identity-v3";
+} from "./features/profile/profile-identity.js?v=20260815-profile-identity-v4";
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
-import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v7";
+import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v8";
 
 const app = document.getElementById("root");
 let busy = false;
 let started = false;
+let renderId = 0;
 
-async function installLiveAvatars() {
-  try {
-    await import(
-      "./features/profile/profile-avatar-live.js?v=20260815-avatar-v6"
+function scheduleProfileEnhancement(root, id) {
+  const run = () => {
+    if (id !== renderId) return;
+    enhanceProfileIdentity(root).catch((error) => {
+      console.warn("Profile identity enhancement failed:", error);
+    });
+  };
+
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(run, { timeout: 1200 });
+  } else {
+    window.setTimeout(run, 40);
+  }
+}
+
+function scheduleLiveAvatarInstaller() {
+  const run = async () => {
+    try {
+      await import(
+        "./features/profile/profile-avatar-live.js?v=20260815-avatar-v7"
+      );
+    } catch (error) {
+      console.warn(
+        "Live profile avatars unavailable:",
+        error,
+      );
+    }
+  };
+
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(
+      () => run().catch(() => {}),
+      { timeout: 1600 },
     );
-  } catch (error) {
-    console.warn(
-      "Live profile avatars unavailable:",
-      error,
-    );
+  } else {
+    window.setTimeout(() => run().catch(() => {}), 80);
   }
 }
 
 async function render() {
+  const currentRender = ++renderId;
   installCloudinaryVideoCompatibility();
-  await import("./state.js");
+
   const { render } = await import(
-    "./router.js?v=20260815-nav-preload-v1"
+    "./router.js?v=20260815-nav-preload-v2"
   );
+
   await render(app);
-  await enhanceProfileIdentity(app);
-  await installLiveAvatars();
+  scheduleProfileEnhancement(app, currentRender);
+  scheduleLiveAvatarInstaller();
+
   bindAuthSwitches();
   bindLoginForm();
   bindSignupForm();
@@ -56,6 +86,7 @@ async function navigate(screen) {
     }
 
     state.screen = String(screen || "home");
+
     await render();
     window.scrollTo({ top: 0, behavior: "auto" });
   } catch (error) {
@@ -87,13 +118,10 @@ if (!window.__indoUniversalNavigation) {
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      if (
-        screen === "profile" &&
-        button.hasAttribute("data-own-profile")
-      ) {
-        navigate("profile").catch(console.error);
-        return;
-      }
+      button.classList.add("indo-nav-pressed");
+      window.setTimeout(() => {
+        button.classList.remove("indo-nav-pressed");
+      }, 140);
 
       navigate(screen).catch(console.error);
     },
@@ -136,7 +164,7 @@ async function start() {
       auth,
       authPersistenceReady,
     } = await import(
-      "./features/auth/firebase-client.js?v=20260815-auth-v4"
+      "./features/auth/firebase-client.js?v=20260815-auth-v5"
     );
     const {
       signOut,
