@@ -14,7 +14,8 @@ async function request(path, options = {}) {
     },
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not update follow status.");
+  if (!response.ok)
+    throw new Error(data.error || "Could not update follow status.");
   return data;
 }
 
@@ -34,8 +35,11 @@ export async function loadFollowRequests() {
 }
 
 export async function respondToFollowRequest(requesterUid, accept) {
-  return request(`/api/social/follow-requests/${encodeURIComponent(requesterUid)}`, {
-    method: "POST",
-    body: JSON.stringify({ accept: Boolean(accept) }),
-  });
+  return request(
+    `/api/social/follow-requests/${encodeURIComponent(requesterUid)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ accept: Boolean(accept) }),
+    },
+  );
 }

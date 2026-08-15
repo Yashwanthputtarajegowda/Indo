@@ -2,7 +2,10 @@ import { state } from "./state.js";
 import { renderLogin, renderSignup } from "./screens/auth.js";
 import { nav } from "./components/nav.js";
 import "./features/ui/feed-follow-button.js";
-import { renderHomeTopbar, installHomeTopbarStyles } from "./screens/home-topbar-v2.js";
+import {
+  renderHomeTopbar,
+  installHomeTopbarStyles,
+} from "./screens/home-topbar-v2.js";
 const NAV_STYLE_ID = "indo-universal-nav";
 function fail(app, error) {
   console.error("Indo route error:", error);
@@ -18,14 +21,24 @@ function installNavStyles() {
 function activeNav() {
   if (state.screen === "messages") return "messages";
   if (state.screen === "reels") return "reels";
-  if (state.screen === "video" || state.screen === "watch-video") return "video";
-  if (["profile", "settings", "edit-profile"].includes(state.screen)) return "profile";
+  if (state.screen === "video" || state.screen === "watch-video")
+    return "video";
+  if (["profile", "settings", "edit-profile"].includes(state.screen))
+    return "profile";
   return "home";
 }
 function ensureUniversalNav(app) {
-  if (!app || ["auth-login", "auth-signup", "edit-profile", "watch-video"].includes(state.screen)) return;
+  if (
+    !app ||
+    ["auth-login", "auth-signup", "edit-profile", "watch-video"].includes(
+      state.screen,
+    )
+  )
+    return;
   installNavStyles();
-  app.querySelectorAll(".bottom-nav,.indo-global-bottom-nav").forEach((n) => n.remove());
+  app
+    .querySelectorAll(".bottom-nav,.indo-global-bottom-nav")
+    .forEach((n) => n.remove());
   const wrapper = document.createElement("div");
   wrapper.innerHTML = nav(activeNav());
   const bottom = wrapper.firstElementChild;
@@ -46,7 +59,8 @@ function ensureHomeTopbar(app) {
 async function lazy(app, path, name, args = []) {
   try {
     const m = await import(path);
-    if (typeof m[name] !== "function") throw new Error(`Missing screen renderer: ${name}`);
+    if (typeof m[name] !== "function")
+      throw new Error(`Missing screen renderer: ${name}`);
     await m[name](app, ...args);
   } catch (e) {
     fail(app, e);
@@ -82,25 +96,43 @@ export async function render(app) {
         await lazy(app, "./screens/upload-video.js", "renderUploadVideo");
         break;
       case "story-create":
-        await lazy(app, "./screens/story-create.js", "renderStoryCreate", [window.__indoStoryDraftFile instanceof File ? window.__indoStoryDraftFile : null]);
+        await lazy(app, "./screens/story-create.js", "renderStoryCreate", [
+          window.__indoStoryDraftFile instanceof File
+            ? window.__indoStoryDraftFile
+            : null,
+        ]);
         break;
       case "profile":
-        await lazy(app, "./screens/profile.js", "renderProfile", [state.profile]);
+        await lazy(app, "./screens/profile.js", "renderProfile", [
+          state.profile,
+        ]);
         break;
       case "edit-profile":
-        await lazy(app, "./screens/edit-profile.js", "renderEditProfile", [state.profile]);
+        await lazy(app, "./screens/edit-profile.js", "renderEditProfile", [
+          state.profile,
+        ]);
         break;
       case "settings":
-        await lazy(app, "./screens/settings.js", "renderSettings", [state.accountType, state.earning, state.earningSummary]);
+        await lazy(app, "./screens/settings.js", "renderSettings", [
+          state.accountType,
+          state.earning,
+          state.earningSummary,
+        ]);
         break;
       case "search":
-        await lazy(app, "./screens/search.js?v=20260815-search-v7", "renderSearch");
+        await lazy(
+          app,
+          "./screens/search.js?v=20260815-search-v7",
+          "renderSearch",
+        );
         break;
       case "notifications":
         await lazy(app, "./screens/notifications.js", "renderNotifications");
         break;
       case "activity":
-        await lazy(app, "./screens/notifications.js", "renderNotifications", ["activity"]);
+        await lazy(app, "./screens/notifications.js", "renderNotifications", [
+          "activity",
+        ]);
         break;
       case "wallet":
         await lazy(app, "./screens/wallet.js", "renderWallet");

@@ -27,9 +27,12 @@ export async function loadPublicProfile(uid) {
   if (!safeUid) throw new Error("User profile is unavailable.");
   const token = await getToken();
   const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(`${apiBase}/api/account/public-profile/${encodeURIComponent(safeUid)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetch(
+    `${apiBase}/api/account/public-profile/${encodeURIComponent(safeUid)}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Could not load profile.");
   return data.profile || null;

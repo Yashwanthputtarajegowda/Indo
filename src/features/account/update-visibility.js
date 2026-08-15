@@ -20,6 +20,7 @@ export async function updateAccountVisibility(accountType) {
   });
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not update account visibility.");
+  if (!response.ok)
+    throw new Error(data.error || "Could not update account visibility.");
   return data;
 }

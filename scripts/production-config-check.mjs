@@ -2,7 +2,9 @@ import fs from "node:fs";
 
 const config = fs.readFileSync("config/runtime-config.js", "utf8");
 
-const apiBaseMatch = config.match(/INDO_API_BASE\s*=.*?['\"](https:\/\/[^'\"]+)['\"]/);
+const apiBaseMatch = config.match(
+  /INDO_API_BASE\s*=.*?['\"](https:\/\/[^'\"]+)['\"]/,
+);
 
 if (!apiBaseMatch) {
   console.error(
@@ -12,7 +14,10 @@ if (!apiBaseMatch) {
 }
 
 const apiBase = apiBaseMatch[1].replace(/\/$/, "");
-if (/^https:\/\/localhost(?::\d+)?$/i.test(apiBase) || /example\.com/i.test(apiBase)) {
+if (
+  /^https:\/\/localhost(?::\d+)?$/i.test(apiBase) ||
+  /example\.com/i.test(apiBase)
+) {
   console.error("INDO_API_BASE still points to a local/example URL.");
   process.exit(1);
 }

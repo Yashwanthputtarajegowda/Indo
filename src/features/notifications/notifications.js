@@ -15,7 +15,8 @@ export async function loadNotifications() {
     cache: "no-store",
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not load notifications.");
+  if (!response.ok)
+    throw new Error(data.error || "Could not load notifications.");
   return Array.isArray(data.notifications) ? data.notifications : [];
 }
 
@@ -26,19 +27,24 @@ export async function loadUnreadCount() {
     cache: "no-store",
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not load unread notification count.");
+  if (!response.ok)
+    throw new Error(data.error || "Could not load unread notification count.");
   return Number(data.unreadCount || 0);
 }
 
 export async function markNotificationRead(id) {
   const { apiBase, headers } = await getAuthContext();
-  const response = await fetch(`${apiBase}/api/notifications/${encodeURIComponent(id)}/read`, {
-    method: "POST",
-    headers,
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `${apiBase}/api/notifications/${encodeURIComponent(id)}/read`,
+    {
+      method: "POST",
+      headers,
+      cache: "no-store",
+    },
+  );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not update notification.");
+  if (!response.ok)
+    throw new Error(data.error || "Could not update notification.");
   return data;
 }
 
@@ -50,6 +56,7 @@ export async function markAllNotificationsRead() {
     cache: "no-store",
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not mark notifications as read.");
+  if (!response.ok)
+    throw new Error(data.error || "Could not mark notifications as read.");
   return data;
 }

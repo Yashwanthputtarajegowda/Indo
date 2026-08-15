@@ -1,4 +1,7 @@
-import { loadNotifications, markNotificationRead } from "../features/notifications/notifications.js";
+import {
+  loadNotifications,
+  markNotificationRead,
+} from "../features/notifications/notifications.js";
 
 function escapeHtml(value = "") {
   return String(value).replace(
@@ -27,7 +30,9 @@ function timeAgo(timestamp) {
 function renderItem(item) {
   const actor = escapeHtml(item.actorUserId || "@user");
   const message = escapeHtml(item.text || "You have new activity.");
-  const initial = escapeHtml((item.actorName || actor.replace(/^@/, "I")).charAt(0).toUpperCase() || "I");
+  const initial = escapeHtml(
+    (item.actorName || actor.replace(/^@/, "I")).charAt(0).toUpperCase() || "I",
+  );
   return `<button class="notice ${item.read ? "" : "unread"}" data-notification-id="${escapeHtml(item.id || "")}" type="button"><div class="avatar small">${initial}</div><p><b>${actor}</b> ${message}<small>${timeAgo(item.createdAt)}</small></p></button>`;
 }
 
@@ -39,7 +44,9 @@ export function renderActivity(app) {
 
   loadNotifications()
     .then((items) => {
-      const activity = items.filter((item) => ["like", "comment"].includes(item.type));
+      const activity = items.filter((item) =>
+        ["like", "comment"].includes(item.type),
+      );
       status.remove();
       if (!activity.length) {
         list.innerHTML = '<div class="feed-status">No activity yet.</div>';

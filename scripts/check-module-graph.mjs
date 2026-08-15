@@ -33,13 +33,16 @@ function resolveImport(fromFile, specifier) {
   const cleanSpecifier = String(specifier).split(/[?#]/, 1)[0];
   if (!cleanSpecifier.startsWith(".")) return null;
   if (cleanSpecifier.endsWith(".css")) {
-    throw new Error(`${fromFile}: JavaScript must not import CSS module ${cleanSpecifier}`);
+    throw new Error(
+      `${fromFile}: JavaScript must not import CSS module ${cleanSpecifier}`,
+    );
   }
   const base = resolve(dirname(fromFile), cleanSpecifier);
   const candidates = [base, `${base}.js`, join(base, "index.js")];
   return (
-    candidates.find((candidate) => candidate.endsWith(".js") || extname(candidate) === ".js") &&
-    candidates.find((candidate) => candidate.endsWith(".js"))
+    candidates.find(
+      (candidate) => candidate.endsWith(".js") || extname(candidate) === ".js",
+    ) && candidates.find((candidate) => candidate.endsWith(".js"))
   );
 }
 

@@ -11,25 +11,43 @@ async function refresh() {
   const postsCount = root.querySelector("[data-posts]");
   if (!followersCount && !followingCount && !postsCount) return;
 
-  const targetUid = String(state.profile?.uid || state.profile?.ownerUid || state.profile?.userId || auth.currentUser?.uid || "").trim();
+  const targetUid = String(
+    state.profile?.uid ||
+      state.profile?.ownerUid ||
+      state.profile?.userId ||
+      auth.currentUser?.uid ||
+      "",
+  ).trim();
   if (!targetUid || !auth.currentUser) return;
 
   try {
     const token = await auth.currentUser.getIdToken(true);
     const base = window.INDO_API_BASE || "";
-    const response = await fetch(`${base}/api/social/profile/${encodeURIComponent(targetUid)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${base}/api/social/profile/${encodeURIComponent(targetUid)}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      },
+    );
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || `Profile sync failed (${response.status}).`);
+    if (!response.ok)
+      throw new Error(
+        data.error || `Profile sync failed (${response.status}).`,
+      );
 
     const stats = data.stats || data.social || {};
-    if (followersCount) followersCount.textContent = String(Number(stats.followersCount || 0));
-    if (followingCount) followingCount.textContent = String(Number(stats.followingCount || 0));
-    if (postsCount) postsCount.textContent = String(Number(stats.postsCount || 0));
+    if (followersCount)
+      followersCount.textContent = String(Number(stats.followersCount || 0));
+    if (followingCount)
+      followingCount.textContent = String(Number(stats.followingCount || 0));
+    if (postsCount)
+      postsCount.textContent = String(Number(stats.postsCount || 0));
 
-    if (state.profile && String(state.profile.uid || state.profile.ownerUid || "") === targetUid) {
+    if (
+      state.profile &&
+      String(state.profile.uid || state.profile.ownerUid || "") === targetUid
+    ) {
       state.profile = {
         ...state.profile,
         ...(data.profile || {}),

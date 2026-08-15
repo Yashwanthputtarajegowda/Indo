@@ -22,8 +22,11 @@ async function loadProfile(key, { uid = false, force = false } = {}) {
   const promise = (async () => {
     try {
       const headers = {};
-      if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken(false)}`;
-      const path = uid ? `/api/account/public-profile/${encodeURIComponent(clean)}` : `/api/account/profile/${encodeURIComponent(clean)}`;
+      if (auth.currentUser)
+        headers.Authorization = `Bearer ${await auth.currentUser.getIdToken(false)}`;
+      const path = uid
+        ? `/api/account/public-profile/${encodeURIComponent(clean)}`
+        : `/api/account/profile/${encodeURIComponent(clean)}`;
       const response = await fetch(`${API()}${path}`, {
         headers,
         cache: "no-store",
@@ -47,13 +50,30 @@ async function loadProfile(key, { uid = false, force = false } = {}) {
 }
 
 function avatarUrl(profile) {
-  return String(profile?.avatarUrl || profile?.photoURL || profile?.photoUrl || "").trim();
+  return String(
+    profile?.avatarUrl || profile?.photoURL || profile?.photoUrl || "",
+  ).trim();
 }
 
 function datasetIdentity(el) {
   if (!(el instanceof Element)) return null;
-  const uid = norm(el.dataset.profileUid || el.dataset.ownerUid || el.dataset.actorUid || el.dataset.userUid || el.dataset.storyOwner || "");
-  const id = norm(el.dataset.profileUsername || el.dataset.profileUser || el.dataset.userId || el.dataset.username || el.dataset.actorUserId || el.dataset.relUser || "");
+  const uid = norm(
+    el.dataset.profileUid ||
+      el.dataset.ownerUid ||
+      el.dataset.actorUid ||
+      el.dataset.userUid ||
+      el.dataset.storyOwner ||
+      "",
+  );
+  const id = norm(
+    el.dataset.profileUsername ||
+      el.dataset.profileUser ||
+      el.dataset.userId ||
+      el.dataset.username ||
+      el.dataset.actorUserId ||
+      el.dataset.relUser ||
+      "",
+  );
   return uid || valid(id) ? { uid, id } : null;
 }
 
@@ -96,12 +116,22 @@ function textIdentity(el) {
     "[data-username]",
   ];
   for (const selector of selectors) {
-    const nodes = el.matches?.(selector) ? [el] : [...(el.querySelectorAll?.(selector) || [])];
+    const nodes = el.matches?.(selector)
+      ? [el]
+      : [...(el.querySelectorAll?.(selector) || [])];
     for (const node of nodes) {
-      const raw = node.getAttribute?.("data-user-id") || node.getAttribute?.("data-username") || node.textContent || "";
+      const raw =
+        node.getAttribute?.("data-user-id") ||
+        node.getAttribute?.("data-username") ||
+        node.textContent ||
+        "";
       const match = String(raw).match(/@?([A-Za-z0-9._-]{2,80})/);
       const id = norm(match?.[1] || "");
-      if (valid(id) && !["user", "profile", "users", "indo"].includes(id.toLowerCase())) return id;
+      if (
+        valid(id) &&
+        !["user", "profile", "users", "indo"].includes(id.toLowerCase())
+      )
+        return id;
     }
   }
   return "";
@@ -173,7 +203,9 @@ function paintIdRow(container, profile) {
   if (!(container instanceof Element)) return;
   const url = avatarUrl(profile);
   if (!url) return;
-  const idNode = container.querySelector?.('.search-profile-id,.indo-rel-v7-id,.indo-rel-id,[class*="user-id"],[class*="username"]');
+  const idNode = container.querySelector?.(
+    '.search-profile-id,.indo-rel-v7-id,.indo-rel-id,[class*="user-id"],[class*="username"]',
+  );
   if (!idNode || idNode.closest(".indo-live-id-avatar-wrap")) return;
   if (
     !String(idNode.textContent || "")
@@ -195,7 +227,9 @@ function paintIdRow(container, profile) {
 async function hydrateAvatar(host, force = false) {
   const identity = identityForAvatar(host);
   if (!identity) return;
-  const profile = identity.uid ? await loadProfile(identity.uid, { uid: true, force }) : await loadProfile(identity.id, { force });
+  const profile = identity.uid
+    ? await loadProfile(identity.uid, { uid: true, force })
+    : await loadProfile(identity.id, { force });
   if (profile) paint(host, profile);
 }
 
@@ -208,7 +242,9 @@ async function hydrateContainer(container, force = false) {
       return id ? { uid: "", id } : null;
     })();
   if (!identity) return;
-  const profile = identity.uid ? await loadProfile(identity.uid, { uid: true, force }) : await loadProfile(identity.id, { force });
+  const profile = identity.uid
+    ? await loadProfile(identity.uid, { uid: true, force })
+    : await loadProfile(identity.id, { force });
   if (!profile) return;
   avatarHosts(container).forEach((host) => paint(host, profile));
   paintIdRow(container, profile);
@@ -216,9 +252,14 @@ async function hydrateContainer(container, force = false) {
 
 function scan(root = document, force = false) {
   if (!root) return;
-  avatarHosts(root).forEach((host) => hydrateAvatar(host, force).catch(() => {}));
-  if (root.matches?.(USER_CONTAINERS)) hydrateContainer(root, force).catch(() => {});
-  root.querySelectorAll?.(USER_CONTAINERS).forEach((container) => hydrateContainer(container, force).catch(() => {}));
+  avatarHosts(root).forEach((host) =>
+    hydrateAvatar(host, force).catch(() => {}),
+  );
+  if (root.matches?.(USER_CONTAINERS))
+    hydrateContainer(root, force).catch(() => {});
+  root
+    .querySelectorAll?.(USER_CONTAINERS)
+    .forEach((container) => hydrateContainer(container, force).catch(() => {}));
 }
 
 function invalidate(uid, userId) {

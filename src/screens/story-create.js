@@ -12,7 +12,20 @@ const FONTS = [
   ["Mono", "monospace"],
 ];
 const COLORS = ["#fff", "#ff4bb8", "#ffcf4a", "#70e7ff", "#9b6cff", "#111"];
-const EMOJIS = ["❤️", "🔥", "✨", "😍", "😂", "👏", "😎", "🥳", "💜", "⭐", "⚡", "🚀"];
+const EMOJIS = [
+  "❤️",
+  "🔥",
+  "✨",
+  "😍",
+  "😂",
+  "👏",
+  "😎",
+  "🥳",
+  "💜",
+  "⭐",
+  "⚡",
+  "🚀",
+];
 const FILTERS = [
   ["Original", "none"],
   ["Glow", "saturate(1.18) brightness(1.05) contrast(1.08)"],
@@ -88,7 +101,10 @@ function compressImage(file) {
     img.onerror = reject;
     img.onload = () => {
       const max = 420,
-        scale = Math.min(1, max / Math.max(img.naturalWidth || 1, img.naturalHeight || 1)),
+        scale = Math.min(
+          1,
+          max / Math.max(img.naturalWidth || 1, img.naturalHeight || 1),
+        ),
         c = document.createElement("canvas");
       c.width = Math.max(1, Math.round((img.naturalWidth || 1) * scale));
       c.height = Math.max(1, Math.round((img.naturalHeight || 1) * scale));
@@ -115,7 +131,12 @@ function installStyles() {
 
 export function renderStoryCreate(app, draftFileOverride = null) {
   installStyles();
-  const initialFile = draftFileOverride instanceof File ? draftFileOverride : window[DRAFT_FILE_KEY] instanceof File ? window[DRAFT_FILE_KEY] : null;
+  const initialFile =
+    draftFileOverride instanceof File
+      ? draftFileOverride
+      : window[DRAFT_FILE_KEY] instanceof File
+        ? window[DRAFT_FILE_KEY]
+        : null;
   const d = readDraft();
   app.innerHTML = `<div class="app-shell indo-o1"><header class="o1-top"><button data-screen="create" aria-label="Back">${icons.back}</button><div class="o1-name">FULLSCREEN STORY</div><button id="o1-save" class="o1-save" type="button">Save</button></header><main class="o1-stage"><section id="o1-card" class="o1-card"><div id="o1-empty" class="o1-empty ${initialFile ? "hidden" : ""}"><strong>Full-screen first.</strong><span>Watch your video without distractions, then swipe up or tap Edit when you want tools.</span><button id="o1-choose" type="button">Choose Video</button></div><span class="o1-badge"><span class="o1-dot"></span>INDO STORY</span><div class="o1-corner"><button id="o1-mute" type="button">🔊</button><button id="o1-fullscreen" type="button">⛶</button></div><video id="o1-video" autoplay playsinline muted></video><div class="o1-vignette"></div><div id="o1-title" class="o1-title"></div><img id="o1-sticker" class="o1-sticker" alt=""><div id="o1-emoji" class="o1-emoji"></div><button id="o1-play" class="o1-play" type="button">▶</button><div class="o1-info"><div class="o1-scrub"><span id="o1-current">00:00</span><input id="o1-seek" class="o1-range" type="range" min="0" max="0" step="0.1" value="0"><span id="o1-total">00:00</span></div><div class="o1-hint"><b>Swipe up</b> to edit</div></div></section></main><footer class="o1-bottom"><div class="o1-quick"><button data-tool="text" type="button"><b>T</b>Text</button><button data-tool="style" type="button"><b>Aa</b>Style</button><button data-tool="sticker" type="button"><b>☺</b>Sticker</button><button data-tool="effect" type="button"><b>✦</b>Effect</button><button data-tool="music" type="button"><b>♫</b>Music</button></div><div class="o1-editbar"><button id="o1-fit" type="button">Fit</button><button id="o1-edit" class="main" type="button">Edit Story</button><button id="o1-publish-bottom" type="button">Publish</button></div></footer><section id="o1-sheet" class="o1-sheet"><div class="o1-sheet-head"><div class="o1-handle"></div><div class="o1-headrow"><strong id="o1-sheet-title">Edit Story</strong><button id="o1-close" type="button">×</button></div></div><div id="o1-panel" class="o1-panel open"></div><div class="o1-actions"><button id="o1-draft" type="button">Save Draft</button><button id="o1-publish" class="publish" type="button">Publish Story</button></div></section><input id="o1-video-input" type="file" accept="video/*" hidden><input id="o1-sticker-input" type="file" accept="image/*" hidden><input id="o1-audio-input" type="file" accept="audio/*" hidden><audio id="o1-audio" preload="metadata"></audio></div>`;
 
@@ -186,7 +207,16 @@ export function renderStoryCreate(app, draftFileOverride = null) {
   };
   const openSheet = (tool) => {
     sheet.classList.add("open");
-    app.querySelector("#o1-sheet-title").textContent = tool === "text" ? "Text Studio" : tool === "style" ? "Style" : tool === "sticker" ? "Sticker" : tool === "effect" ? "Effect" : "Music";
+    app.querySelector("#o1-sheet-title").textContent =
+      tool === "text"
+        ? "Text Studio"
+        : tool === "style"
+          ? "Style"
+          : tool === "sticker"
+            ? "Sticker"
+            : tool === "effect"
+              ? "Effect"
+              : "Music";
     buildPanel(tool);
   };
   const closeSheet = () => sheet.classList.remove("open");
@@ -268,13 +298,19 @@ export function renderStoryCreate(app, draftFileOverride = null) {
           saveDraft(state);
         }),
       );
-      panel.querySelector("#o1-photo").addEventListener("click", () => app.querySelector("#o1-sticker-input").click());
-      panel.querySelector("#o1-sticker-scale").addEventListener("input", (e) => {
-        state.stickerScale = Number(e.target.value);
-        preview();
-        buildPanel("sticker");
-        saveDraft(state);
-      });
+      panel
+        .querySelector("#o1-photo")
+        .addEventListener("click", () =>
+          app.querySelector("#o1-sticker-input").click(),
+        );
+      panel
+        .querySelector("#o1-sticker-scale")
+        .addEventListener("input", (e) => {
+          state.stickerScale = Number(e.target.value);
+          preview();
+          buildPanel("sticker");
+          saveDraft(state);
+        });
       return;
     }
     if (tool === "effect") {
@@ -287,11 +323,20 @@ export function renderStoryCreate(app, draftFileOverride = null) {
           saveDraft(state);
         }),
       );
-      ["o1-enhance", "o1-glow", "o1-clean"].forEach((id) => panel.querySelector(`#${id}`).addEventListener("click", () => setMsg("Preview effect applied.")));
+      ["o1-enhance", "o1-glow", "o1-clean"].forEach((id) =>
+        panel
+          .querySelector(`#${id}`)
+          .addEventListener("click", () => setMsg("Preview effect applied.")),
+      );
       return;
     }
     panel.innerHTML = `<div class="o1-sec"><div class="o1-label"><span>Music & audio</span><span>Preview</span></div><div class="o1-audio"><label class="o1-file" for="o1-audio-input">Choose Audio</label><span id="o1-audio-name" class="o1-name">No audio selected</span></div></div><div class="o1-sec"><div class="o1-label"><span>Volume</span><span>75%</span></div><input id="o1-audio-volume" class="o1-slider" type="range" min="0" max="1" step=".05" value=".75"></div><p class="o1-note">Audio preview only; the existing secure story publishing API is unchanged.</p>`;
-    panel.querySelector("#o1-audio-volume").addEventListener("input", (e) => (audio.volume = Number(e.target.value)));
+    panel
+      .querySelector("#o1-audio-volume")
+      .addEventListener(
+        "input",
+        (e) => (audio.volume = Number(e.target.value)),
+      );
   };
   const loadVideo = (file) => {
     if (!(file instanceof File) || !file.type.startsWith("video/")) {
@@ -374,9 +419,17 @@ export function renderStoryCreate(app, draftFileOverride = null) {
     setMsg("Draft saved.");
   });
   app.querySelector("#o1-close").addEventListener("click", closeSheet);
-  app.querySelector("#o1-edit").addEventListener("click", () => openSheet("text"));
-  app.querySelectorAll("[data-tool]").forEach((b) => b.addEventListener("click", () => openSheet(b.dataset.tool)));
-  app.querySelector("#o1-choose").addEventListener("click", () => videoInput.click());
+  app
+    .querySelector("#o1-edit")
+    .addEventListener("click", () => openSheet("text"));
+  app
+    .querySelectorAll("[data-tool]")
+    .forEach((b) =>
+      b.addEventListener("click", () => openSheet(b.dataset.tool)),
+    );
+  app
+    .querySelector("#o1-choose")
+    .addEventListener("click", () => videoInput.click());
   app.querySelector("#o1-mute").addEventListener("click", () => {
     video.muted = !video.muted;
     app.querySelector("#o1-mute").textContent = video.muted ? "🔇" : "🔊";
@@ -398,19 +451,21 @@ export function renderStoryCreate(app, draftFileOverride = null) {
     if (f) loadVideo(f);
     videoInput.value = "";
   });
-  app.querySelector("#o1-sticker-input").addEventListener("change", async () => {
-    const f = app.querySelector("#o1-sticker-input").files?.[0];
-    if (!f) return;
-    try {
-      state.stickerDataUrl = await compressImage(f);
-      preview();
-      saveDraft(state);
-      openSheet("sticker");
-    } catch {
-      setMsg("Could not load photo.");
-    }
-    app.querySelector("#o1-sticker-input").value = "";
-  });
+  app
+    .querySelector("#o1-sticker-input")
+    .addEventListener("change", async () => {
+      const f = app.querySelector("#o1-sticker-input").files?.[0];
+      if (!f) return;
+      try {
+        state.stickerDataUrl = await compressImage(f);
+        preview();
+        saveDraft(state);
+        openSheet("sticker");
+      } catch {
+        setMsg("Could not load photo.");
+      }
+      app.querySelector("#o1-sticker-input").value = "";
+    });
   app.querySelector("#o1-audio-input").addEventListener("change", () => {
     const f = app.querySelector("#o1-audio-input").files?.[0];
     if (!f) return;

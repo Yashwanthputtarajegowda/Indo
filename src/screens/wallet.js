@@ -16,7 +16,8 @@ function escapeHtml(value = "") {
   );
 }
 function renderPayouts(payouts) {
-  if (!payouts.length) return '<div class="profile-empty">No payout requests yet.</div>';
+  if (!payouts.length)
+    return '<div class="profile-empty">No payout requests yet.</div>';
   return payouts
     .map(
       (payout) =>
@@ -32,10 +33,13 @@ export async function renderWallet(app) {
   try {
     const wallet = await loadWallet();
     balance.textContent = `$${Number(wallet.balance || 0).toFixed(2)}`;
-    status.textContent = wallet.earningEnabled ? `Minimum payout: $${Number(wallet.minimumPayoutUsd || 10).toFixed(2)}` : "Turn Earning ON after eligibility to build payable balance.";
+    status.textContent = wallet.earningEnabled
+      ? `Minimum payout: $${Number(wallet.minimumPayoutUsd || 10).toFixed(2)}`
+      : "Turn Earning ON after eligibility to build payable balance.";
     list.innerHTML = renderPayouts(wallet.payouts || []);
   } catch (error) {
     status.textContent = error.message || "Could not load wallet.";
-    list.innerHTML = '<div class="profile-empty">Could not load payout history.</div>';
+    list.innerHTML =
+      '<div class="profile-empty">Could not load payout history.</div>';
   }
 }

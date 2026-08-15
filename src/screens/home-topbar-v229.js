@@ -9,20 +9,30 @@ async function loadUnreadCount() {
   if (!user) return 0;
   try {
     const token = await user.getIdToken();
-    const response = await fetch(`${window.INDO_API_BASE || ""}/api/notifications`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${window.INDO_API_BASE || ""}/api/notifications`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      },
+    );
     if (!response.ok) return 0;
     const data = await response.json().catch(() => ({}));
-    return Array.isArray(data.notifications) ? data.notifications.reduce((n, item) => n + (item?.read === false ? 1 : 0), 0) : 0;
+    return Array.isArray(data.notifications)
+      ? data.notifications.reduce(
+          (n, item) => n + (item?.read === false ? 1 : 0),
+          0,
+        )
+      : 0;
   } catch {
     return 0;
   }
 }
 
 function paintUnreadBadge(count) {
-  const button = document.querySelector(".indo-option5-topbar .notification-button");
+  const button = document.querySelector(
+    ".indo-option5-topbar .notification-button",
+  );
   if (!button) return;
   const n = Math.max(0, Number(count) || 0);
   const existing = button.querySelector(".indo-notification-badge");

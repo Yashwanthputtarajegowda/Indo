@@ -8,8 +8,16 @@ function normalizeStory(story, currentUid = "") {
   if (!story || typeof story !== "object") return null;
   return {
     ...story,
-    ownerUid: String(story.ownerUid || story.uid || story.userId || story.creatorUid || currentUid || ""),
-    secureUrl: story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "",
+    ownerUid: String(
+      story.ownerUid ||
+        story.uid ||
+        story.userId ||
+        story.creatorUid ||
+        currentUid ||
+        "",
+    ),
+    secureUrl:
+      story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "",
   };
 }
 
@@ -17,7 +25,8 @@ function readLocalStory(currentUid) {
   try {
     const cached = JSON.parse(localStorage.getItem(LAST_STORY_KEY) || "null");
     const story = normalizeStory(cached, currentUid);
-    if (!story || story.ownerUid !== currentUid || !story.secureUrl) return null;
+    if (!story || story.ownerUid !== currentUid || !story.secureUrl)
+      return null;
     const createdAt = Number(story.createdAt || 0);
     if (createdAt && Date.now() - createdAt > STORY_MAX_AGE_MS) {
       localStorage.removeItem(LAST_STORY_KEY);
@@ -42,10 +51,21 @@ export async function loadStories() {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Could not load stories.");
 
-    const stories = Array.isArray(data.stories) ? data.stories.map((story) => normalizeStory(story, user.uid)).filter(Boolean) : [];
+    const stories = Array.isArray(data.stories)
+      ? data.stories
+          .map((story) => normalizeStory(story, user.uid))
+          .filter(Boolean)
+      : [];
 
     const localStory = readLocalStory(user.uid);
-    if (localStory && !stories.some((story) => String(story.ownerUid) === user.uid && String(story.id || "") === String(localStory.id || ""))) {
+    if (
+      localStory &&
+      !stories.some(
+        (story) =>
+          String(story.ownerUid) === user.uid &&
+          String(story.id || "") === String(localStory.id || ""),
+      )
+    ) {
       stories.unshift(localStory);
     }
 
@@ -71,9 +91,13 @@ export function renderStoriesRow(stories) {
   return unique
     .map((story) => {
       const name = String(story.name || story.username || "Indo User");
-      const username = String(story.username || story.name || "Indo User").replace(/^@/, "");
-      const initial = name.replace(/^@/, "").trim().charAt(0).toUpperCase() || "I";
-      const storyUrl = story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "";
+      const username = String(
+        story.username || story.name || "Indo User",
+      ).replace(/^@/, "");
+      const initial =
+        name.replace(/^@/, "").trim().charAt(0).toUpperCase() || "I";
+      const storyUrl =
+        story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "";
       return `<button class="story" type="button" data-story-url="${escapeHtml(storyUrl)}" data-story-name="${escapeHtml(name)}"><div class="avatar gradient">${escapeHtml(initial)}</div><span>@${escapeHtml(username)}</span></button>`;
     })
     .join("");
@@ -102,7 +126,9 @@ export function bindStoryButtons(root) {
       const overlay = document.createElement("div");
       overlay.className = "story-viewer";
       overlay.innerHTML = `<button type="button" class="story-viewer-close" aria-label="Close">×</button><div class="story-viewer-card"><b>${escapeHtml(name)}</b><video src="${escapeHtml(url)}" controls autoplay playsinline></video></div>`;
-      overlay.querySelector(".story-viewer-close").addEventListener("click", () => overlay.remove());
+      overlay
+        .querySelector(".story-viewer-close")
+        .addEventListener("click", () => overlay.remove());
       overlay.addEventListener("click", (event) => {
         if (event.target === overlay) overlay.remove();
       });

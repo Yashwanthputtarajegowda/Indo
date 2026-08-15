@@ -16,7 +16,8 @@ async function getStorySignature() {
     body: JSON.stringify({ kind: "story" }),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not prepare story upload.");
+  if (!response.ok)
+    throw new Error(data.error || "Could not prepare story upload.");
   return { ...data, token };
 }
 
@@ -27,14 +28,19 @@ async function uploadToCloudinary(file, config) {
   form.append("timestamp", String(config.timestamp));
   form.append("signature", config.signature);
   form.append("folder", config.folder || "indo/stories");
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`, { method: "POST", body: form });
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`,
+    { method: "POST", body: form },
+  );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error?.message || "Cloudinary story upload failed.");
+  if (!response.ok)
+    throw new Error(data.error?.message || "Cloudinary story upload failed.");
   return data;
 }
 
 export async function publishStory(file, onProgress = () => {}, editor = {}) {
-  if (!(file instanceof File) || !file.type.startsWith("video/")) throw new Error("Please select a video story.");
+  if (!(file instanceof File) || !file.type.startsWith("video/"))
+    throw new Error("Please select a video story.");
   onProgress(10, "Preparing story upload...");
   const config = await getStorySignature();
   onProgress(20, "Uploading story...");
@@ -57,13 +63,23 @@ export async function publishStory(file, onProgress = () => {}, editor = {}) {
 
   const user = auth.currentUser;
   if (user) {
-    const returned = data.story && typeof data.story === "object" ? data.story : {};
+    const returned =
+      data.story && typeof data.story === "object" ? data.story : {};
     const cachedStory = {
       ...returned,
       id: returned.id || uploaded.public_id,
-      ownerUid: returned.ownerUid || returned.uid || returned.userId || user.uid,
-      username: returned.username || user.displayName || user.email?.split("@")[0] || "User",
-      secureUrl: returned.secureUrl || returned.videoUrl || returned.url || uploaded.secure_url,
+      ownerUid:
+        returned.ownerUid || returned.uid || returned.userId || user.uid,
+      username:
+        returned.username ||
+        user.displayName ||
+        user.email?.split("@")[0] ||
+        "User",
+      secureUrl:
+        returned.secureUrl ||
+        returned.videoUrl ||
+        returned.url ||
+        uploaded.secure_url,
       title: String(editor.title || "")
         .trim()
         .slice(0, 80),

@@ -44,9 +44,12 @@ export async function loadComments(mediaId) {
   if (!user) throw new Error("Please login first.");
   const token = await user.getIdToken();
   const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(`${apiBase}/api/media/${encodeURIComponent(mediaId)}/comments`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetch(
+    `${apiBase}/api/media/${encodeURIComponent(mediaId)}/comments`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Could not load comments.");
   return data.comments || [];

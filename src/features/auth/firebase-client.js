@@ -23,6 +23,13 @@ export const auth = getAuth(firebaseApp);
 
 // Canonical Indo login persistence: keep the Firebase session across reloads
 // and normal browser restarts. Never store ID/access tokens in localStorage.
-export const authPersistenceReady = setPersistence(auth, browserLocalPersistence);
+export const authPersistenceReady = setPersistence(
+  auth,
+  browserLocalPersistence,
+);
 
-export { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail };
+export {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+};

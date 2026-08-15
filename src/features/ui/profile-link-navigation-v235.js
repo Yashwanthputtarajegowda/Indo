@@ -75,7 +75,11 @@ function findIdentityTarget(element) {
 
   // Last-resort support for plain @User ID text rendered without a dedicated class.
   let cursor = element;
-  for (let depth = 0; cursor && depth < 5; depth += 1, cursor = cursor.parentElement) {
+  for (
+    let depth = 0;
+    cursor && depth < 5;
+    depth += 1, cursor = cursor.parentElement
+  ) {
     const userId = extractUserId(cursor);
     if (userId) return { element: cursor, userId };
   }
@@ -88,15 +92,23 @@ async function openProfile(userId) {
   busy = true;
   try {
     const apiBase = window.INDO_API_BASE || "";
-    const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(normalized)}`, { cache: "no-store" });
+    const response = await fetch(
+      `${apiBase}/api/account/profile/${encodeURIComponent(normalized)}`,
+      { cache: "no-store" },
+    );
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data?.ok || !data?.profile) throw new Error(data?.error || "Could not open profile.");
+    if (!response.ok || !data?.ok || !data?.profile)
+      throw new Error(data?.error || "Could not open profile.");
 
     state.profile = {
       ...data.profile,
       uid: data.profile.uid || data.profile.ownerUid || "",
-      username: normalizeUserId(data.profile.userId || data.profile.username || normalized),
-      userId: normalizeUserId(data.profile.userId || data.profile.username || normalized),
+      username: normalizeUserId(
+        data.profile.userId || data.profile.username || normalized,
+      ),
+      userId: normalizeUserId(
+        data.profile.userId || data.profile.username || normalized,
+      ),
       stats: data.stats || {},
       social: data.social || {},
     };
@@ -149,14 +161,25 @@ export function installProfileLinkNavigation() {
       if (!target?.userId) return;
 
       // Keep dedicated controls working normally. Identity buttons/cards are allowed.
-      const actionControl = element.closest("[data-search-follow-uid],[data-follow-response],[data-action],[data-screen],input,textarea,select,a[href]");
+      const actionControl = element.closest(
+        "[data-search-follow-uid],[data-follow-response],[data-action],[data-screen],input,textarea,select,a[href]",
+      );
       const targetElement = target.element;
       const identityButton =
-        targetElement?.matches(".search-profile-main,.search-profile-card,.notice,.profile-relation-row,.indo-story-card,.search-user") ||
-        targetElement?.matches("[data-user-id],[data-profile-user-id],[data-username],[data-userid],[data-profile-user]");
+        targetElement?.matches(
+          ".search-profile-main,.search-profile-card,.notice,.profile-relation-row,.indo-story-card,.search-user",
+        ) ||
+        targetElement?.matches(
+          "[data-user-id],[data-profile-user-id],[data-username],[data-userid],[data-profile-user]",
+        );
 
       if (actionControl && !identityButton) return;
-      if (element.closest(".search-follow-button,.follow-btn,button[data-search-follow-uid]")) return;
+      if (
+        element.closest(
+          ".search-follow-button,.follow-btn,button[data-search-follow-uid]",
+        )
+      )
+        return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -169,8 +192,12 @@ export function installProfileLinkNavigation() {
 export function bindProfileIdentity(container = document) {
   installProfileLinkNavigation();
   if (!(container instanceof Element || container instanceof Document)) return;
-  container.querySelectorAll("[data-profile-user-id],[data-user-id],[data-username],[data-userid],[data-profile-user]").forEach((el) => {
-    const id = extractUserId(el);
-    if (id) el.setAttribute("data-profile-user-id", id);
-  });
+  container
+    .querySelectorAll(
+      "[data-profile-user-id],[data-user-id],[data-username],[data-userid],[data-profile-user]",
+    )
+    .forEach((el) => {
+      const id = extractUserId(el);
+      if (id) el.setAttribute("data-profile-user-id", id);
+    });
 }

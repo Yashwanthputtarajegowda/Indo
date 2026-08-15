@@ -61,7 +61,9 @@ function tokenise(value = "") {
 function loadProfile() {
   try {
     const raw = JSON.parse(localStorage.getItem(storageKey()) || "{}");
-    return raw && typeof raw === "object" ? raw : { tokens: {}, creators: {}, searches: {}, media: {}, language: {} };
+    return raw && typeof raw === "object"
+      ? raw
+      : { tokens: {}, creators: {}, searches: {}, media: {}, language: {} };
   } catch {
     return { tokens: {}, creators: {}, searches: {}, media: {}, language: {} };
   }
@@ -102,7 +104,16 @@ function addWeightedTokens(profile, tokens, weight) {
   }
 }
 function mediaText(media = {}) {
-  return [media.title, media.caption, media.creator, media.creatorName, media.userId, media.username, media.category, media.tags]
+  return [
+    media.title,
+    media.caption,
+    media.creator,
+    media.creatorName,
+    media.userId,
+    media.username,
+    media.category,
+    media.tags,
+  ]
     .flatMap((value) => (Array.isArray(value) ? value : [value]))
     .filter(Boolean)
     .join(" ");
@@ -112,12 +123,15 @@ export function recordInterestText(text, weight = 1, meta = {}) {
   addWeightedTokens(profile, tokenise(text), weight);
   if (meta.creator) {
     const creator = String(meta.creator).replace(/^@/, "").toLowerCase();
-    if (creator) profile.creators[creator] = decay(profile.creators[creator], Date.now()) + weight;
+    if (creator)
+      profile.creators[creator] =
+        decay(profile.creators[creator], Date.now()) + weight;
   }
   if (meta.mediaId)
     profile.media[String(meta.mediaId)] = {
       last: Date.now(),
-      weight: (Number(profile.media[String(meta.mediaId)]?.weight) || 0) + weight,
+      weight:
+        (Number(profile.media[String(meta.mediaId)]?.weight) || 0) + weight,
     };
   saveProfile(profile);
 }
@@ -144,7 +158,8 @@ export function recordSearchQuery(query) {
   if (!tokens.length) return;
   const profile = loadProfile();
   addWeightedTokens(profile, tokens, 4);
-  for (const token of tokens) profile.searches[token] = (Number(profile.searches[token]) || 0) + 1;
+  for (const token of tokens)
+    profile.searches[token] = (Number(profile.searches[token]) || 0) + 1;
   saveProfile(profile);
 }
 export function setPreferenceLanguage(language) {
@@ -154,7 +169,8 @@ export function setPreferenceLanguage(language) {
     .trim();
   if (!lang) return;
   profile.language[lang] = {
-    weight: decay(profile.language[lang]?.weight, profile.language[lang]?.last) + 3,
+    weight:
+      decay(profile.language[lang]?.weight, profile.language[lang]?.last) + 3,
     last: Date.now(),
   };
   saveProfile(profile);
@@ -183,27 +199,53 @@ function languageScore(media, language) {
   if (lang === "gu") return /[\u0A80-\u0AFF]/.test(text) ? 1 : 0;
   if (lang === "pa") return /[\u0A00-\u0A7F]/.test(text) ? 1 : 0;
   if (lang === "mr") return /[\u0900-\u097F]/.test(text) ? 1 : 0.15;
-  if (lang === "en") return /\b(the|is|are|and|with|travel|food|news|music|how|why|best|life|tech)\b/i.test(text) ? 1 : 0.15;
+  if (lang === "en")
+    return /\b(the|is|are|and|with|travel|food|news|music|how|why|best|life|tech)\b/i.test(
+      text,
+    )
+      ? 1
+      : 0.15;
   return 0.05;
 }
 function interestScore(media, profile) {
   const tokens = tokenise(mediaText(media));
   if (!tokens.length) return 0;
   let score = 0;
-  for (const token of tokens) score += decay(profile.tokens?.[token]?.weight, profile.tokens?.[token]?.last);
+  for (const token of tokens)
+    score += decay(
+      profile.tokens?.[token]?.weight,
+      profile.tokens?.[token]?.last,
+    );
   const creator = String(media.creator || media.userId || media.username || "")
     .replace(/^@/, "")
     .toLowerCase();
-  const creatorBoost = creator ? Math.min(2, decay(profile.creators?.[creator], Date.now()) / 5) : 0;
+  const creatorBoost = creator
+    ? Math.min(2, decay(profile.creators?.[creator], Date.now()) / 5)
+    : 0;
   return score / Math.sqrt(tokens.length) + creatorBoost;
 }
 function engagementScore(media) {
-  return Math.log1p(Math.max(0, Number(media.views || 0))) * 0.55 + Math.log1p(Math.max(0, Number(media.likes || 0))) * 1.1 + Math.log1p(Math.max(0, Number(media.comments || 0))) * 0.85;
+  return (
+    Math.log1p(Math.max(0, Number(media.views || 0))) * 0.55 +
+    Math.log1p(Math.max(0, Number(media.likes || 0))) * 1.1 +
+    Math.log1p(Math.max(0, Number(media.comments || 0))) * 0.85
+  );
 }
 function recencyScore(createdAt) {
-  return Math.max(0, 1 - Math.max(0, Date.now() - Number(createdAt || 0)) / (7 * DAY_MS));
+  return Math.max(
+    0,
+    1 - Math.max(0, Date.now() - Number(createdAt || 0)) / (7 * DAY_MS),
+  );
 }
-export function rankMedia(items, { type = "", limit = 50, query = "", language = getLanguagePreference() } = {}) {
+export function rankMedia(
+  items,
+  {
+    type = "",
+    limit = 50,
+    query = "",
+    language = getLanguagePreference(),
+  } = {},
+) {
   const profile = loadProfile();
   const q = String(query || "")
     .trim()
@@ -218,14 +260,22 @@ export function rankMedia(items, { type = "", limit = 50, query = "", language =
         const engagement = engagementScore(media);
         const recent = recencyScore(media.createdAt);
         const trending = engagement * (recent + 0.35);
-        return (q ? 20 : 1) * personal + lang * 2.4 + trending * 0.9 + recent * 1.2 + Math.random() * 0.08;
+        return (
+          (q ? 20 : 1) * personal +
+          lang * 2.4 +
+          trending * 0.9 +
+          recent * 1.2 +
+          Math.random() * 0.08
+        );
       };
       return score(b) - score(a);
     })
     .slice(0, Math.max(0, Number(limit) || 50));
 }
 function cloneInit(init) {
-  return init ? { ...init, headers: init.headers ? { ...init.headers } : init.headers } : undefined;
+  return init
+    ? { ...init, headers: init.headers ? { ...init.headers } : init.headers }
+    : undefined;
 }
 export function installRecommendationFetch() {
   if (window.__indoRecommendationFetchInstalled) return;
@@ -234,7 +284,8 @@ export function installRecommendationFetch() {
   window.__indoOriginalFetch = original;
   window.fetch = async (input, init = {}) => {
     const rawUrl = input instanceof Request ? input.url : String(input || "");
-    if (!/\/api\/media\/videos(?:\?|$)/.test(rawUrl)) return original(input, init);
+    if (!/\/api\/media\/videos(?:\?|$)/.test(rawUrl))
+      return original(input, init);
     let parsed;
     try {
       parsed = new URL(rawUrl, window.location.origin);
@@ -243,7 +294,10 @@ export function installRecommendationFetch() {
     }
     const type = String(parsed.searchParams.get("type") || "").toLowerCase();
     const q = String(parsed.searchParams.get("q") || "");
-    const limit = Math.min(100, Math.max(1, Number(parsed.searchParams.get("limit") || 50)));
+    const limit = Math.min(
+      100,
+      Math.max(1, Number(parsed.searchParams.get("limit") || 50)),
+    );
     const screen = String(window.__indoRecommendationScreen || "");
     if (screen === "home") {
       const videoUrl = new URL(parsed);
@@ -252,9 +306,18 @@ export function installRecommendationFetch() {
       const reelUrl = new URL(parsed);
       reelUrl.searchParams.set("type", "reel");
       reelUrl.searchParams.set("limit", String(Math.max(limit, 50)));
-      const [videoResponse, reelResponse] = await Promise.all([original(videoUrl.toString(), cloneInit(init)), original(reelUrl.toString(), cloneInit(init))]);
-      const [videoData, reelData] = await Promise.all([videoResponse.json().catch(() => ({})), reelResponse.json().catch(() => ({}))]);
-      const merged = [...(Array.isArray(videoData.videos) ? videoData.videos : []), ...(Array.isArray(reelData.videos) ? reelData.videos : [])];
+      const [videoResponse, reelResponse] = await Promise.all([
+        original(videoUrl.toString(), cloneInit(init)),
+        original(reelUrl.toString(), cloneInit(init)),
+      ]);
+      const [videoData, reelData] = await Promise.all([
+        videoResponse.json().catch(() => ({})),
+        reelResponse.json().catch(() => ({})),
+      ]);
+      const merged = [
+        ...(Array.isArray(videoData.videos) ? videoData.videos : []),
+        ...(Array.isArray(reelData.videos) ? reelData.videos : []),
+      ];
       return new Response(
         JSON.stringify({
           ok: true,
@@ -287,7 +350,10 @@ export function initRecommendationEngine() {
   if (window.__indoRecommendationInitialized) return;
   window.__indoRecommendationInitialized = true;
   setPreferenceLanguage(
-    String(localStorage.getItem(`${STORAGE_PREFIX}${currentUserId()}:language`) || "").trim() ||
+    String(
+      localStorage.getItem(`${STORAGE_PREFIX}${currentUserId()}:language`) ||
+        "",
+    ).trim() ||
       String(navigator.language || "en")
         .split("-")[0]
         .toLowerCase(),
@@ -301,7 +367,10 @@ export function initRecommendationEngine() {
       const placeholder = String(input.placeholder || "").toLowerCase();
       if (!placeholder.includes("search")) return;
       clearTimeout(input.__indoSearchTimer);
-      input.__indoSearchTimer = setTimeout(() => recordSearchQuery(input.value || ""), 400);
+      input.__indoSearchTimer = setTimeout(
+        () => recordSearchQuery(input.value || ""),
+        400,
+      );
     },
     true,
   );
@@ -312,13 +381,18 @@ export function initRecommendationEngine() {
       if (!element) return;
       const action = element.closest("[data-engagement]");
       if (action) {
-        const root = action.closest("[data-video-id],.reel-view,.video-post,.indo-video-card,.indo-video-mini");
+        const root = action.closest(
+          "[data-video-id],.reel-view,.video-post,.indo-video-card,.indo-video-mini",
+        );
         if (root)
           recordMediaInteraction(
             {
               id: root.dataset.videoId || root.dataset.videoOpen,
               title: root.textContent || "",
-              creator: root.querySelector?.(".indo-video-user-id,.indo-video-mini-name,.reel-user b")?.textContent || "",
+              creator:
+                root.querySelector?.(
+                  ".indo-video-user-id,.indo-video-mini-name,.reel-user b",
+                )?.textContent || "",
             },
             action.dataset.engagement,
           );
@@ -326,13 +400,18 @@ export function initRecommendationEngine() {
       }
       const open = element.closest("[data-video-open]");
       if (open) {
-        const root = open.closest("[data-video-id],.indo-video-card,.indo-video-mini");
+        const root = open.closest(
+          "[data-video-id],.indo-video-card,.indo-video-mini",
+        );
         if (root)
           recordMediaInteraction(
             {
               id: open.dataset.videoOpen,
               title: root.textContent || "",
-              creator: root.querySelector?.(".indo-video-user-id,.indo-video-mini-name")?.textContent || "",
+              creator:
+                root.querySelector?.(
+                  ".indo-video-user-id,.indo-video-mini-name",
+                )?.textContent || "",
             },
             "view",
           );

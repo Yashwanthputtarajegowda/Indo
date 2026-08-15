@@ -4,8 +4,12 @@ import { recordWatchProgress } from "../earning/earning.js";
 export async function loadReels(limit = 20) {
   const apiBase = window.INDO_API_BASE || "";
   const headers = {};
-  if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
-  const response = await fetch(`${apiBase}/api/media/videos?type=reel&limit=${limit}`, { headers });
+  if (auth.currentUser)
+    headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
+  const response = await fetch(
+    `${apiBase}/api/media/videos?type=reel&limit=${limit}`,
+    { headers },
+  );
   if (!response.ok) throw new Error("Could not load reels.");
   const data = await response.json();
   return Array.isArray(data.videos) ? data.videos : [];
@@ -14,11 +18,15 @@ export async function loadReels(limit = 20) {
 export async function recordReelView(reelId) {
   const apiBase = window.INDO_API_BASE || "";
   const headers = {};
-  if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
-  const response = await fetch(`${apiBase}/api/media/videos/${encodeURIComponent(reelId)}/view`, {
-    method: "POST",
-    headers,
-  });
+  if (auth.currentUser)
+    headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
+  const response = await fetch(
+    `${apiBase}/api/media/videos/${encodeURIComponent(reelId)}/view`,
+    {
+      method: "POST",
+      headers,
+    },
+  );
   if (!response.ok) throw new Error("Could not record reel view.");
   return response.json();
 }

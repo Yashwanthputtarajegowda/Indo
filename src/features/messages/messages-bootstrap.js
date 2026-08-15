@@ -74,14 +74,17 @@ function openMessageComposer(uid, userId, name) {
   const list = overlay.querySelector("[data-message-list]");
   const form = overlay.querySelector("[data-message-form]");
   const close = () => overlay.remove();
-  overlay.querySelector("[data-message-close]").addEventListener("click", close);
+  overlay
+    .querySelector("[data-message-close]")
+    .addEventListener("click", close);
   overlay.firstElementChild.addEventListener("click", (event) => {
     if (event.target === overlay.firstElementChild) close();
   });
 
   const render = (messages) => {
     if (!messages.length) {
-      list.innerHTML = '<div style="opacity:.6;text-align:center;padding:24px">No messages yet. Say hi.</div>';
+      list.innerHTML =
+        '<div style="opacity:.6;text-align:center;padding:24px">No messages yet. Say hi.</div>';
       return;
     }
     list.innerHTML = messages
@@ -114,7 +117,10 @@ function openMessageComposer(uid, userId, name) {
       input.value = "";
       render(await loadMessages(uid));
     } catch (error) {
-      list.insertAdjacentHTML("beforeend", `<div style="color:#ff8b8b">${escapeHtml(error.message || "Could not send message.")}</div>`);
+      list.insertAdjacentHTML(
+        "beforeend",
+        `<div style="color:#ff8b8b">${escapeHtml(error.message || "Could not send message.")}</div>`,
+      );
     } finally {
       button.disabled = false;
       input.focus();
@@ -123,26 +129,31 @@ function openMessageComposer(uid, userId, name) {
 }
 
 function addMessageButtons() {
-  document.querySelectorAll("[data-search-result] [data-search-follow-uid]").forEach((followButton) => {
-    if (followButton.dataset.messageReady === "true") return;
-    followButton.dataset.messageReady = "true";
-    const uid = followButton.dataset.searchFollowUid;
-    if (!uid) return;
-    const wrapper = document.createElement("span");
-    wrapper.style.cssText = "display:inline-flex;gap:8px;margin-left:8px;";
-    const messageButton = document.createElement("button");
-    messageButton.type = "button";
-    messageButton.className = "follow-btn";
-    messageButton.textContent = "Message";
-    messageButton.dataset.messageUid = uid;
-    messageButton.addEventListener("click", () => {
-      const result = followButton.closest(".search-user-result");
-      const name = result?.querySelector(".search-user-copy small")?.textContent || "Indo User";
-      const userId = result?.querySelector(".search-user-copy b")?.textContent || "";
-      openMessageComposer(uid, userId, name);
+  document
+    .querySelectorAll("[data-search-result] [data-search-follow-uid]")
+    .forEach((followButton) => {
+      if (followButton.dataset.messageReady === "true") return;
+      followButton.dataset.messageReady = "true";
+      const uid = followButton.dataset.searchFollowUid;
+      if (!uid) return;
+      const wrapper = document.createElement("span");
+      wrapper.style.cssText = "display:inline-flex;gap:8px;margin-left:8px;";
+      const messageButton = document.createElement("button");
+      messageButton.type = "button";
+      messageButton.className = "follow-btn";
+      messageButton.textContent = "Message";
+      messageButton.dataset.messageUid = uid;
+      messageButton.addEventListener("click", () => {
+        const result = followButton.closest(".search-user-result");
+        const name =
+          result?.querySelector(".search-user-copy small")?.textContent ||
+          "Indo User";
+        const userId =
+          result?.querySelector(".search-user-copy b")?.textContent || "";
+        openMessageComposer(uid, userId, name);
+      });
+      followButton.insertAdjacentElement("afterend", messageButton);
     });
-    followButton.insertAdjacentElement("afterend", messageButton);
-  });
 }
 
 const observer = new MutationObserver(addMessageButtons);

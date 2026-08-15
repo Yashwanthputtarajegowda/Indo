@@ -19,7 +19,10 @@ function installStyles() {
   document.head.appendChild(style);
 }
 
-export function renderIndoBrandTopbar({ rightHtml = "", rightLabel = "" } = {}) {
+export function renderIndoBrandTopbar({
+  rightHtml = "",
+  rightLabel = "",
+} = {}) {
   installStyles();
   return `<header class="indo-brand-topbar"><button class="indo-brand-home" type="button" data-screen="home" aria-label="Indo Home"><span class="indo-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M19.7 2 7.3 17.1h7.2L11.8 30 25 13.2h-7.1L19.7 2Z" fill="currentColor"/></svg></span><span class="indo-brand-word">INDO</span></button><div class="indo-brand-right" aria-label="${rightLabel}">${rightHtml}</div></header>`;
 }

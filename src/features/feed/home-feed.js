@@ -21,7 +21,8 @@ function escapeHtml(value = "") {
 }
 
 function svgIcon(name) {
-  const common = 'fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
+  const common =
+    'fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
 
   const icons = {
     like: `<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -543,7 +544,11 @@ function ensureFeedDesignStyles() {
 function cloudinaryBrowserUrl(rawUrl) {
   const url = String(rawUrl || "").trim();
 
-  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/video/upload/")) {
+  if (
+    !url ||
+    !url.includes("res.cloudinary.com") ||
+    !url.includes("/video/upload/")
+  ) {
     return url;
   }
 
@@ -600,7 +605,10 @@ function markFeedSeen(videos) {
     .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
     .slice(0, 5000);
 
-  localStorage.setItem(getFeedSeenKey(), JSON.stringify(Object.fromEntries(entries)));
+  localStorage.setItem(
+    getFeedSeenKey(),
+    JSON.stringify(Object.fromEntries(entries)),
+  );
 }
 
 function shuffleVideos(items) {
@@ -649,7 +657,9 @@ async function fetchVideos(apiBase, headers, query) {
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
 
-    throw new Error(data.error || `Could not load videos (${response.status}).`);
+    throw new Error(
+      data.error || `Could not load videos (${response.status}).`,
+    );
   }
 
   const data = await response.json().catch(() => ({}));
@@ -665,11 +675,18 @@ export async function loadHomeVideos(limit = DEFAULT_FEED_LIMIT) {
     headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
   }
 
-  const requested = Math.max(1, Math.min(50, Number(limit) || DEFAULT_FEED_LIMIT));
+  const requested = Math.max(
+    1,
+    Math.min(50, Number(limit) || DEFAULT_FEED_LIMIT),
+  );
 
   const fetchLimit = Math.max(requested * 5, 50);
 
-  const typed = await fetchVideos(apiBase, headers, `?type=video&limit=${fetchLimit}`);
+  const typed = await fetchVideos(
+    apiBase,
+    headers,
+    `?type=video&limit=${fetchLimit}`,
+  );
 
   if (typed.length) {
     return filterAndTakeOnce(typed, requested);
@@ -678,7 +695,11 @@ export async function loadHomeVideos(limit = DEFAULT_FEED_LIMIT) {
   const fallback = await fetchVideos(apiBase, headers, `?limit=${fetchLimit}`);
 
   return filterAndTakeOnce(
-    fallback.filter((item) => ["video", "mp4", "reel"].includes(String(item.mediaType || item.resourceType || "video").toLowerCase())),
+    fallback.filter((item) =>
+      ["video", "mp4", "reel"].includes(
+        String(item.mediaType || item.resourceType || "video").toLowerCase(),
+      ),
+    ),
     requested,
   );
 }
@@ -691,10 +712,13 @@ export async function recordVideoView(videoId) {
     headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
   }
 
-  await fetch(`${apiBase}/api/media/videos/${encodeURIComponent(videoId)}/view`, {
-    method: "POST",
-    headers,
-  });
+  await fetch(
+    `${apiBase}/api/media/videos/${encodeURIComponent(videoId)}/view`,
+    {
+      method: "POST",
+      headers,
+    },
+  );
 }
 
 export async function deleteVideo(videoId) {
@@ -704,17 +728,22 @@ export async function deleteVideo(videoId) {
     throw new Error("Please login first.");
   }
 
-  const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/videos/${encodeURIComponent(videoId)}/delete`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${await user.getIdToken()}`,
+  const response = await fetch(
+    `${window.INDO_API_BASE || ""}/api/media/videos/${encodeURIComponent(videoId)}/delete`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await user.getIdToken()}`,
+      },
     },
-  });
+  );
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.detail || data.error || `Delete failed (${response.status}).`);
+    throw new Error(
+      data.detail || data.error || `Delete failed (${response.status}).`,
+    );
   }
 
   return data;
@@ -833,7 +862,8 @@ function enforceSingleVideoPlayback() {
   document.addEventListener(
     "play",
     (event) => {
-      const current = event.target instanceof HTMLVideoElement ? event.target : null;
+      const current =
+        event.target instanceof HTMLVideoElement ? event.target : null;
 
       if (!current) return;
 
@@ -846,7 +876,8 @@ function enforceSingleVideoPlayback() {
   document.addEventListener(
     "playing",
     (event) => {
-      const current = event.target instanceof HTMLVideoElement ? event.target : null;
+      const current =
+        event.target instanceof HTMLVideoElement ? event.target : null;
 
       if (!current) return;
 
@@ -868,7 +899,13 @@ function enforceSingleVideoPlayback() {
 }
 
 function getPostTitle(video) {
-  return String(video?.title || video?.postTitle || video?.caption || video?.description || "").trim();
+  return String(
+    video?.title ||
+      video?.postTitle ||
+      video?.caption ||
+      video?.description ||
+      "",
+  ).trim();
 }
 
 function isTitleLong(title) {
@@ -886,7 +923,13 @@ export function renderVideoCard(video) {
 
   const ownerUid = escapeHtml(video.ownerUid || "");
 
-  const creatorAvatar = escapeHtml(video.creatorAvatar || video.avatarUrl || video.profilePhoto || video.photoURL || "");
+  const creatorAvatar = escapeHtml(
+    video.creatorAvatar ||
+      video.avatarUrl ||
+      video.profilePhoto ||
+      video.photoURL ||
+      "",
+  );
 
   /*
     IMPORTANT:
@@ -911,11 +954,16 @@ export function renderVideoCard(video) {
 
   const mediaUrl = cloudinaryBrowserUrl(rawMediaUrl);
 
-  const fallbackUrl = rawMediaUrl && mediaUrl !== rawMediaUrl ? rawMediaUrl : "";
+  const fallbackUrl =
+    rawMediaUrl && mediaUrl !== rawMediaUrl ? rawMediaUrl : "";
 
-  const poster = video.thumbnailUrl ? ` poster="${escapeHtml(video.thumbnailUrl)}"` : "";
+  const poster = video.thumbnailUrl
+    ? ` poster="${escapeHtml(video.thumbnailUrl)}"`
+    : "";
 
-  const initial = escapeHtml(creatorRaw.replace(/^@/, "").charAt(0).toUpperCase() || "I");
+  const initial = escapeHtml(
+    creatorRaw.replace(/^@/, "").charAt(0).toUpperCase() || "I",
+  );
 
   const avatar = creatorAvatar
     ? `
@@ -1111,7 +1159,8 @@ function openPostDetails(card) {
 
   const saves = card.dataset.postSaves || "0";
 
-  const creator = card.querySelector(".neon-edge-name")?.textContent?.trim() || "";
+  const creator =
+    card.querySelector(".neon-edge-name")?.textContent?.trim() || "";
 
   const backdrop = document.createElement("div");
 
@@ -1176,7 +1225,9 @@ function openPostDetails(card) {
 
   const close = () => backdrop.remove();
 
-  backdrop.querySelector("[data-post-details-close]")?.addEventListener("click", close);
+  backdrop
+    .querySelector("[data-post-details-close]")
+    ?.addEventListener("click", close);
 
   backdrop.addEventListener("click", (event) => {
     if (event.target === backdrop) {
@@ -1288,17 +1339,20 @@ async function setSaved(card) {
   const next = button?.dataset.saved !== "1";
 
   try {
-    const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/save`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/save`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
 
-        Authorization: `Bearer ${await user.getIdToken()}`,
+          Authorization: `Bearer ${await user.getIdToken()}`,
+        },
+        body: JSON.stringify({
+          save: next,
+        }),
       },
-      body: JSON.stringify({
-        save: next,
-      }),
-    });
+    );
 
     if (!response.ok) {
       throw new Error("Could not update save.");
@@ -1319,7 +1373,10 @@ function openFeedMoreMenu(button, card) {
 
   menu.className = "indo-feed-menu";
 
-  const isOwner = Boolean(auth.currentUser?.uid && String(card.dataset.ownerUid || "") === String(auth.currentUser.uid));
+  const isOwner = Boolean(
+    auth.currentUser?.uid &&
+    String(card.dataset.ownerUid || "") === String(auth.currentUser.uid),
+  );
 
   menu.innerHTML = `
     ${isOwner ? '<button type="button" data-feed-action="delete">Delete video</button>' : ""}
@@ -1523,7 +1580,11 @@ function bindLazyVideo(video, videoId) {
     passive: true,
   });
 
-  video.addEventListener("pointerdown", () => enableAudioFromInteraction(video), { passive: true });
+  video.addEventListener(
+    "pointerdown",
+    () => enableAudioFromInteraction(video),
+    { passive: true },
+  );
 
   if ("IntersectionObserver" in window) {
     observer = new IntersectionObserver(
@@ -1572,11 +1633,14 @@ async function getEngagement(videoId) {
 
   const token = await user.getIdToken();
 
-  const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(videoId)}/engagement`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(videoId)}/engagement`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
-  });
+  );
 
   if (!response.ok) {
     return null;
@@ -1595,17 +1659,20 @@ async function setLike(card) {
   const next = button?.dataset.liked !== "1";
 
   try {
-    const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/like`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/like`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
 
-        Authorization: `Bearer ${await user.getIdToken()}`,
+          Authorization: `Bearer ${await user.getIdToken()}`,
+        },
+        body: JSON.stringify({
+          like: next,
+        }),
       },
-      body: JSON.stringify({
-        like: next,
-      }),
-    });
+    );
 
     const data = await response.json().catch(() => ({}));
 
@@ -1691,7 +1758,9 @@ async function openComments(card) {
 
   document.body.appendChild(backdrop);
 
-  backdrop.querySelector("[data-comment-close]")?.addEventListener("click", () => backdrop.remove());
+  backdrop
+    .querySelector("[data-comment-close]")
+    ?.addEventListener("click", () => backdrop.remove());
 
   backdrop.addEventListener("click", (event) => {
     if (event.target === backdrop) {
@@ -1704,11 +1773,14 @@ async function openComments(card) {
   try {
     const token = await user.getIdToken();
 
-    const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/comments`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await fetch(
+      `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/comments`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     const data = await response.json().catch(() => ({}));
 
@@ -1746,17 +1818,20 @@ async function openComments(card) {
 
     if (!text) return;
 
-    const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/comments`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/comments`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
 
-        Authorization: `Bearer ${await user.getIdToken()}`,
+          Authorization: `Bearer ${await user.getIdToken()}`,
+        },
+        body: JSON.stringify({
+          text,
+        }),
       },
-      body: JSON.stringify({
-        text,
-      }),
-    });
+    );
 
     if (response.ok) {
       input.value = "";
@@ -1843,13 +1918,15 @@ export function bindVideoCards(root) {
 
   enforceSingleVideoPlayback();
 
-  root.querySelectorAll("[data-video-id] .post-video[data-video-src]").forEach((video) => {
-    const card = video.closest("[data-video-id]");
+  root
+    .querySelectorAll("[data-video-id] .post-video[data-video-src]")
+    .forEach((video) => {
+      const card = video.closest("[data-video-id]");
 
-    if (card) {
-      bindLazyVideo(video, card.dataset.videoId);
-    }
-  });
+      if (card) {
+        bindLazyVideo(video, card.dataset.videoId);
+      }
+    });
 
   bindPostDetailsButtons(root);
 

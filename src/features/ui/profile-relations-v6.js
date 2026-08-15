@@ -48,32 +48,54 @@ async function authRequest(path) {
 
 function getTargetUid() {
   const profile = state.profile || {};
-  return String(profile.uid || profile.ownerUid || profile.userId || auth.currentUser?.uid || "").trim();
+  return String(
+    profile.uid ||
+      profile.ownerUid ||
+      profile.userId ||
+      auth.currentUser?.uid ||
+      "",
+  ).trim();
 }
 
 async function fetchRelation(targetUid, relation) {
-  const response = await authRequest(`/api/social/${encodeURIComponent(relation)}/${encodeURIComponent(targetUid)}`);
+  const response = await authRequest(
+    `/api/social/${encodeURIComponent(relation)}/${encodeURIComponent(targetUid)}`,
+  );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Could not load ${relation}.`);
+  if (!response.ok)
+    throw new Error(data.error || `Could not load ${relation}.`);
   const items = Array.isArray(data.items) ? data.items : [];
   return {
-    count: Number.isFinite(Number(data.count)) ? Number(data.count) : items.length,
+    count: Number.isFinite(Number(data.count))
+      ? Number(data.count)
+      : items.length,
     items,
   };
 }
 
 async function refreshStats(root = document.getElementById("root")) {
   if (!root) return;
-  const followersButton = root.querySelector('.profile-direct-stat[data-relation="followers"]');
-  const followingButton = root.querySelector('.profile-direct-stat[data-relation="following"]');
+  const followersButton = root.querySelector(
+    '.profile-direct-stat[data-relation="followers"]',
+  );
+  const followingButton = root.querySelector(
+    '.profile-direct-stat[data-relation="following"]',
+  );
   if (!followersButton && !followingButton) return;
   const targetUid = getTargetUid();
   if (!targetUid || root.dataset.profileRelationsV7Uid === targetUid) return;
   root.dataset.profileRelationsV7Uid = targetUid;
   try {
-    const [followers, following] = await Promise.all([fetchRelation(targetUid, "followers"), fetchRelation(targetUid, "following")]);
-    const followersCount = followersButton?.querySelector("[data-followers-count]");
-    const followingCount = followingButton?.querySelector("[data-following-count]");
+    const [followers, following] = await Promise.all([
+      fetchRelation(targetUid, "followers"),
+      fetchRelation(targetUid, "following"),
+    ]);
+    const followersCount = followersButton?.querySelector(
+      "[data-followers-count]",
+    );
+    const followingCount = followingButton?.querySelector(
+      "[data-following-count]",
+    );
     if (followersCount) followersCount.textContent = String(followers.count);
     if (followingCount) followingCount.textContent = String(following.count);
     followersButton?.setAttribute("aria-label", `${followers.count} Followers`);
@@ -91,7 +113,9 @@ async function openRelation(targetUid, relation) {
   modal.className = "indo-rel-v7";
   modal.innerHTML = `<section class="indo-rel-v7-card"><header class="indo-rel-v7-head"><strong>${relation === "followers" ? "Followers" : "Following"}</strong><button class="indo-rel-v7-close" type="button" aria-label="Close">×</button></header><div class="indo-rel-v7-list"><div class="indo-rel-v7-empty">Loading...</div></div></section>`;
   document.body.appendChild(modal);
-  modal.querySelector(".indo-rel-v7-close")?.addEventListener("click", closeList);
+  modal
+    .querySelector(".indo-rel-v7-close")
+    ?.addEventListener("click", closeList);
   modal.addEventListener("click", (event) => {
     if (event.target === modal) closeList();
   });
@@ -105,9 +129,16 @@ async function openRelation(targetUid, relation) {
     list.innerHTML = result.items
       .map((item) => {
         const uid = String(item.uid || "").trim();
-        const userId = String(item.userId || item.username || "").replace(/^@/, "");
+        const userId = String(item.userId || item.username || "").replace(
+          /^@/,
+          "",
+        );
         const name = String(item.name || "Indo User");
-        const initial = (name.trim().charAt(0) || userId.charAt(0) || "U").toUpperCase();
+        const initial = (
+          name.trim().charAt(0) ||
+          userId.charAt(0) ||
+          "U"
+        ).toUpperCase();
         return `<button class="indo-rel-v7-row" type="button" data-rel-uid="${esc(uid)}" data-rel-user="${esc(userId)}"><div class="indo-rel-v7-avatar">${esc(initial)}</div><div><div class="indo-rel-v7-name">${esc(name)}</div><div class="indo-rel-v7-id">@${esc(userId || "user")}</div></div></button>`;
       })
       .join("");
@@ -133,7 +164,10 @@ function install() {
   document.addEventListener(
     "click",
     (event) => {
-      const target = event.target instanceof Element ? event.target.closest(".profile-direct-stat[data-relation]") : null;
+      const target =
+        event.target instanceof Element
+          ? event.target.closest(".profile-direct-stat[data-relation]")
+          : null;
       if (!target) return;
       const relation = target.dataset.relation;
       if (relation !== "followers" && relation !== "following") return;

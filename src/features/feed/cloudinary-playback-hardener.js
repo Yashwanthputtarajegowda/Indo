@@ -3,7 +3,8 @@ const installed = Symbol.for("indo.cloudinaryPlaybackHardener");
 function variants(raw) {
   const url = String(raw || "").trim();
   if (!url) return [];
-  if (!url.includes("res.cloudinary.com") || !url.includes("/video/upload/")) return [url];
+  if (!url.includes("res.cloudinary.com") || !url.includes("/video/upload/"))
+    return [url];
   const marker = "/video/upload/";
   const i = url.indexOf(marker);
   if (i < 0) return [url];
@@ -12,7 +13,14 @@ function variants(raw) {
   const qi = rest.indexOf("?");
   const path = qi >= 0 ? rest.slice(0, qi) : rest;
   const query = qi >= 0 ? rest.slice(qi) : "";
-  return [...new Set([`${prefix}f_mp4,vc_h264,ac_aac,q_auto/${path}${query}`, `${prefix}f_mp4,vc_h264,ac_aac/${path}${query}`, `${prefix}f_mp4,vc_h264/${path}${query}`, url])];
+  return [
+    ...new Set([
+      `${prefix}f_mp4,vc_h264,ac_aac,q_auto/${path}${query}`,
+      `${prefix}f_mp4,vc_h264,ac_aac/${path}${query}`,
+      `${prefix}f_mp4,vc_h264/${path}${query}`,
+      url,
+    ]),
+  ];
 }
 
 function getCandidates(video) {
@@ -23,7 +31,13 @@ function getCandidates(video) {
     stored = [];
   }
   if (stored.length) return stored;
-  const original = video.dataset.originalVideoSrc || video.dataset.videoSrc || video.currentSrc || video.src || video.querySelector("source")?.src || "";
+  const original =
+    video.dataset.originalVideoSrc ||
+    video.dataset.videoSrc ||
+    video.currentSrc ||
+    video.src ||
+    video.querySelector("source")?.src ||
+    "";
   const list = variants(original);
   video.dataset.indoCloudinaryCandidates = JSON.stringify(list);
   return list;
@@ -67,13 +81,24 @@ function next(video, autoplay = true) {
 function isCloudinaryVideo(target) {
   const video = target instanceof HTMLVideoElement ? target : null;
   if (!video) return null;
-  const raw = video.dataset.originalVideoSrc || video.dataset.videoSrc || video.currentSrc || video.src || "";
+  const raw =
+    video.dataset.originalVideoSrc ||
+    video.dataset.videoSrc ||
+    video.currentSrc ||
+    video.src ||
+    "";
   return raw.includes("res.cloudinary.com/") ? video : null;
 }
 
 function prepareVideo(video) {
   if (!(video instanceof HTMLVideoElement)) return;
-  const raw = video.dataset.originalVideoSrc || video.dataset.videoSrc || video.currentSrc || video.src || video.querySelector("source")?.src || "";
+  const raw =
+    video.dataset.originalVideoSrc ||
+    video.dataset.videoSrc ||
+    video.currentSrc ||
+    video.src ||
+    video.querySelector("source")?.src ||
+    "";
   if (!raw.includes("res.cloudinary.com/")) return;
   if (!video.dataset.indoCloudinaryCandidates) {
     video.dataset.indoCloudinaryCandidates = JSON.stringify(variants(raw));
@@ -126,7 +151,8 @@ function install() {
       video.dataset.indoCloudinaryStallTimer = "1";
       window.setTimeout(() => {
         video.dataset.indoCloudinaryStallTimer = "";
-        if (video.isConnected && video.readyState < 2 && !video.paused) next(video, true);
+        if (video.isConnected && video.readyState < 2 && !video.paused)
+          next(video, true);
       }, 2200);
     },
     true,
@@ -155,8 +181,12 @@ function install() {
 
   const unlockAudio = () => {
     window.__indoAudioUnlocked = true;
-    const videos = Array.from(document.querySelectorAll("#root video.post-video"));
-    const current = videos.find((video) => !video.paused) || videos.find((video) => video.readyState >= 2);
+    const videos = Array.from(
+      document.querySelectorAll("#root video.post-video"),
+    );
+    const current =
+      videos.find((video) => !video.paused) ||
+      videos.find((video) => video.readyState >= 2);
     if (!current) return;
     videos.forEach((video) => {
       if (video !== current) video.pause();
@@ -191,7 +221,9 @@ function install() {
     }
   }
 
-  document.querySelectorAll("#root video.post-video, #root video[data-video-src]").forEach(prepareVideo);
+  document
+    .querySelectorAll("#root video.post-video, #root video[data-video-src]")
+    .forEach(prepareVideo);
   const root = document.getElementById("root");
   if (!root) return;
   const observer = new MutationObserver((records) => {
