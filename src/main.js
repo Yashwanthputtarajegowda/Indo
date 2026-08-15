@@ -2,7 +2,6 @@ import {
   bindAuthSwitches,
   bindLoginForm,
   bindSignupForm,
-  hasLocalSession,
 } from "./features/auth/auth-controller.js";
 import {
   enhanceProfileIdentity,
@@ -96,22 +95,16 @@ async function start() {
   started = true;
   try {
     const { auth, authPersistenceReady } = await import("./features/auth/firebase-client.js?v=20260815-auth-v6");
-    const { signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js");
+    const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js");
     await authPersistenceReady;
     let settled = false;
     const bootWithUser = async (user) => {
       if (settled) return;
       settled = true;
       const { state } = await import("./state.js");
-      if (user && !hasLocalSession()) {
-        try { await signOut(auth); } catch {}
-        state.authenticated = false;
-        state.screen = "auth-login";
-      } else {
-        state.authenticated = Boolean(user);
-        if (user && (state.screen === "auth-login" || state.screen === "auth-signup")) state.screen = "home";
-        if (!user && !String(state.screen || "").startsWith("auth-")) state.screen = "auth-login";
-      }
+      state.authenticated = Boolean(user);
+      if (user && (state.screen === "auth-login" || state.screen === "auth-signup")) state.screen = "home";
+      if (!user && !String(state.screen || "").startsWith("auth-")) state.screen = "auth-login";
       try {
         await Promise.race([render(), new Promise((_, reject) => setTimeout(() => reject(new Error("Startup timed out.")), 10000))]);
       } catch (error) {
