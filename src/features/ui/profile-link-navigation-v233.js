@@ -1,6 +1,5 @@
 import { state } from '../../state.js';
 
-const VERSION = '233';
 const STYLE_ID = 'indo-profile-link-navigation-v233';
 let installed = false;
 let busy = false;
@@ -23,23 +22,7 @@ function findIdentityTarget(element) {
   const direct = element.closest('[data-user-id],[data-profile-user-id],[data-username],[data-userid]');
   if (direct) return { element: direct, userId: extractFromElement(direct) };
 
-  const selectors = [
-    '.search-user-copy',
-    '.search-user',
-    '.notice p b',
-    '.notice',
-    '.indo-comment-name',
-    '.profile-relation-row',
-    '.neon-edge-creator',
-    '.neon-edge-name',
-    '.indo-story-card-body strong',
-    '.indo-story-card',
-    '.watch-creator',
-    '.creator-user',
-    '.post-creator',
-    '[class*="creator"]',
-  ];
-
+  const selectors = ['.search-user-copy','.search-user','.notice p b','.notice','.indo-comment-name','.profile-relation-row','.neon-edge-creator','.neon-edge-name','.indo-story-card-body strong','.indo-story-card','.watch-creator','.creator-user','.post-creator','[class*="creator"]'];
   for (const selector of selectors) {
     const target = element.closest(selector);
     if (!target) continue;
@@ -55,31 +38,17 @@ async function openProfile(userId) {
   busy = true;
   try {
     state.profile = { username: normalized, userId: normalized };
-    state.screen = 'profile';
     window.__indoProfileTargetUserId = normalized;
-    if (typeof window.__indoNavigate === 'function') {
-      await window.__indoNavigate('profile');
-    } else {
-      window.dispatchEvent(new CustomEvent('indo:profile-navigate', { detail: { userId: normalized } }));
-    }
-  } finally {
-    busy = false;
-  }
+    if (typeof window.__indoNavigate === 'function') await window.__indoNavigate('profile');
+    else state.screen = 'profile';
+  } finally { busy = false; }
 }
 
 function installStyles() {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = `
-    [data-user-id],[data-profile-user-id],[data-username],[data-userid],
-    .search-user-copy,.search-user,.notice p b,.notice,.indo-comment-name,
-    .profile-relation-row,.neon-edge-creator,.neon-edge-name,
-    .indo-story-card-body strong,.indo-story-card,.watch-creator,.creator-user,.post-creator{
-      cursor:pointer;
-    }
-    .profile-direct-user-link{cursor:pointer;color:inherit;text-decoration:none}
-  `;
+  style.textContent = `[data-user-id],[data-profile-user-id],[data-username],[data-userid],.search-user-copy,.search-user,.notice p b,.notice,.indo-comment-name,.profile-relation-row,.neon-edge-creator,.neon-edge-name,.indo-story-card-body strong,.indo-story-card,.watch-creator,.creator-user,.post-creator{cursor:pointer}.profile-direct-user-link{cursor:pointer;color:inherit;text-decoration:none}`;
   document.head.appendChild(style);
 }
 
