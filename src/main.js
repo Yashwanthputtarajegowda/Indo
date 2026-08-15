@@ -33,7 +33,9 @@ async function installLiveAvatars() {
 async function render() {
   installCloudinaryVideoCompatibility();
   await import("./state.js");
-  const { render } = await import("./router.js");
+  const { render } = await import(
+    "./router.js?v=20260815-nav-preload-v1"
+  );
   await render(app);
   await enhanceProfileIdentity(app);
   await installLiveAvatars();
