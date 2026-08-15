@@ -20,7 +20,19 @@ function getContext() {
 }
 
 function backToProfile() {
+  const context = getContext();
+  const returnProfile = context.returnProfile;
+
   window.__indoProfileRelationContext = null;
+
+  if (window.__indoOpenProfile && returnProfile?.userId) {
+    window.__indoOpenProfile(returnProfile).catch((error) => {
+      console.warn("Could not return to profile:", error);
+      window.__indoNavigate?.("profile");
+    });
+    return;
+  }
+
   window.__indoNavigate?.("profile");
 }
 
@@ -64,96 +76,108 @@ export async function renderProfileRelation(app) {
 
   const style = document.createElement("style");
   style.textContent = `
-    .indo-relation-page{
-      min-height:100vh;
-      background:#08080d;
-      color:#f4f4f7;
+    .indo-relation-page {
+      min-height: 100vh;
+      background: #08080d;
+      color: #f4f4f7;
     }
-    .indo-relation-card{
-      width:min(520px,100%);
-      min-height:100vh;
-      margin:auto;
-      background:#101017;
+
+    .indo-relation-card {
+      width: min(520px, 100%);
+      min-height: 100vh;
+      margin: auto;
+      background: #101017;
     }
-    .indo-relation-header{
-      position:sticky;
-      top:0;
-      z-index:2;
-      display:grid;
-      grid-template-columns:42px 1fr 42px;
-      align-items:center;
-      height:58px;
-      padding:0 12px;
-      border-bottom:1px solid #292934;
-      background:#101017;
-      box-sizing:border-box;
+
+    .indo-relation-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 42px 1fr 42px;
+      align-items: center;
+      height: 58px;
+      padding: 0 12px;
+      border-bottom: 1px solid #292934;
+      background: #101017;
+      box-sizing: border-box;
     }
-    .indo-relation-header h1{
-      margin:0;
-      text-align:center;
-      font-size:17px;
+
+    .indo-relation-header h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 17px;
     }
-    .indo-relation-header button{
-      width:36px;
-      height:36px;
-      border:0;
-      border-radius:50%;
-      background:#1b1b25;
-      color:#fff;
-      font-size:20px;
-      cursor:pointer;
+
+    .indo-relation-header button {
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 50%;
+      background: #1b1b25;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
     }
-    .indo-relation-list{
-      padding:12px 14px 80px;
-      display:grid;
-      gap:8px;
+
+    .indo-relation-list {
+      padding: 12px 14px 80px;
+      display: grid;
+      gap: 8px;
     }
-    .indo-relation-item{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      width:100%;
-      padding:10px;
-      border:1px solid #222630;
-      border-radius:12px;
-      background:#12141c;
-      color:#fff;
-      text-align:left;
-      cursor:pointer;
-      box-sizing:border-box;
+
+    .indo-relation-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #222630;
+      border-radius: 12px;
+      background: #12141c;
+      color: #fff;
+      text-align: left;
+      cursor: pointer;
+      box-sizing: border-box;
     }
-    .indo-relation-avatar{
-      width:42px;
-      height:42px;
-      display:grid;
-      place-items:center;
-      flex:0 0 42px;
-      overflow:hidden;
-      border-radius:50%;
-      background:#242938;
-      font-weight:900;
+
+    .indo-relation-avatar {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 42px;
+      overflow: hidden;
+      border-radius: 50%;
+      background: #242938;
+      font-weight: 900;
     }
-    .indo-relation-avatar img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
+
+    .indo-relation-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
-    .indo-relation-meta{
-      min-width:0;
+
+    .indo-relation-meta {
+      min-width: 0;
     }
-    .indo-relation-name{
-      font-size:13px;
-      font-weight:800;
+
+    .indo-relation-name {
+      font-size: 13px;
+      font-weight: 800;
     }
-    .indo-relation-id{
-      margin-top:3px;
-      color:#858d9f;
-      font-size:11px;
+
+    .indo-relation-id {
+      margin-top: 3px;
+      color: #858d9f;
+      font-size: 11px;
     }
-    .indo-relation-empty{
-      padding:44px 16px;
-      color:#858d9f;
-      text-align:center;
+
+    .indo-relation-empty {
+      padding: 44px 16px;
+      color: #858d9f;
+      text-align: center;
     }
   `;
   app.appendChild(style);
@@ -162,7 +186,9 @@ export async function renderProfileRelation(app) {
     .querySelector("[data-relation-back]")
     ?.addEventListener("click", backToProfile);
 
-  const list = app.querySelector("[data-relation-list]");
+  const list = app.querySelector(
+    "[data-relation-list]",
+  );
   const user = auth.currentUser;
 
   if (!user) {
@@ -229,6 +255,7 @@ export async function renderProfileRelation(app) {
         const initial = esc(
           name.charAt(0).toUpperCase(),
         );
+
         return `
           <button
             type="button"
@@ -265,7 +292,10 @@ export async function renderProfileRelation(app) {
   } catch (error) {
     list.innerHTML = `
       <div class="indo-relation-empty">
-        ${esc(error?.message || `Could not load ${title.toLowerCase()}.`)}
+        ${esc(
+          error?.message ||
+            `Could not load ${title.toLowerCase()}.`,
+        )}
       </div>
     `;
   }
