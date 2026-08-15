@@ -7,33 +7,9 @@ import {
 } from "./firebase-client.js";
 import { submitSignup } from "./signup-form.js";
 
-const ROUTER_VERSION = "20260815-211";
-const LOCAL_SESSION_KEY = "indo:auth-session-v1";
+const ROUTER_VERSION = "20260815-212";
 function getRoot() {
   return document.getElementById("root");
-}
-function saveLocalSession(user) {
-  try {
-    localStorage.setItem(
-      LOCAL_SESSION_KEY,
-      JSON.stringify({
-        uid: user?.uid || "",
-        email: user?.email || "",
-        savedAt: Date.now(),
-      }),
-    );
-  } catch {}
-}
-export function hasLocalSession() {
-  try {
-    return Boolean(
-      JSON.parse(
-        localStorage.getItem(LOCAL_SESSION_KEY) || "null",
-      )?.uid,
-    );
-  } catch {
-    return false;
-  }
 }
 
 async function goTo(screen) {
@@ -105,8 +81,7 @@ function bindLoginForm() {
         email,
         password,
       );
-      saveLocalSession(credential.user);
-      state.authenticated = true;
+      state.authenticated = Boolean(credential?.user);
       state.profile = null;
       await goTo("home");
     } catch (error) {
@@ -165,8 +140,7 @@ function bindSignupForm() {
     try {
       await authPersistenceReady;
       const user = await submitSignup(form);
-      saveLocalSession(user || auth.currentUser);
-      state.authenticated = true;
+      state.authenticated = Boolean(user || auth.currentUser);
       state.profile = null;
       await goTo("home");
     } catch (error) {
