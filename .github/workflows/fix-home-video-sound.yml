@@ -9,29 +9,51 @@ permissions:
 
 jobs:
   fix:
-    if: "!contains(github.event.head_commit.message, '[video-ui-patched]')"
+    if: "!contains(github.event.head_commit.message, '[autoplay-sound-fixed]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply home video UI patch
+      - name: Patch home feed video autoplay
         run: |
-          if [ ! -f scripts/indo-video-patch.py ]; then
-            echo 'Patch script not present; nothing to do.'
-            exit 0
-          fi
+          python - <<'PY'
+          from pathlib import Path
 
-          python scripts/indo-video-patch.py
-          git rm scripts/indo-video-patch.py
+          p = Path('src/features/feed/home-feed.js')
+          s = p.read_text()
+          s = s.replace('`<video class="post-video" autoplay muted playsinline', '`<video class="post-video" autoplay playsinline')
+          s = s.replace(
+              "    video.muted = true;\n    video.setAttribute('muted', '');\n    video.setAttribute('autoplay', '');",
+              "    video.muted = false;\n    video.removeAttribute('muted');\n    video.setAttribute('autoplay', '');"
+          )
+          s = s.replace(
+              "    const autoplay = () => video.play().catch(() => {});",
+              "    const autoplayWithSound = () => {\n      video.muted = false;\n      video.removeAttribute('muted');\n      video.play().catch(() => {});\n    };"
+          )
+          s = s.replace(
+              "video.addEventListener('canplay', autoplay, { once: true });",
+              "video.addEventListener('canplay', autoplayWithSound, { once: true });"
+          )
+          s = s.replace(
+              'if (entry.isIntersecting && entry.intersectionRatio >= 0.5) autoplay();',
+              'if (entry.isIntersecting && entry.intersectionRatio >= 0.5) autoplayWithSound();'
+          )
+          s = s.replace(
+              '      autoplay();\n    }\n\n    video.addEventListener',
+              '      autoplayWithSound();\n    }\n\n    video.addEventListener'
+          )
+          p.write_text(s)
+          PY
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
           git add src/features/feed/home-feed.js .github/workflows/fix-home-video-sound.yml
 
           if git diff --cached --quiet; then
-            echo 'No UI changes were needed.'
+            echo 'No autoplay patch changes needed; workflow completed successfully.'
             exit 0
           fi
 
-          git commit -m 'feat: refresh futuristic home video section [video-ui-patched]'
+          git commit -m 'fix: autoplay home videos with sound [autoplay-sound-fixed]'
           git push
