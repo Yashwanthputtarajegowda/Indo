@@ -1,5 +1,5 @@
 import { bindAuthSwitches, bindLoginForm, bindSignupForm } from './features/auth/auth-controller.js';
-import './features/profile/profile-avatar-live.js';
+import './features/profile/profile-avatar-live.js?v=20260815-avatar-v3';
 
 const app=document.getElementById('root');
 let busy=false;
