@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { renderLogin, renderSignup } from './screens/auth.js?v=235';
 import './features/ui/feed-follow-button.js';
-import { installProfileLinkNavigation } from './features/ui/profile-link-navigation-v233.js';
+import { installProfileLinkNavigation } from './features/ui/profile-link-navigation-v235.js';
 
 const VERSION = '235';
 const NAV_STYLE_ID = 'indo-global-nav-v235';
