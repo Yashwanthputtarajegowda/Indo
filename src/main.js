@@ -5,13 +5,18 @@ import {
   hasLocalSession,
 } from "./features/auth/auth-controller.js";
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
+import "./features/feed/report-handler.js";
 import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v4";
+
 const app = document.getElementById("root");
 let busy = false;
 let started = false;
+
 async function installLiveAvatars() {
   try {
-    await import("./features/profile/profile-avatar-live.js?v=20260815-avatar-v6");
+    await import(
+      "./features/profile/profile-avatar-live.js?v=20260815-avatar-v6"
+    );
   } catch (error) {
     console.warn(
       "Live profile avatars unavailable:",
@@ -19,6 +24,7 @@ async function installLiveAvatars() {
     );
   }
 }
+
 async function render() {
   installCloudinaryVideoCompatibility();
   await import("./state.js");
@@ -29,12 +35,18 @@ async function render() {
   bindLoginForm();
   bindSignupForm();
 }
+
 async function navigate(screen) {
   if (busy) return;
   busy = true;
+
   try {
     const { state } = await import("./state.js");
-    if (screen === "profile") state.profile = null;
+
+    if (screen === "profile") {
+      state.profile = null;
+    }
+
     state.screen = String(screen || "home");
     await render();
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -45,8 +57,10 @@ async function navigate(screen) {
     busy = false;
   }
 }
+
 if (!window.__indoUniversalNavigation) {
   window.__indoUniversalNavigation = true;
+
   document.addEventListener(
     "click",
     (event) => {
@@ -55,11 +69,16 @@ if (!window.__indoUniversalNavigation) {
           ? event.target
           : null;
       const button = el?.closest("[data-screen]");
+
       if (!button) return;
+
       const screen = button.getAttribute("data-screen");
+
       if (!screen) return;
+
       event.preventDefault();
       event.stopImmediatePropagation();
+
       if (
         screen === "profile" &&
         button.hasAttribute("data-own-profile")
@@ -67,56 +86,93 @@ if (!window.__indoUniversalNavigation) {
         navigate("profile").catch(console.error);
         return;
       }
+
       navigate(screen).catch(console.error);
     },
     true,
   );
 }
+
 function showBootFailure(
   message = "Could not start Indo. Please reload the app.",
 ) {
   if (!app) return;
-  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>${message}</p><button type="button" id="indo-retry-boot" style="margin-top:14px;padding:10px 16px;border-radius:10px;background:#743cff;color:#fff;font-weight:800;cursor:pointer">Retry</button></main>`;
+
+  app.innerHTML = `
+    <main class="splash-screen splash-error">
+      <div class="splash-name">Indo</div>
+      <p>${message}</p>
+      <button
+        type="button"
+        id="indo-retry-boot"
+        style="margin-top:14px;padding:10px 16px;border-radius:10px;background:#743cff;color:#fff;font-weight:800;cursor:pointer"
+      >
+        Retry
+      </button>
+    </main>
+  `;
+
   document
     .getElementById("indo-retry-boot")
     ?.addEventListener("click", () =>
       window.location.reload(),
     );
 }
+
 async function start() {
   if (started) return;
   started = true;
+
   try {
-    const { auth, authPersistenceReady } =
-      await import("./features/auth/firebase-client.js?v=20260815-auth-v4");
-    const { signOut, onAuthStateChanged } =
-      await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js");
+    const {
+      auth,
+      authPersistenceReady,
+    } = await import(
+      "./features/auth/firebase-client.js?v=20260815-auth-v4"
+    );
+    const {
+      signOut,
+      onAuthStateChanged,
+    } = await import(
+      "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js"
+    );
+
     await authPersistenceReady;
+
     let settled = false;
+
     const bootWithUser = async (user) => {
       if (settled) return;
       settled = true;
+
       const { state } = await import("./state.js");
+
       if (user && !hasLocalSession()) {
         try {
           await signOut(auth);
         } catch {}
+
         state.authenticated = false;
         state.screen = "auth-login";
       } else {
         state.authenticated = Boolean(user);
+
         if (
           user &&
           (state.screen === "auth-login" ||
             state.screen === "auth-signup")
-        )
+        ) {
           state.screen = "home";
+        }
+
         if (
           !user &&
           !String(state.screen || "").startsWith("auth-")
-        )
+        ) {
           state.screen = "auth-login";
+        }
       }
+
       try {
         await Promise.race([
           render(),
@@ -132,7 +188,9 @@ async function start() {
         showBootFailure();
       }
     };
+
     let unsubscribe;
+
     const firstAuth = new Promise((resolve) => {
       unsubscribe = onAuthStateChanged(
         auth,
@@ -140,6 +198,7 @@ async function start() {
         () => resolve(auth.currentUser || null),
       );
     });
+
     const user = await Promise.race([
       firstAuth,
       new Promise((resolve) =>
@@ -149,14 +208,17 @@ async function start() {
         ),
       ),
     ]);
+
     try {
       unsubscribe?.();
     } catch {}
+
     await bootWithUser(user || null);
   } catch (error) {
     console.error("Indo boot failed:", error);
     showBootFailure("Indo could not start.");
   }
 }
+
 window.__indoNavigate = navigate;
 start();
