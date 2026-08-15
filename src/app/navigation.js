@@ -17,7 +17,12 @@ export function renderEditProfileScreen(app) {
 export function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   window.addEventListener("load", () => {
-    const serviceWorkerUrl = new URL("../../sw.js", import.meta.url);
-    navigator.serviceWorker.register(serviceWorkerUrl).catch(() => {});
+    const serviceWorkerUrl = new URL(
+      "../../sw.js",
+      import.meta.url,
+    );
+    navigator.serviceWorker
+      .register(serviceWorkerUrl)
+      .catch(() => {});
   });
 }

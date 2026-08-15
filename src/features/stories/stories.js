@@ -17,18 +17,31 @@ function normalizeStory(story, currentUid = "") {
         "",
     ),
     secureUrl:
-      story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "",
+      story.secureUrl ||
+      story.videoUrl ||
+      story.url ||
+      story.mediaUrl ||
+      "",
   };
 }
 
 function readLocalStory(currentUid) {
   try {
-    const cached = JSON.parse(localStorage.getItem(LAST_STORY_KEY) || "null");
+    const cached = JSON.parse(
+      localStorage.getItem(LAST_STORY_KEY) || "null",
+    );
     const story = normalizeStory(cached, currentUid);
-    if (!story || story.ownerUid !== currentUid || !story.secureUrl)
+    if (
+      !story ||
+      story.ownerUid !== currentUid ||
+      !story.secureUrl
+    )
       return null;
     const createdAt = Number(story.createdAt || 0);
-    if (createdAt && Date.now() - createdAt > STORY_MAX_AGE_MS) {
+    if (
+      createdAt &&
+      Date.now() - createdAt > STORY_MAX_AGE_MS
+    ) {
       localStorage.removeItem(LAST_STORY_KEY);
       return null;
     }
@@ -49,7 +62,10 @@ export async function loadStories() {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "Could not load stories.");
+    if (!response.ok)
+      throw new Error(
+        data.error || "Could not load stories.",
+      );
 
     const stories = Array.isArray(data.stories)
       ? data.stories
@@ -63,7 +79,8 @@ export async function loadStories() {
       !stories.some(
         (story) =>
           String(story.ownerUid) === user.uid &&
-          String(story.id || "") === String(localStory.id || ""),
+          String(story.id || "") ===
+            String(localStory.id || ""),
       )
     ) {
       stories.unshift(localStory);
@@ -83,21 +100,33 @@ export function renderStoriesRow(stories) {
   const unique = [];
   const seen = new Set();
   for (const story of active) {
-    const owner = String(story.ownerUid || story.uid || story.userId || "");
+    const owner = String(
+      story.ownerUid || story.uid || story.userId || "",
+    );
     if (!owner || seen.has(owner)) continue;
     seen.add(owner);
     unique.push(story);
   }
   return unique
     .map((story) => {
-      const name = String(story.name || story.username || "Indo User");
+      const name = String(
+        story.name || story.username || "Indo User",
+      );
       const username = String(
         story.username || story.name || "Indo User",
       ).replace(/^@/, "");
       const initial =
-        name.replace(/^@/, "").trim().charAt(0).toUpperCase() || "I";
+        name
+          .replace(/^@/, "")
+          .trim()
+          .charAt(0)
+          .toUpperCase() || "I";
       const storyUrl =
-        story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "";
+        story.secureUrl ||
+        story.videoUrl ||
+        story.url ||
+        story.mediaUrl ||
+        "";
       return `<button class="story" type="button" data-story-url="${escapeHtml(storyUrl)}" data-story-name="${escapeHtml(name)}"><div class="avatar gradient">${escapeHtml(initial)}</div><span>@${escapeHtml(username)}</span></button>`;
     })
     .join("");
@@ -118,21 +147,26 @@ function escapeHtml(value = "") {
 }
 
 export function bindStoryButtons(root) {
-  root.querySelectorAll("[data-story-url]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const url = button.dataset.storyUrl;
-      const name = button.dataset.storyName || "Indo User";
-      if (!url) return;
-      const overlay = document.createElement("div");
-      overlay.className = "story-viewer";
-      overlay.innerHTML = `<button type="button" class="story-viewer-close" aria-label="Close">×</button><div class="story-viewer-card"><b>${escapeHtml(name)}</b><video src="${escapeHtml(url)}" controls autoplay playsinline></video></div>`;
-      overlay
-        .querySelector(".story-viewer-close")
-        .addEventListener("click", () => overlay.remove());
-      overlay.addEventListener("click", (event) => {
-        if (event.target === overlay) overlay.remove();
+  root
+    .querySelectorAll("[data-story-url]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const url = button.dataset.storyUrl;
+        const name =
+          button.dataset.storyName || "Indo User";
+        if (!url) return;
+        const overlay = document.createElement("div");
+        overlay.className = "story-viewer";
+        overlay.innerHTML = `<button type="button" class="story-viewer-close" aria-label="Close">×</button><div class="story-viewer-card"><b>${escapeHtml(name)}</b><video src="${escapeHtml(url)}" controls autoplay playsinline></video></div>`;
+        overlay
+          .querySelector(".story-viewer-close")
+          .addEventListener("click", () =>
+            overlay.remove(),
+          );
+        overlay.addEventListener("click", (event) => {
+          if (event.target === overlay) overlay.remove();
+        });
+        document.body.appendChild(overlay);
       });
-      document.body.appendChild(overlay);
     });
-  });
 }

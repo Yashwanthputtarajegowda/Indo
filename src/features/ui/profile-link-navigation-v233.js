@@ -29,7 +29,11 @@ function findIdentityTarget(element) {
   const direct = element.closest(
     "[data-user-id],[data-profile-user-id],[data-username],[data-userid]",
   );
-  if (direct) return { element: direct, userId: extractFromElement(direct) };
+  if (direct)
+    return {
+      element: direct,
+      userId: extractFromElement(direct),
+    };
 
   const selectors = [
     ".search-user-copy",
@@ -61,7 +65,10 @@ async function openProfile(userId) {
   if (!normalized || busy) return;
   busy = true;
   try {
-    state.profile = { username: normalized, userId: normalized };
+    state.profile = {
+      username: normalized,
+      userId: normalized,
+    };
     window.__indoProfileTargetUserId = normalized;
     if (typeof window.__indoNavigate === "function")
       await window.__indoNavigate("profile");
@@ -86,7 +93,10 @@ export function installProfileLinkNavigation() {
   document.addEventListener(
     "click",
     (event) => {
-      const element = event.target instanceof Element ? event.target : null;
+      const element =
+        event.target instanceof Element
+          ? event.target
+          : null;
       if (!element) return;
       if (
         element.closest(
@@ -108,7 +118,11 @@ export function installProfileLinkNavigation() {
 
 export function bindProfileIdentity(container = document) {
   installProfileLinkNavigation();
-  if (!(container instanceof Element || container instanceof Document)) return;
+  if (!(
+    container instanceof Element ||
+    container instanceof Document
+  ))
+    return;
   container
     .querySelectorAll(
       "[data-profile-user-id],[data-user-id],[data-username],[data-userid]",

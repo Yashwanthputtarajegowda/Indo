@@ -15,18 +15,25 @@ async function request(path, options = {}) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(data.error || "Could not update follow status.");
+    throw new Error(
+      data.error || "Could not update follow status.",
+    );
   return data;
 }
 
 export async function loadFollowStatus(targetUid) {
-  return request(`/api/social/follow-status/${encodeURIComponent(targetUid)}`);
+  return request(
+    `/api/social/follow-status/${encodeURIComponent(targetUid)}`,
+  );
 }
 
 export async function toggleFollow(targetUid, follow) {
   return request("/api/social/follow", {
     method: "POST",
-    body: JSON.stringify({ targetUid, follow: Boolean(follow) }),
+    body: JSON.stringify({
+      targetUid,
+      follow: Boolean(follow),
+    }),
   });
 }
 
@@ -34,7 +41,10 @@ export async function loadFollowRequests() {
   return request("/api/social/follow-requests");
 }
 
-export async function respondToFollowRequest(requesterUid, accept) {
+export async function respondToFollowRequest(
+  requesterUid,
+  accept,
+) {
   return request(
     `/api/social/follow-requests/${encodeURIComponent(requesterUid)}`,
     {

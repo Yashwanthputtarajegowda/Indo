@@ -41,7 +41,11 @@ const STOP_WORDS = new Set([
   "very",
 ]);
 function currentUserId() {
-  return String(window.__indoRecommendationUid || "guest").trim() || "guest";
+  return (
+    String(
+      window.__indoRecommendationUid || "guest",
+    ).trim() || "guest"
+  );
 }
 function storageKey() {
   return `${STORAGE_PREFIX}${currentUserId()}`;
@@ -53,19 +57,38 @@ function tokenise(value = "") {
         .toLowerCase()
         .replace(/https?:\/\/\S+/g, " ")
         .replace(/[@#]/g, " ")
-        .split(/[^a-z0-9\u0C80-\u0CFF\u0900-\u097F\u0B80-\u0BFF\u0C00-\u0C7F]+/)
-        .filter((token) => token.length >= 2 && !STOP_WORDS.has(token)),
+        .split(
+          /[^a-z0-9\u0C80-\u0CFF\u0900-\u097F\u0B80-\u0BFF\u0C00-\u0C7F]+/,
+        )
+        .filter(
+          (token) =>
+            token.length >= 2 && !STOP_WORDS.has(token),
+        ),
     ),
   ];
 }
 function loadProfile() {
   try {
-    const raw = JSON.parse(localStorage.getItem(storageKey()) || "{}");
+    const raw = JSON.parse(
+      localStorage.getItem(storageKey()) || "{}",
+    );
     return raw && typeof raw === "object"
       ? raw
-      : { tokens: {}, creators: {}, searches: {}, media: {}, language: {} };
+      : {
+          tokens: {},
+          creators: {},
+          searches: {},
+          media: {},
+          language: {},
+        };
   } catch {
-    return { tokens: {}, creators: {}, searches: {}, media: {}, language: {} };
+    return {
+      tokens: {},
+      creators: {},
+      searches: {},
+      media: {},
+      language: {},
+    };
   }
 }
 function saveProfile(profile) {
@@ -79,25 +102,44 @@ function saveProfile(profile) {
     };
     clean.tokens = Object.fromEntries(
       Object.entries(clean.tokens)
-        .sort((a, b) => Number(b[1]?.weight || 0) - Number(a[1]?.weight || 0))
+        .sort(
+          (a, b) =>
+            Number(b[1]?.weight || 0) -
+            Number(a[1]?.weight || 0),
+        )
         .slice(0, 260),
     );
     clean.media = Object.fromEntries(
       Object.entries(clean.media)
-        .sort((a, b) => Number(b[1]?.last || 0) - Number(a[1]?.last || 0))
+        .sort(
+          (a, b) =>
+            Number(b[1]?.last || 0) -
+            Number(a[1]?.last || 0),
+        )
         .slice(0, 500),
     );
-    localStorage.setItem(storageKey(), JSON.stringify(clean));
+    localStorage.setItem(
+      storageKey(),
+      JSON.stringify(clean),
+    );
   } catch {}
 }
 function decay(value, last) {
-  const age = Math.max(0, Date.now() - Number(last || Date.now()));
-  return Number(value || 0) * Math.pow(0.5, age / HALF_LIFE_MS);
+  const age = Math.max(
+    0,
+    Date.now() - Number(last || Date.now()),
+  );
+  return (
+    Number(value || 0) * Math.pow(0.5, age / HALF_LIFE_MS)
+  );
 }
 function addWeightedTokens(profile, tokens, weight) {
   const now = Date.now();
   for (const token of tokens) {
-    const item = profile.tokens[token] || { weight: 0, last: now };
+    const item = profile.tokens[token] || {
+      weight: 0,
+      last: now,
+    };
     item.weight = decay(item.weight, item.last) + weight;
     item.last = now;
     profile.tokens[token] = item;
@@ -114,28 +156,42 @@ function mediaText(media = {}) {
     media.category,
     media.tags,
   ]
-    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .flatMap((value) =>
+      Array.isArray(value) ? value : [value],
+    )
     .filter(Boolean)
     .join(" ");
 }
-export function recordInterestText(text, weight = 1, meta = {}) {
+export function recordInterestText(
+  text,
+  weight = 1,
+  meta = {},
+) {
   const profile = loadProfile();
   addWeightedTokens(profile, tokenise(text), weight);
   if (meta.creator) {
-    const creator = String(meta.creator).replace(/^@/, "").toLowerCase();
+    const creator = String(meta.creator)
+      .replace(/^@/, "")
+      .toLowerCase();
     if (creator)
       profile.creators[creator] =
-        decay(profile.creators[creator], Date.now()) + weight;
+        decay(profile.creators[creator], Date.now()) +
+        weight;
   }
   if (meta.mediaId)
     profile.media[String(meta.mediaId)] = {
       last: Date.now(),
       weight:
-        (Number(profile.media[String(meta.mediaId)]?.weight) || 0) + weight,
+        (Number(
+          profile.media[String(meta.mediaId)]?.weight,
+        ) || 0) + weight,
     };
   saveProfile(profile);
 }
-export function recordMediaInteraction(media, kind = "view") {
+export function recordMediaInteraction(
+  media,
+  kind = "view",
+) {
   const weight =
     {
       view: 1,
@@ -150,7 +206,8 @@ export function recordMediaInteraction(media, kind = "view") {
     }[kind] ?? 1;
   recordInterestText(mediaText(media), weight, {
     mediaId: media?.id,
-    creator: media?.creator || media?.userId || media?.username,
+    creator:
+      media?.creator || media?.userId || media?.username,
   });
 }
 export function recordSearchQuery(query) {
@@ -159,7 +216,8 @@ export function recordSearchQuery(query) {
   const profile = loadProfile();
   addWeightedTokens(profile, tokens, 4);
   for (const token of tokens)
-    profile.searches[token] = (Number(profile.searches[token]) || 0) + 1;
+    profile.searches[token] =
+      (Number(profile.searches[token]) || 0) + 1;
   saveProfile(profile);
 }
 export function setPreferenceLanguage(language) {
@@ -170,7 +228,10 @@ export function setPreferenceLanguage(language) {
   if (!lang) return;
   profile.language[lang] = {
     weight:
-      decay(profile.language[lang]?.weight, profile.language[lang]?.last) + 3,
+      decay(
+        profile.language[lang]?.weight,
+        profile.language[lang]?.last,
+      ) + 3,
     last: Date.now(),
   };
   saveProfile(profile);
@@ -178,7 +239,10 @@ export function setPreferenceLanguage(language) {
 export function getLanguagePreference() {
   const profile = loadProfile();
   const list = Object.entries(profile.language || {})
-    .map(([lang, item]) => [lang, decay(item?.weight, item?.last)])
+    .map(([lang, item]) => [
+      lang,
+      decay(item?.weight, item?.last),
+    ])
     .sort((a, b) => b[1] - a[1]);
   return (
     list[0]?.[0] ||
@@ -190,15 +254,24 @@ export function getLanguagePreference() {
 function languageScore(media, language) {
   const text = mediaText(media);
   const lang = String(language || "").toLowerCase();
-  if (lang === "kn") return /[\u0C80-\u0CFF]/.test(text) ? 1 : 0;
-  if (lang === "hi") return /[\u0900-\u097F]/.test(text) ? 1 : 0;
-  if (lang === "ta") return /[\u0B80-\u0BFF]/.test(text) ? 1 : 0;
-  if (lang === "te") return /[\u0C00-\u0C7F]/.test(text) ? 1 : 0;
-  if (lang === "ml") return /[\u0D00-\u0D7F]/.test(text) ? 1 : 0;
-  if (lang === "bn") return /[\u0980-\u09FF]/.test(text) ? 1 : 0;
-  if (lang === "gu") return /[\u0A80-\u0AFF]/.test(text) ? 1 : 0;
-  if (lang === "pa") return /[\u0A00-\u0A7F]/.test(text) ? 1 : 0;
-  if (lang === "mr") return /[\u0900-\u097F]/.test(text) ? 1 : 0.15;
+  if (lang === "kn")
+    return /[\u0C80-\u0CFF]/.test(text) ? 1 : 0;
+  if (lang === "hi")
+    return /[\u0900-\u097F]/.test(text) ? 1 : 0;
+  if (lang === "ta")
+    return /[\u0B80-\u0BFF]/.test(text) ? 1 : 0;
+  if (lang === "te")
+    return /[\u0C00-\u0C7F]/.test(text) ? 1 : 0;
+  if (lang === "ml")
+    return /[\u0D00-\u0D7F]/.test(text) ? 1 : 0;
+  if (lang === "bn")
+    return /[\u0980-\u09FF]/.test(text) ? 1 : 0;
+  if (lang === "gu")
+    return /[\u0A80-\u0AFF]/.test(text) ? 1 : 0;
+  if (lang === "pa")
+    return /[\u0A00-\u0A7F]/.test(text) ? 1 : 0;
+  if (lang === "mr")
+    return /[\u0900-\u097F]/.test(text) ? 1 : 0.15;
   if (lang === "en")
     return /\b(the|is|are|and|with|travel|food|news|music|how|why|best|life|tech)\b/i.test(
       text,
@@ -216,25 +289,35 @@ function interestScore(media, profile) {
       profile.tokens?.[token]?.weight,
       profile.tokens?.[token]?.last,
     );
-  const creator = String(media.creator || media.userId || media.username || "")
+  const creator = String(
+    media.creator || media.userId || media.username || "",
+  )
     .replace(/^@/, "")
     .toLowerCase();
   const creatorBoost = creator
-    ? Math.min(2, decay(profile.creators?.[creator], Date.now()) / 5)
+    ? Math.min(
+        2,
+        decay(profile.creators?.[creator], Date.now()) / 5,
+      )
     : 0;
   return score / Math.sqrt(tokens.length) + creatorBoost;
 }
 function engagementScore(media) {
   return (
-    Math.log1p(Math.max(0, Number(media.views || 0))) * 0.55 +
-    Math.log1p(Math.max(0, Number(media.likes || 0))) * 1.1 +
-    Math.log1p(Math.max(0, Number(media.comments || 0))) * 0.85
+    Math.log1p(Math.max(0, Number(media.views || 0))) *
+      0.55 +
+    Math.log1p(Math.max(0, Number(media.likes || 0))) *
+      1.1 +
+    Math.log1p(Math.max(0, Number(media.comments || 0))) *
+      0.85
   );
 }
 function recencyScore(createdAt) {
   return Math.max(
     0,
-    1 - Math.max(0, Date.now() - Number(createdAt || 0)) / (7 * DAY_MS),
+    1 -
+      Math.max(0, Date.now() - Number(createdAt || 0)) /
+        (7 * DAY_MS),
   );
 }
 export function rankMedia(
@@ -274,7 +357,12 @@ export function rankMedia(
 }
 function cloneInit(init) {
   return init
-    ? { ...init, headers: init.headers ? { ...init.headers } : init.headers }
+    ? {
+        ...init,
+        headers: init.headers
+          ? { ...init.headers }
+          : init.headers,
+      }
     : undefined;
 }
 export function installRecommendationFetch() {
@@ -283,7 +371,10 @@ export function installRecommendationFetch() {
   const original = window.fetch.bind(window);
   window.__indoOriginalFetch = original;
   window.fetch = async (input, init = {}) => {
-    const rawUrl = input instanceof Request ? input.url : String(input || "");
+    const rawUrl =
+      input instanceof Request
+        ? input.url
+        : String(input || "");
     if (!/\/api\/media\/videos(?:\?|$)/.test(rawUrl))
       return original(input, init);
     let parsed;
@@ -292,49 +383,76 @@ export function installRecommendationFetch() {
     } catch {
       return original(input, init);
     }
-    const type = String(parsed.searchParams.get("type") || "").toLowerCase();
+    const type = String(
+      parsed.searchParams.get("type") || "",
+    ).toLowerCase();
     const q = String(parsed.searchParams.get("q") || "");
     const limit = Math.min(
       100,
-      Math.max(1, Number(parsed.searchParams.get("limit") || 50)),
+      Math.max(
+        1,
+        Number(parsed.searchParams.get("limit") || 50),
+      ),
     );
-    const screen = String(window.__indoRecommendationScreen || "");
+    const screen = String(
+      window.__indoRecommendationScreen || "",
+    );
     if (screen === "home") {
       const videoUrl = new URL(parsed);
       videoUrl.searchParams.set("type", "video");
-      videoUrl.searchParams.set("limit", String(Math.max(limit, 50)));
+      videoUrl.searchParams.set(
+        "limit",
+        String(Math.max(limit, 50)),
+      );
       const reelUrl = new URL(parsed);
       reelUrl.searchParams.set("type", "reel");
-      reelUrl.searchParams.set("limit", String(Math.max(limit, 50)));
-      const [videoResponse, reelResponse] = await Promise.all([
-        original(videoUrl.toString(), cloneInit(init)),
-        original(reelUrl.toString(), cloneInit(init)),
-      ]);
+      reelUrl.searchParams.set(
+        "limit",
+        String(Math.max(limit, 50)),
+      );
+      const [videoResponse, reelResponse] =
+        await Promise.all([
+          original(videoUrl.toString(), cloneInit(init)),
+          original(reelUrl.toString(), cloneInit(init)),
+        ]);
       const [videoData, reelData] = await Promise.all([
         videoResponse.json().catch(() => ({})),
         reelResponse.json().catch(() => ({})),
       ]);
       const merged = [
-        ...(Array.isArray(videoData.videos) ? videoData.videos : []),
-        ...(Array.isArray(reelData.videos) ? reelData.videos : []),
+        ...(Array.isArray(videoData.videos)
+          ? videoData.videos
+          : []),
+        ...(Array.isArray(reelData.videos)
+          ? reelData.videos
+          : []),
       ];
       return new Response(
         JSON.stringify({
           ok: true,
           videos: rankMedia(merged, { limit, query: q }),
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
       );
     }
     if (type === "video" || type === "reel") {
       const response = await original(input, init);
       if (!response.ok) return response;
       const data = await response.json().catch(() => ({}));
-      const onlyVideos = Array.isArray(data.videos) ? data.videos : [];
+      const onlyVideos = Array.isArray(data.videos)
+        ? data.videos
+        : [];
       return new Response(
         JSON.stringify({
           ...data,
-          videos: rankMedia(onlyVideos, { type, limit, query: q }),
+          videos: rankMedia(onlyVideos, {
+            type,
+            limit,
+            query: q,
+          }),
         }),
         {
           status: response.status,
@@ -351,8 +469,9 @@ export function initRecommendationEngine() {
   window.__indoRecommendationInitialized = true;
   setPreferenceLanguage(
     String(
-      localStorage.getItem(`${STORAGE_PREFIX}${currentUserId()}:language`) ||
-        "",
+      localStorage.getItem(
+        `${STORAGE_PREFIX}${currentUserId()}:language`,
+      ) || "",
     ).trim() ||
       String(navigator.language || "en")
         .split("-")[0]
@@ -364,7 +483,9 @@ export function initRecommendationEngine() {
     (event) => {
       const input = event.target;
       if (!(input instanceof HTMLInputElement)) return;
-      const placeholder = String(input.placeholder || "").toLowerCase();
+      const placeholder = String(
+        input.placeholder || "",
+      ).toLowerCase();
       if (!placeholder.includes("search")) return;
       clearTimeout(input.__indoSearchTimer);
       input.__indoSearchTimer = setTimeout(
@@ -377,7 +498,10 @@ export function initRecommendationEngine() {
   document.addEventListener(
     "click",
     (event) => {
-      const element = event.target instanceof Element ? event.target : null;
+      const element =
+        event.target instanceof Element
+          ? event.target
+          : null;
       if (!element) return;
       const action = element.closest("[data-engagement]");
       if (action) {
@@ -387,7 +511,9 @@ export function initRecommendationEngine() {
         if (root)
           recordMediaInteraction(
             {
-              id: root.dataset.videoId || root.dataset.videoOpen,
+              id:
+                root.dataset.videoId ||
+                root.dataset.videoOpen,
               title: root.textContent || "",
               creator:
                 root.querySelector?.(

@@ -33,8 +33,10 @@ async function token() {
 }
 async function api(path, options = {}) {
   const h = { ...(options.headers || {}) };
-  if (options.body !== undefined) h["Content-Type"] = "application/json";
-  if (options.auth !== false) h.Authorization = `Bearer ${await token()}`;
+  if (options.body !== undefined)
+    h["Content-Type"] = "application/json";
+  if (options.auth !== false)
+    h.Authorization = `Bearer ${await token()}`;
   const r = await fetch(`${API_BASE()}${path}`, {
     ...options,
     headers: h,
@@ -56,7 +58,11 @@ function styles() {
 async function ownProfile() {
   const d = await api("/api/account/me");
   return d?.profile
-    ? { ...d.profile, stats: d.stats || {}, social: d.social || {} }
+    ? {
+        ...d.profile,
+        stats: d.stats || {},
+        social: d.social || {},
+      }
     : null;
 }
 async function profileById(id) {
@@ -64,12 +70,18 @@ async function profileById(id) {
     `/api/account/profile/${encodeURIComponent(String(id || "").replace(/^@/, ""))}`,
   );
   return d?.profile
-    ? { ...d.profile, stats: d.stats || {}, social: d.social || {} }
+    ? {
+        ...d.profile,
+        stats: d.stats || {},
+        social: d.social || {},
+      }
     : null;
 }
 async function loadVideos(uid) {
   try {
-    const d = await api("/api/media/videos?limit=50", { auth: false });
+    const d = await api("/api/media/videos?limit=50", {
+      auth: false,
+    });
     return (d.videos || []).filter(
       (v) => String(v.ownerUid || "") === String(uid),
     );
@@ -110,13 +122,20 @@ function applyLiveProfile(app, profile, own, id) {
   const nextName =
     (own
       ? firebaseName || backendName || emailName || id
-      : backendName || firebaseName || id || emailName || "Profile"
+      : backendName ||
+        firebaseName ||
+        id ||
+        emailName ||
+        "Profile"
     ).trim() || "Profile";
   const nextId = String(
     profile?.userId || profile?.username || id || "",
   ).replace(/^@/, "");
   const avatar = String(
-    profile?.avatarUrl || profile?.photoURL || profile?.photoUrl || "",
+    profile?.avatarUrl ||
+      profile?.photoURL ||
+      profile?.photoUrl ||
+      "",
   ).trim();
   const bio = String(profile?.bio || "").trim();
   const location = String(profile?.location || "").trim();
@@ -129,12 +148,16 @@ function applyLiveProfile(app, profile, own, id) {
     bioEl.textContent = bio;
     bioEl.hidden = !bio;
   }
-  const locEl = app.querySelector("[data-profile-location]");
+  const locEl = app.querySelector(
+    "[data-profile-location]",
+  );
   if (locEl) {
     locEl.textContent = `⌖ ${location}`;
     locEl.hidden = !location;
   }
-  const avatarEl = app.querySelector("[data-profile-avatar]");
+  const avatarEl = app.querySelector(
+    "[data-profile-avatar]",
+  );
   if (avatarEl) {
     const initial = (nextName || nextId || "I")
       .replace(/^@/, "")
@@ -146,7 +169,10 @@ function applyLiveProfile(app, profile, own, id) {
   }
 }
 
-export async function renderProfile(app, profileArg = null) {
+export async function renderProfile(
+  app,
+  profileArg = null,
+) {
   styles();
   if (window.__indoProfileLiveTimer)
     clearInterval(window.__indoProfileLiveTimer);
@@ -155,19 +181,29 @@ export async function renderProfile(app, profileArg = null) {
     own = false;
   try {
     const requested = String(
-      profileArg?.userId || profileArg?.username || profileArg?.uid || "",
+      profileArg?.userId ||
+        profileArg?.username ||
+        profileArg?.uid ||
+        "",
     ).replace(/^@/, "");
-    if (requested && String(profileArg?.uid || "") === String(me?.uid || "")) {
+    if (
+      requested &&
+      String(profileArg?.uid || "") ===
+        String(me?.uid || "")
+    ) {
       own = true;
       profile = await ownProfile();
     } else if (requested) {
       profile = await profileById(requested);
-      own = String(profile?.uid || "") === String(me?.uid || "");
+      own =
+        String(profile?.uid || "") ===
+        String(me?.uid || "");
     } else {
       own = true;
       profile = await ownProfile();
     }
-    if (!profile) throw Error("Profile could not be loaded.");
+    if (!profile)
+      throw Error("Profile could not be loaded.");
   } catch (e) {
     app.innerHTML = `<div class="prof"><main class="prof-main"><h2>Profile unavailable</h2><p>${esc(e.message)}</p></main>${nav("profile")}</div>`;
     return;
@@ -175,17 +211,26 @@ export async function renderProfile(app, profileArg = null) {
 
   const uid = String(profile.uid || me?.uid || "");
   const id = String(
-    profile.userId || profile.username || me?.email?.split("@")[0] || "",
+    profile.userId ||
+      profile.username ||
+      me?.email?.split("@")[0] ||
+      "",
   ).replace(/^@/, "");
   const firebaseName = String(me?.displayName || "").trim();
-  const backendName = String(profile.name || profile.displayName || "").trim();
+  const backendName = String(
+    profile.name || profile.displayName || "",
+  ).trim();
   const emailName = String(me?.email || "")
     .split("@")[0]
     .trim();
   const name =
     (own
       ? firebaseName || backendName || emailName || id
-      : backendName || firebaseName || id || emailName || "Profile"
+      : backendName ||
+        firebaseName ||
+        id ||
+        emailName ||
+        "Profile"
     ).trim() || "Profile";
   const bio = String(profile.bio || "").trim();
   const location = String(profile.location || "").trim();
@@ -194,35 +239,54 @@ export async function renderProfile(app, profileArg = null) {
   const items = await loadVideos(uid);
   const stats = {
     videos: Number(st.videosCount ?? st.postsCount ?? 0),
-    followers: Number(st.followersCount ?? soc.followersCount ?? 0),
-    following: Number(st.followingCount ?? soc.followingCount ?? 0),
+    followers: Number(
+      st.followersCount ?? soc.followersCount ?? 0,
+    ),
+    following: Number(
+      st.followingCount ?? soc.followingCount ?? 0,
+    ),
     likes: Number(st.likesCount ?? profile.likesCount ?? 0),
   };
   const avatar = String(
-    profile.avatarUrl || profile.photoURL || profile.photoUrl || "",
+    profile.avatarUrl ||
+      profile.photoURL ||
+      profile.photoUrl ||
+      "",
   ).trim();
-  const initial = (name || id || "I").replace(/^@/, "").charAt(0).toUpperCase();
+  const initial = (name || id || "I")
+    .replace(/^@/, "")
+    .charAt(0)
+    .toUpperCase();
   app.innerHTML = `<div class="prof">${renderIndoBrandTopbar({ rightLabel: "Profile" })}<main class="prof-main"><section class="prof-hero"><div class="prof-pic"><div class="prof-ring"></div><div class="prof-avatar" data-profile-avatar>${avatar ? `<img src="${esc(avatar)}" alt="Profile">` : esc(initial)}</div><span class="prof-online"></span></div><div class="prof-name" data-profile-name>${esc(name)}</div><div class="prof-id" data-profile-id>@${esc(id)}</div><div class="prof-bio" data-profile-bio ${bio ? "" : "hidden"}>${esc(bio)}</div><div class="prof-location" data-profile-location ${location ? "" : "hidden"}>⌖ ${esc(location)}</div></section><div class="prof-line"></div><section class="prof-stats"><div class="prof-stat"><b data-stat="videos">${count(stats.videos)}</b><span>Videos</span></div><div class="prof-stat"><b data-stat="followers">${count(stats.followers)}</b><span>Followers</span></div><div class="prof-stat"><b data-stat="following">${count(stats.following)}</b><span>Following</span></div><div class="prof-stat"><b data-stat="likes">${count(stats.likes)}</b><span>Likes</span></div></section>${own ? `<div class="prof-actions"><button class="prof-btn primary" type="button" id="indo-edit-profile">✎ Edit Profile</button><button class="prof-btn" type="button" id="indo-share-profile">Share</button><button class="prof-btn" type="button" id="indo-settings">⚙</button></div>` : ""}<section><div class="prof-section-title"><strong>Recent Videos</strong><button type="button" id="indo-view-videos">View all</button></div><div class="prof-videos">${videoGrid(items)}</div></section></main>${nav("profile")}</div>`;
 
-  app.querySelector("#indo-edit-profile")?.addEventListener("click", (e) => {
-    e.preventDefault();
-    go("edit-profile");
-  });
-  app.querySelector("#indo-settings")?.addEventListener("click", (e) => {
-    e.preventDefault();
-    go("settings");
-  });
-  app.querySelector("#indo-view-videos")?.addEventListener("click", (e) => {
-    e.preventDefault();
-    go("video");
-  });
+  app
+    .querySelector("#indo-edit-profile")
+    ?.addEventListener("click", (e) => {
+      e.preventDefault();
+      go("edit-profile");
+    });
+  app
+    .querySelector("#indo-settings")
+    ?.addEventListener("click", (e) => {
+      e.preventDefault();
+      go("settings");
+    });
+  app
+    .querySelector("#indo-view-videos")
+    ?.addEventListener("click", (e) => {
+      e.preventDefault();
+      go("video");
+    });
   app
     .querySelector("#indo-share-profile")
     ?.addEventListener("click", async () => {
       const url = `${location.origin}${location.pathname}?profile=${encodeURIComponent(id)}`;
       try {
         if (navigator.share)
-          await navigator.share({ title: `${name} on Indo`, url });
+          await navigator.share({
+            title: `${name} on Indo`,
+            url,
+          });
         else await navigator.clipboard?.writeText(url);
       } catch {}
     });
@@ -232,19 +296,31 @@ export async function renderProfile(app, profileArg = null) {
     if (busy || document.hidden) return;
     busy = true;
     try {
-      const fresh = own ? await ownProfile() : await profileById(id);
+      const fresh = own
+        ? await ownProfile()
+        : await profileById(id);
       if (fresh) {
         applyLiveProfile(app, fresh, own, id);
         const s = fresh.stats || {},
           so = fresh.social || {};
         const vals = {
-          videos: Number(s.videosCount ?? s.postsCount ?? 0),
-          followers: Number(s.followersCount ?? so.followersCount ?? 0),
-          following: Number(s.followingCount ?? so.followingCount ?? 0),
-          likes: Number(s.likesCount ?? fresh.likesCount ?? 0),
+          videos: Number(
+            s.videosCount ?? s.postsCount ?? 0,
+          ),
+          followers: Number(
+            s.followersCount ?? so.followersCount ?? 0,
+          ),
+          following: Number(
+            s.followingCount ?? so.followingCount ?? 0,
+          ),
+          likes: Number(
+            s.likesCount ?? fresh.likesCount ?? 0,
+          ),
         };
         for (const [k, v] of Object.entries(vals)) {
-          const el = app.querySelector(`[data-stat="${k}"]`);
+          const el = app.querySelector(
+            `[data-stat="${k}"]`,
+          );
           if (el) el.textContent = count(v);
         }
       }
@@ -254,6 +330,9 @@ export async function renderProfile(app, profileArg = null) {
       busy = false;
     }
   };
-  window.__indoProfileLiveTimer = setInterval(refresh, POLL_MS);
+  window.__indoProfileLiveTimer = setInterval(
+    refresh,
+    POLL_MS,
+  );
   refresh();
 }

@@ -44,7 +44,8 @@ function passwordField(id, placeholder, label) {
 }
 
 export function renderAuth(app, go) {
-  const mode = sessionStorage.getItem("indo-auth-mode") || "login";
+  const mode =
+    sessionStorage.getItem("indo-auth-mode") || "login";
   const isSignup = mode === "signup";
 
   app.innerHTML = `<div class="auth-page ${isSignup ? "auth-page-signup" : "auth-page-login"}">
@@ -92,21 +93,30 @@ export function renderAuth(app, go) {
     </main>
   </div>`;
 
-  app.querySelectorAll("[data-auth-mode]").forEach((button) => {
-    button.addEventListener("click", () => {
-      sessionStorage.setItem("indo-auth-mode", button.dataset.authMode);
+  app
+    .querySelectorAll("[data-auth-mode]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        sessionStorage.setItem(
+          "indo-auth-mode",
+          button.dataset.authMode,
+        );
+        renderAuth(app, go);
+      });
+    });
+
+  app
+    .querySelector("[data-auth-back]")
+    ?.addEventListener("click", () => {
+      sessionStorage.setItem("indo-auth-mode", "login");
       renderAuth(app, go);
     });
-  });
-
-  app.querySelector("[data-auth-back]")?.addEventListener("click", () => {
-    sessionStorage.setItem("indo-auth-mode", "login");
-    renderAuth(app, go);
-  });
 
   app.querySelectorAll("[data-eye]").forEach((button) => {
     button.addEventListener("click", () => {
-      const input = app.querySelector(`#${button.dataset.eye}`);
+      const input = app.querySelector(
+        `#${button.dataset.eye}`,
+      );
       if (!input) return;
       const showing = input.type === "text";
       input.type = showing ? "password" : "text";
@@ -114,20 +124,28 @@ export function renderAuth(app, go) {
     });
   });
 
-  app.querySelector("#auth-userid")?.addEventListener("input", (event) => {
-    const value = event.target.value.trim();
-    const available = app.querySelector(".auth-available");
-    if (available)
-      available.classList.toggle(
-        "show",
-        value.startsWith("@") && value.length > 1 && !value.includes(" "),
+  app
+    .querySelector("#auth-userid")
+    ?.addEventListener("input", (event) => {
+      const value = event.target.value.trim();
+      const available = app.querySelector(
+        ".auth-available",
       );
-  });
+      if (available)
+        available.classList.toggle(
+          "show",
+          value.startsWith("@") &&
+            value.length > 1 &&
+            !value.includes(" "),
+        );
+    });
 
   const submit = app.querySelector("[data-auth-submit]");
   submit?.addEventListener("click", () => {
     if (submit.dataset.authSubmit === "signup") {
-      const userId = app.querySelector("#auth-userid")?.value.trim() || "";
+      const userId =
+        app.querySelector("#auth-userid")?.value.trim() ||
+        "";
       if (!userId.startsWith("@") || userId.length < 2) {
         alert("User ID @ ಇಂದ ಶುರು ಆಗಬೇಕು.");
         return;

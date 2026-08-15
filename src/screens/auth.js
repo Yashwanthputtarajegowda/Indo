@@ -44,13 +44,15 @@ function bindPasswordToggle(app, inputId, toggleId) {
   });
 }
 function bindSocialButtons(app, messageSelector) {
-  app.querySelectorAll("[data-auth-provider]").forEach((button) =>
-    button.addEventListener("click", () => {
-      const message = app.querySelector(messageSelector);
-      if (message)
-        message.textContent = `${button.getAttribute("data-auth-provider")} sign-in is not configured yet.`;
-    }),
-  );
+  app
+    .querySelectorAll("[data-auth-provider]")
+    .forEach((button) =>
+      button.addEventListener("click", () => {
+        const message = app.querySelector(messageSelector);
+        if (message)
+          message.textContent = `${button.getAttribute("data-auth-provider")} sign-in is not configured yet.`;
+      }),
+    );
 }
 function installUserIdBehavior(app) {
   const input = app.querySelector("#signup-user-id");
@@ -65,7 +67,8 @@ function installUserIdBehavior(app) {
       .replace(/^@+/, "")
       .toLowerCase();
   const setAvailable = (show) => {
-    if (available) available.classList.toggle("show", Boolean(show));
+    if (available)
+      available.classList.toggle("show", Boolean(show));
   };
   const updatePreview = () => {
     const raw = getRawUserId();
@@ -83,23 +86,32 @@ function installUserIdBehavior(app) {
       updatePreview();
       return;
     }
-    if (message) message.textContent = "Checking User ID...";
+    if (message)
+      message.textContent = "Checking User ID...";
     try {
       const apiBase = window.INDO_API_BASE || "";
-      const response = await fetch(`${apiBase}/api/account/check-user-id`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: raw }),
-      });
+      const response = await fetch(
+        `${apiBase}/api/account/check-user-id`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: raw }),
+        },
+      );
       const data = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(data.error || "Could not check User ID.");
+        throw new Error(
+          data.error || "Could not check User ID.",
+        );
       if (data.available) {
         input.setCustomValidity("");
-        if (message) message.textContent = `@${raw} is available.`;
+        if (message)
+          message.textContent = `@${raw} is available.`;
         setAvailable(true);
       } else {
-        input.setCustomValidity("This User ID is already taken.");
+        input.setCustomValidity(
+          "This User ID is already taken.",
+        );
         if (message)
           message.textContent = `@${raw} is already taken. Choose another User ID.`;
         setAvailable(false);
@@ -128,12 +140,20 @@ const messageStyle =
   "margin:0;min-height:0;padding:0;font-size:8px;line-height:1.1;text-align:center;color:#ff7bdd;overflow:visible";
 export function renderLogin(app) {
   app.innerHTML = `<main class="auth-page indo-auth-v160">${ambient()}<section class="auth-shell" aria-label="Indo login">${brand()}<section class="auth-card auth-login-card"><div class="auth-welcome"><h1>Welcome back!</h1><p>Login to continue your journey</p></div><form id="login-form" class="auth-form"><label class="auth-field"><span>${authIcon("mail")}Email ID</span><div class="auth-input-wrap">${svg.mail}<input id="login-email" type="email" placeholder="Enter your email" autocomplete="email" required></div></label><label class="auth-field"><span>${authIcon("lock")}Password</span><div class="auth-input-wrap">${svg.lock}<input id="login-password" type="password" placeholder="Enter your password" autocomplete="current-password" required><button class="auth-eye" id="login-password-toggle" type="button" aria-label="Show password">${svg.eye}</button></div></label><div class="auth-options"><label class="auth-check"><input id="login-remember" type="checkbox" checked><span></span>Remember me</label><button class="forgot-btn" data-password-reset type="button">Forgot Password?</button></div><p id="login-message" class="auth-message" aria-live="polite" style="${messageStyle}"></p><button class="auth-submit" type="submit"><span>⚡ Login</span>${svg.arrow}</button></form><div class="auth-social-label"><span></span><b>or continue with</b><span></span></div>${socialButtons()}<div class="auth-create-row">Don't have an account? <button class="auth-switch" data-auth="signup" type="button">Create new account →</button></div>${privacy()}</section></section></main>`;
-  bindPasswordToggle(app, "#login-password", "#login-password-toggle");
+  bindPasswordToggle(
+    app,
+    "#login-password",
+    "#login-password-toggle",
+  );
   bindSocialButtons(app, "#login-message");
 }
 export function renderSignup(app) {
   app.innerHTML = `<main class="auth-page indo-auth-v160"><button class="auth-back auth-switch" data-auth="login" type="button" aria-label="Back to login">←</button>${ambient()}<section class="auth-shell auth-signup-shell" aria-label="Indo create account">${brand(true)}<section class="auth-card auth-signup-card"><div class="auth-welcome"><h1>Create your account</h1><p>Choose your Indo identity and start <b>sharing</b></p></div><form id="signup-form" class="auth-form"><label class="auth-field"><span>${authIcon("user")}Your name</span><div class="auth-input-wrap">${svg.user}<input id="signup-username" placeholder="Your name" autocomplete="name" required></div></label><label class="auth-field"><span>${authIcon("user")}User ID</span><div class="auth-input-wrap auth-userid-wrap"><span class="auth-at">@</span><input id="signup-user-id" placeholder="Choose your User ID" autocomplete="username" autocapitalize="none" spellcheck="false" required><span id="user-id-available" class="auth-available">${svg.check} User ID available</span></div><small id="user-id-message" class="auth-hint">Choose any User ID. @ will be added automatically.</small></label><label class="auth-field"><span>${authIcon("phone")}Mobile Number</span><div class="auth-phone-row"><button type="button" class="auth-country" aria-label="Country code">${svg.phone}<b>+91</b><span>⌄</span></button><div class="auth-input-wrap"><input id="signup-mobile" type="tel" placeholder="Enter your mobile number" autocomplete="tel" required></div></div></label><label class="auth-field"><span>${authIcon("mail")}Email ID</span><div class="auth-input-wrap">${svg.mail}<input id="signup-email" type="email" placeholder="Enter your email ID" autocomplete="email" required></div></label><label class="auth-field"><span>${authIcon("lock")}Password</span><div class="auth-input-wrap">${svg.lock}<input id="signup-password" type="password" placeholder="Create a password" autocomplete="new-password" minlength="8" required><button class="auth-eye" id="signup-password-toggle" type="button" aria-label="Show password">${svg.eye}</button></div></label><label class="auth-terms"><input id="signup-terms" type="checkbox" required><span></span><b>I agree to the <em>Terms of Service</em> and <em>Privacy Policy</em></b></label><p id="signup-message" class="auth-message" aria-live="polite" style="${messageStyle}"></p><button class="auth-submit" type="submit"><span>⚡ Create Account</span>${svg.arrow}</button></form><div class="auth-social-label"><span></span><b>or sign up with</b><span></span></div>${socialButtons()}<div class="auth-create-row">Already have an account? <button class="auth-switch" data-auth="login" type="button">Login now →</button></div>${privacy()}</section></section></main>`;
-  bindPasswordToggle(app, "#signup-password", "#signup-password-toggle");
+  bindPasswordToggle(
+    app,
+    "#signup-password",
+    "#signup-password-toggle",
+  );
   bindSocialButtons(app, "#signup-message");
   installUserIdBehavior(app);
 }

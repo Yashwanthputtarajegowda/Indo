@@ -52,7 +52,8 @@ export function createSessionController(app) {
         await refreshEarning().catch(() => {});
         if (
           splashFinished &&
-          (state.screen === "auth-login" || state.screen === "auth-signup")
+          (state.screen === "auth-login" ||
+            state.screen === "auth-signup")
         )
           goTo(app, "home");
       },
@@ -63,11 +64,19 @@ export function createSessionController(app) {
         state.accountType = "public";
         state.earning = null;
         state.earningSummary = null;
-        if (splashFinished && !String(state.screen).startsWith("auth-"))
+        if (
+          splashFinished &&
+          !String(state.screen).startsWith("auth-")
+        )
           goTo(app, "auth-login");
       },
     );
   }
 
-  return { start, markSplashFinished, getSessionUser, ...getRefreshers() };
+  return {
+    start,
+    markSplashFinished,
+    getSessionUser,
+    ...getRefreshers(),
+  };
 }

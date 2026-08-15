@@ -30,7 +30,9 @@ function paintUnreadBadge(count) {
   );
   if (!button) return;
   const n = Math.max(0, Number(count) || 0);
-  const existing = button.querySelector(".indo-notification-badge");
+  const existing = button.querySelector(
+    ".indo-notification-badge",
+  );
   if (n === 0) {
     existing?.remove();
     button.removeAttribute("data-unread-count");
@@ -42,7 +44,10 @@ function paintUnreadBadge(count) {
   badge.textContent = n > 99 ? "99+" : String(n);
   if (!existing) button.appendChild(badge);
   button.setAttribute("data-unread-count", String(n));
-  button.setAttribute("aria-label", `Notifications, ${n} unread`);
+  button.setAttribute(
+    "aria-label",
+    `Notifications, ${n} unread`,
+  );
 }
 
 async function refreshUnreadBadge() {
@@ -60,10 +65,22 @@ function clearUnreadBadge() {
 }
 
 function installEvents() {
-  window.removeEventListener("indo:notifications-read", clearUnreadBadge);
-  window.addEventListener("indo:notifications-read", clearUnreadBadge);
-  window.removeEventListener("indo:notification-received", refreshUnreadBadge);
-  window.addEventListener("indo:notification-received", refreshUnreadBadge);
+  window.removeEventListener(
+    "indo:notifications-read",
+    clearUnreadBadge,
+  );
+  window.addEventListener(
+    "indo:notifications-read",
+    clearUnreadBadge,
+  );
+  window.removeEventListener(
+    "indo:notification-received",
+    refreshUnreadBadge,
+  );
+  window.addEventListener(
+    "indo:notification-received",
+    refreshUnreadBadge,
+  );
 }
 
 function startPolling() {

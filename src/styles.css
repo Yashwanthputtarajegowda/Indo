@@ -320,7 +320,10 @@ button:disabled {
 .reel-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(transparent 40%, rgba(0, 0, 0, 0.85));
+  background: linear-gradient(
+    transparent 40%,
+    rgba(0, 0, 0, 0.85)
+  );
   pointer-events: none;
 }
 .reel-info {

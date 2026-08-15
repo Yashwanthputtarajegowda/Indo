@@ -12,7 +12,10 @@ function removeCard(video) {
 
 async function validateVideo(video) {
   if (!(video instanceof HTMLVideoElement)) return;
-  if (video.dataset[CHECKED_KEY] === "1" || video.dataset[CHECKING_KEY] === "1")
+  if (
+    video.dataset[CHECKED_KEY] === "1" ||
+    video.dataset[CHECKING_KEY] === "1"
+  )
     return;
   const source = String(
     video.dataset.originalVideoSrc ||
@@ -22,12 +25,16 @@ async function validateVideo(video) {
       video.src ||
       "",
   ).trim();
-  if (!source || !source.includes("res.cloudinary.com/")) return;
+  if (!source || !source.includes("res.cloudinary.com/"))
+    return;
 
   video.dataset[CHECKING_KEY] = "1";
   try {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 7000);
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      7000,
+    );
     const response = await fetch(source, {
       method: "HEAD",
       mode: "cors",
@@ -38,7 +45,10 @@ async function validateVideo(video) {
 
     // Cloudinary transformations can temporarily return non-200 while being
     // generated. Only a definitive missing response should remove the card.
-    if (response.status === 404 || response.status === 410) {
+    if (
+      response.status === 404 ||
+      response.status === 410
+    ) {
       removeCard(video);
       return;
     }
@@ -69,7 +79,8 @@ function bind(video) {
   video.addEventListener(
     "error",
     () => {
-      if (video.dataset.indoVideoFinalFailure === "1") removeCard(video);
+      if (video.dataset.indoVideoFinalFailure === "1")
+        removeCard(video);
     },
     { once: false },
   );
@@ -78,7 +89,9 @@ function bind(video) {
 
 function scan() {
   document
-    .querySelectorAll("#root video[data-video-src], #root video.post-video")
+    .querySelectorAll(
+      "#root video[data-video-src], #root video.post-video",
+    )
     .forEach(bind);
 }
 

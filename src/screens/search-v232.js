@@ -3,7 +3,10 @@ import {
   renderHomeTopbar,
   installHomeTopbarStyles,
 } from "./home-topbar-v230.js";
-import { loadFollowStatus, toggleFollow } from "../features/social/follow.js";
+import {
+  loadFollowStatus,
+  toggleFollow,
+} from "../features/social/follow.js";
 import { state } from "../state.js";
 
 const VERSION = "232";
@@ -24,8 +27,10 @@ function escapeHtml(value = "") {
 
 function formatCount(value) {
   const n = Number(value) || 0;
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}K`;
+  if (n >= 1000000)
+    return `${(n / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1000)
+    return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}K`;
   return String(n);
 }
 
@@ -52,7 +57,10 @@ async function searchUsers(query) {
     { cache: "no-store" },
   );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not search users.");
+  if (!response.ok)
+    throw new Error(
+      data.error || "Could not search users.",
+    );
   return Array.isArray(data.users) ? data.users : [];
 }
 
@@ -67,8 +75,14 @@ async function openUserProfile(username) {
   );
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data?.ok)
-    throw new Error(data.error || "Could not open profile.");
-  state.profile = { ...data.profile, stats: data.stats, social: data.social };
+    throw new Error(
+      data.error || "Could not open profile.",
+    );
+  state.profile = {
+    ...data.profile,
+    stats: data.stats,
+    social: data.social,
+  };
   state.screen = "profile";
   if (typeof window.__indoNavigate === "function")
     await window.__indoNavigate("profile");
@@ -128,58 +142,75 @@ export async function renderSearch(app) {
   injectStyles();
   app.innerHTML = `<div class="app-shell">${renderHomeTopbar()}<main class="search-v232"><div class="search-v232-box"><span aria-hidden="true">⌕</span><input id="user-search-input-v232" autocomplete="off" placeholder="Search @User ID..." aria-label="Search User ID"><button class="search-v232-clear" id="search-clear-v232" type="button" aria-label="Clear search">×</button></div><h4 class="search-v232-users-title">Users</h4><div class="search-v232-results" id="search-results-v232"><div class="search-v232-empty">Search a User ID to see matching profiles.</div></div></main>${nav("search")}</div>`;
 
-  const input = app.querySelector("#user-search-input-v232");
+  const input = app.querySelector(
+    "#user-search-input-v232",
+  );
   const clear = app.querySelector("#search-clear-v232");
   const results = app.querySelector("#search-results-v232");
   let timer = null;
   let requestId = 0;
 
   const bindFollowButtons = () => {
-    results.querySelectorAll("[data-follow-user]").forEach(async (button) => {
-      if (button.dataset.bound === "1") return;
-      button.dataset.bound = "1";
-      const targetUid = button.dataset.followUser;
-      try {
-        const status = await loadFollowStatus(targetUid);
-        const following = Boolean(status?.following);
-        button.dataset.following = following ? "1" : "0";
-        button.textContent = status?.requested
-          ? "Requested"
-          : following
-            ? "Following"
-            : "Follow";
-      } catch {}
-      button.addEventListener("click", async (event) => {
-        event.stopPropagation();
-        const following = button.dataset.following === "1";
-        button.disabled = true;
+    results
+      .querySelectorAll("[data-follow-user]")
+      .forEach(async (button) => {
+        if (button.dataset.bound === "1") return;
+        button.dataset.bound = "1";
+        const targetUid = button.dataset.followUser;
         try {
-          const data = await toggleFollow(targetUid, !following);
-          button.dataset.following = data?.following ? "1" : "0";
-          button.textContent = data?.requested
+          const status = await loadFollowStatus(targetUid);
+          const following = Boolean(status?.following);
+          button.dataset.following = following ? "1" : "0";
+          button.textContent = status?.requested
             ? "Requested"
-            : data?.following
+            : following
               ? "Following"
               : "Follow";
-        } catch (error) {
-          button.title = error.message || "Could not update follow status.";
-        } finally {
-          button.disabled = false;
-        }
+        } catch {}
+        button.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          const following =
+            button.dataset.following === "1";
+          button.disabled = true;
+          try {
+            const data = await toggleFollow(
+              targetUid,
+              !following,
+            );
+            button.dataset.following = data?.following
+              ? "1"
+              : "0";
+            button.textContent = data?.requested
+              ? "Requested"
+              : data?.following
+                ? "Following"
+                : "Follow";
+          } catch (error) {
+            button.title =
+              error.message ||
+              "Could not update follow status.";
+          } finally {
+            button.disabled = false;
+          }
+        });
       });
-    });
   };
 
   results.addEventListener("click", (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-    const cardButton = target?.closest("[data-open-profile]");
+    const target =
+      event.target instanceof Element ? event.target : null;
+    const cardButton = target?.closest(
+      "[data-open-profile]",
+    );
     if (!cardButton) return;
-    openUserProfile(cardButton.dataset.openProfile).catch((error) => {
-      results.insertAdjacentHTML(
-        "afterbegin",
-        `<div class="search-v232-empty">${escapeHtml(error.message || "Could not open profile.")}</div>`,
-      );
-    });
+    openUserProfile(cardButton.dataset.openProfile).catch(
+      (error) => {
+        results.insertAdjacentHTML(
+          "afterbegin",
+          `<div class="search-v232-empty">${escapeHtml(error.message || "Could not open profile.")}</div>`,
+        );
+      },
+    );
   });
 
   const runSearch = async () => {
@@ -191,7 +222,8 @@ export async function renderSearch(app) {
         '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>';
       return;
     }
-    results.innerHTML = '<div class="search-v232-empty">Searching...</div>';
+    results.innerHTML =
+      '<div class="search-v232-empty">Searching...</div>';
     try {
       const users = await searchUsers(value);
       if (current !== requestId) return;

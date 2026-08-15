@@ -40,21 +40,30 @@ async function getFollowStatus(targetUid) {
 
 async function setFollow(targetUid, shouldFollow) {
   const user = auth.currentUser;
-  if (!user || !targetUid) throw new Error("Please login first.");
+  if (!user || !targetUid)
+    throw new Error("Please login first.");
   const token = await user.getIdToken();
   const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(`${apiBase}/api/social/follow`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${apiBase}/api/social/follow`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        targetUid,
+        follow: shouldFollow,
+      }),
     },
-    body: JSON.stringify({ targetUid, follow: shouldFollow }),
-  });
+  );
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     throw new Error(
-      data.error || data.detail || "Could not update follow status.",
+      data.error ||
+        data.detail ||
+        "Could not update follow status.",
     );
   }
 }
@@ -63,8 +72,12 @@ function enhanceCard(card) {
   if (!(card instanceof Element)) return;
   const head = card.querySelector(".post-head");
   const menu = head?.querySelector("[data-feed-more]");
-  const targetUid = String(card.dataset.ownerUid || "").trim();
-  const currentUid = String(auth.currentUser?.uid || "").trim();
+  const targetUid = String(
+    card.dataset.ownerUid || "",
+  ).trim();
+  const currentUid = String(
+    auth.currentUser?.uid || "",
+  ).trim();
   if (
     !head ||
     !menu ||
@@ -89,9 +102,13 @@ function enhanceCard(card) {
   });
 }
 
-export function enhanceHomePostFollowButtons(root = document) {
+export function enhanceHomePostFollowButtons(
+  root = document,
+) {
   root
-    .querySelectorAll(".video-post[data-owner-uid], .post-card[data-owner-uid]")
+    .querySelectorAll(
+      ".video-post[data-owner-uid], .post-card[data-owner-uid]",
+    )
     .forEach(enhanceCard);
 }
 
@@ -108,7 +125,9 @@ function install() {
       if (!button) return;
       event.preventDefault();
       event.stopPropagation();
-      const targetUid = String(button.dataset.postFollow || "").trim();
+      const targetUid = String(
+        button.dataset.postFollow || "",
+      ).trim();
       if (!targetUid) return;
       const next = button.dataset.following !== "1";
       const oldText = button.textContent;

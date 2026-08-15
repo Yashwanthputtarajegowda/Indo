@@ -1,7 +1,8 @@
 import { icons } from "../data.js";
 
 export function nav(active) {
-  const isActive = (screen) => (active === screen ? "active" : "");
+  const isActive = (screen) =>
+    active === screen ? "active" : "";
   return `<nav class="bottom-nav" aria-label="Primary navigation">
     <button type="button" data-screen="home" class="${isActive("home")}">${icons.home}<span>Home</span></button>
     <button type="button" data-screen="messages" class="${isActive("messages")}">⌕<span>Message</span></button>

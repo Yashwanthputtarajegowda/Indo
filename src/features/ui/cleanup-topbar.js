@@ -2,7 +2,9 @@ let installed = false;
 
 function removeUnusedTopbarButton(root = document) {
   root
-    .querySelectorAll?.('.top-actions [data-screen="activity"]')
+    .querySelectorAll?.(
+      '.top-actions [data-screen="activity"]',
+    )
     .forEach((button) => button.remove());
 }
 

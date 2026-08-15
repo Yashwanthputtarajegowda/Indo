@@ -12,16 +12,25 @@ export async function updateCurrentProfile({ name, bio }) {
 
   const token = await user.getIdToken();
   const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(`${apiBase}/api/account/profile`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${apiBase}/api/account/profile`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name: cleanName,
+        bio: cleanBio,
+      }),
     },
-    body: JSON.stringify({ name: cleanName, bio: cleanBio }),
-  });
+  );
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not update profile.");
+  if (!response.ok)
+    throw new Error(
+      data.error || "Could not update profile.",
+    );
   return data.profile;
 }

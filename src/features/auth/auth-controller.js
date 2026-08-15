@@ -27,7 +27,9 @@ function saveLocalSession(user) {
 export function hasLocalSession() {
   try {
     return Boolean(
-      JSON.parse(localStorage.getItem(LOCAL_SESSION_KEY) || "null")?.uid,
+      JSON.parse(
+        localStorage.getItem(LOCAL_SESSION_KEY) || "null",
+      )?.uid,
     );
   } catch {
     return false;
@@ -36,7 +38,9 @@ export function hasLocalSession() {
 
 async function goTo(screen) {
   state.screen = screen;
-  const { render } = await import(`../../router.js?v=${ROUTER_VERSION}`);
+  const { render } = await import(
+    `../../router.js?v=${ROUTER_VERSION}`
+  );
   await render(getRoot());
 }
 
@@ -48,25 +52,32 @@ function loginErrorText(error) {
     code === "auth/wrong-password"
   )
     return "Email ID or password is incorrect.";
-  if (code === "auth/invalid-email") return "Enter a valid email ID.";
-  if (code === "auth/user-disabled") return "This account has been disabled.";
+  if (code === "auth/invalid-email")
+    return "Enter a valid email ID.";
+  if (code === "auth/user-disabled")
+    return "This account has been disabled.";
   if (code === "auth/too-many-requests")
     return "Too many login attempts. Please try again later.";
   if (code === "auth/network-request-failed")
     return "Network error. Check your internet connection and try again.";
-  return error?.message || "Could not login. Please try again.";
+  return (
+    error?.message || "Could not login. Please try again."
+  );
 }
 
 function bindLoginForm() {
   const root = getRoot();
   const form = root?.querySelector("#login-form");
-  if (!form || form.dataset.authControllerBound === "1") return;
+  if (!form || form.dataset.authControllerBound === "1")
+    return;
   form.dataset.authControllerBound = "1";
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     event.stopPropagation();
     const emailInput = form.querySelector("#login-email");
-    const passwordInput = form.querySelector("#login-password");
+    const passwordInput = form.querySelector(
+      "#login-password",
+    );
     const button = form.querySelector(".auth-submit");
     const message = form.querySelector("#login-message");
     const email = String(emailInput?.value || "")
@@ -74,12 +85,14 @@ function bindLoginForm() {
       .toLowerCase();
     const password = String(passwordInput?.value || "");
     if (!email) {
-      if (message) message.textContent = "Enter your email ID.";
+      if (message)
+        message.textContent = "Enter your email ID.";
       emailInput?.focus();
       return;
     }
     if (!password) {
-      if (message) message.textContent = "Enter your password.";
+      if (message)
+        message.textContent = "Enter your password.";
       passwordInput?.focus();
       return;
     }
@@ -98,11 +111,14 @@ function bindLoginForm() {
       await goTo("home");
     } catch (error) {
       console.error("Login failed:", error);
-      if (message) message.textContent = loginErrorText(error);
+      if (message)
+        message.textContent = loginErrorText(error);
       if (button) button.disabled = false;
     }
   });
-  const resetButton = form.querySelector("[data-password-reset]");
+  const resetButton = form.querySelector(
+    "[data-password-reset]",
+  );
   resetButton?.addEventListener("click", async () => {
     const emailInput = form.querySelector("#login-email");
     const message = form.querySelector("#login-message");
@@ -110,19 +126,24 @@ function bindLoginForm() {
       .trim()
       .toLowerCase();
     if (!email) {
-      if (message) message.textContent = "Enter your email ID first.";
+      if (message)
+        message.textContent = "Enter your email ID first.";
       emailInput?.focus();
       return;
     }
     resetButton.disabled = true;
-    if (message) message.textContent = "Sending password reset email...";
+    if (message)
+      message.textContent =
+        "Sending password reset email...";
     try {
       await sendPasswordResetEmail(auth, email);
       if (message)
-        message.textContent = "Password reset email sent. Check your inbox.";
+        message.textContent =
+          "Password reset email sent. Check your inbox.";
     } catch (error) {
       console.error("Password reset failed:", error);
-      if (message) message.textContent = loginErrorText(error);
+      if (message)
+        message.textContent = loginErrorText(error);
     } finally {
       resetButton.disabled = false;
     }
@@ -131,14 +152,16 @@ function bindLoginForm() {
 
 function bindSignupForm() {
   const form = getRoot()?.querySelector("#signup-form");
-  if (!form || form.dataset.authControllerBound === "1") return;
+  if (!form || form.dataset.authControllerBound === "1")
+    return;
   form.dataset.authControllerBound = "1";
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const button = form.querySelector(".auth-submit");
     const message = form.querySelector("#signup-message");
     if (button) button.disabled = true;
-    if (message) message.textContent = "Creating account...";
+    if (message)
+      message.textContent = "Creating account...";
     try {
       await authPersistenceReady;
       const user = await submitSignup(form);
@@ -156,7 +179,8 @@ function bindSignupForm() {
             ? "Password must be at least 8 characters."
             : code === "auth/invalid-email"
               ? "Enter a valid email ID."
-              : error?.message || "Could not create account. Please try again.";
+              : error?.message ||
+                "Could not create account. Please try again.";
       if (message) message.textContent = text;
       if (button) button.disabled = false;
     }
@@ -173,7 +197,9 @@ function bindAuthSwitches() {
       event.preventDefault();
       event.stopPropagation();
       const screen =
-        button.dataset.auth === "signup" ? "auth-signup" : "auth-login";
+        button.dataset.auth === "signup"
+          ? "auth-signup"
+          : "auth-login";
       await goTo(screen);
       bindAuthSwitches();
     });

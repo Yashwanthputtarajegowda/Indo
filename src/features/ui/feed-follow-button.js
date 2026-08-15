@@ -54,15 +54,23 @@ function buttonLabel(stateValue) {
 }
 
 function paintButton(button, stateValue) {
-  button.classList.toggle("following", stateValue === "following");
-  button.classList.toggle("pending", stateValue === "pending");
+  button.classList.toggle(
+    "following",
+    stateValue === "following",
+  );
+  button.classList.toggle(
+    "pending",
+    stateValue === "pending",
+  );
   button.dataset.followState = stateValue;
   button.innerHTML = `${followIcon(stateValue === "following")}<span>${buttonLabel(stateValue)}</span>`;
 }
 
 async function setupButton(button, ownerUid) {
   const uid = String(ownerUid || "").trim();
-  const currentUid = String(auth.currentUser?.uid || "").trim();
+  const currentUid = String(
+    auth.currentUser?.uid || "",
+  ).trim();
   if (!uid || !currentUid || uid === currentUid) {
     button.remove();
     return;
@@ -76,7 +84,9 @@ async function setupButton(button, ownerUid) {
     else
       paintButton(
         button,
-        data.following || data.isFollowing ? "following" : "idle",
+        data.following || data.isFollowing
+          ? "following"
+          : "idle",
       );
   } catch {
     paintButton(button, "idle");
@@ -85,19 +95,29 @@ async function setupButton(button, ownerUid) {
   button.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
-    const currentState = button.dataset.followState || "idle";
+    const currentState =
+      button.dataset.followState || "idle";
     const nextFollow = currentState !== "following";
     button.disabled = true;
     try {
       const response = await request("/api/social/follow", {
         method: "POST",
-        body: JSON.stringify({ targetUid: uid, follow: nextFollow }),
+        body: JSON.stringify({
+          targetUid: uid,
+          follow: nextFollow,
+        }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(data.error || "Could not update follow status.");
+        throw new Error(
+          data.error || "Could not update follow status.",
+        );
       if (data.pending) paintButton(button, "pending");
-      else paintButton(button, nextFollow ? "following" : "idle");
+      else
+        paintButton(
+          button,
+          nextFollow ? "following" : "idle",
+        );
     } catch (error) {
       console.warn("Feed follow action failed:", error);
     } finally {
@@ -136,10 +156,13 @@ function install() {
       for (const node of mutation.addedNodes)
         if (node.nodeType === 1) process(node);
   });
-  observer.observe(document.getElementById("root") || document.body, {
-    childList: true,
-    subtree: true,
-  });
+  observer.observe(
+    document.getElementById("root") || document.body,
+    {
+      childList: true,
+      subtree: true,
+    },
+  );
 }
 
 function relationEntries(value) {
@@ -156,11 +179,17 @@ async function relationToken() {
   if (!user) throw new Error("Please login first.");
   return user.getIdToken(true);
 }
-async function loadRelationDirect(targetUid, relation, token) {
+async function loadRelationDirect(
+  targetUid,
+  relation,
+  token,
+) {
   const url = `https://indo-174f0-default-rtdb.firebaseio.com/users/${encodeURIComponent(targetUid)}/${relation}.json?auth=${encodeURIComponent(token)}`;
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error("relation read failed");
-  return relationEntries(await response.json().catch(() => ({})));
+  return relationEntries(
+    await response.json().catch(() => ({})),
+  );
 }
 async function openProfileRelation(root, relation) {
   const modal = document.createElement("div");
@@ -187,7 +216,8 @@ async function openProfileRelation(root, relation) {
     let uid = String(p.uid || p.ownerUid || "").trim();
     let username = String(
       p.username ||
-        root.querySelector(".profile-direct-head h2")?.textContent ||
+        root.querySelector(".profile-direct-head h2")
+          ?.textContent ||
         "",
     )
       .replace(/^@/, "")
@@ -195,7 +225,10 @@ async function openProfileRelation(root, relation) {
     if (!uid && username) {
       const r = await fetch(
         `${window.INDO_API_BASE || ""}/api/account/profile/${encodeURIComponent(username)}?t=${Date.now()}`,
-        { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        },
       );
       const d = await r.json().catch(() => ({}));
       if (r.ok && d.profile) {
@@ -211,26 +244,39 @@ async function openProfileRelation(root, relation) {
     if (!uid) throw new Error("Profile UID is missing.");
     let items = [];
     try {
-      items = await loadRelationDirect(uid, relation, token);
+      items = await loadRelationDirect(
+        uid,
+        relation,
+        token,
+      );
     } catch {}
-    if (!items.length && p[relation]) items = relationEntries(p[relation]);
+    if (!items.length && p[relation])
+      items = relationEntries(p[relation]);
     if (!items.length) {
       try {
         const r = await fetch(
           `${window.INDO_API_BASE || ""}/api/social/${relation}/${encodeURIComponent(uid)}?t=${Date.now()}`,
-          { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          },
         );
         const d = await r.json().catch(() => ({}));
-        if (r.ok) items = Array.isArray(d.items) ? d.items : [];
+        if (r.ok)
+          items = Array.isArray(d.items) ? d.items : [];
       } catch {}
     }
     if (!items.length) {
-      list.innerHTML = '<div class="indo-rel-empty">No users yet.</div>';
+      list.innerHTML =
+        '<div class="indo-rel-empty">No users yet.</div>';
       return;
     }
     list.innerHTML = items
       .map((item) => {
-        const id = String(item.userId || "").replace(/^@/, "");
+        const id = String(item.userId || "").replace(
+          /^@/,
+          "",
+        );
         const name = String(item.name || "Indo User");
         return `<button class="indo-rel-row" type="button" data-ruser="${item.uid || ""}" data-rid="${id}"><div class="indo-rel-avatar">${(name.charAt(0) || "U").toUpperCase()}</div><div><div class="indo-rel-name">${name}</div><div class="indo-rel-id">@${id || "user"}</div></div></button>`;
       })
@@ -240,9 +286,14 @@ async function openProfileRelation(root, relation) {
         const uid = b.dataset.ruser || "";
         const id = b.dataset.rid || "";
         modal.remove();
-        state.profile = { uid, ownerUid: uid, username: id };
+        state.profile = {
+          uid,
+          ownerUid: uid,
+          username: id,
+        };
         state.screen = "profile";
-        if (window.__indoNavigate) await window.__indoNavigate("profile");
+        if (window.__indoNavigate)
+          await window.__indoNavigate("profile");
       }),
     );
   } catch (error) {
@@ -258,7 +309,9 @@ function installRelationOverride() {
     (event) => {
       const stat =
         event.target instanceof Element
-          ? event.target.closest(".profile-direct-stats > div")
+          ? event.target.closest(
+              ".profile-direct-stats > div",
+            )
           : null;
       if (!stat) return;
       const root = document.getElementById("root");
@@ -268,11 +321,17 @@ function installRelationOverride() {
         !stats?.classList.contains("profile-direct-stats")
       )
         return;
-      const index = Array.prototype.indexOf.call(stats.children, stat);
+      const index = Array.prototype.indexOf.call(
+        stats.children,
+        stat,
+      );
       if (index !== 1 && index !== 2) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      openProfileRelation(root, index === 1 ? "followers" : "following");
+      openProfileRelation(
+        root,
+        index === 1 ? "followers" : "following",
+      );
     },
     true,
   );

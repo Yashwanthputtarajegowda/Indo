@@ -6,37 +6,54 @@ async function request(path, method = "GET", body) {
   const token = await user.getIdToken();
   const apiBase = window.INDO_API_BASE || "";
   const headers = { Authorization: `Bearer ${token}` };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (body !== undefined)
+    headers["Content-Type"] = "application/json";
   const response = await fetch(`${apiBase}${path}`, {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body:
+      body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Request failed.");
+  if (!response.ok)
+    throw new Error(data.error || "Request failed.");
   return data;
 }
 
 export function loadEngagement(mediaId) {
-  return request(`/api/media/${encodeURIComponent(mediaId)}/engagement`);
+  return request(
+    `/api/media/${encodeURIComponent(mediaId)}/engagement`,
+  );
 }
 
 export function toggleLike(mediaId, like) {
-  return request(`/api/media/${encodeURIComponent(mediaId)}/like`, "POST", {
-    like,
-  });
+  return request(
+    `/api/media/${encodeURIComponent(mediaId)}/like`,
+    "POST",
+    {
+      like,
+    },
+  );
 }
 
 export function toggleSave(mediaId, save) {
-  return request(`/api/media/${encodeURIComponent(mediaId)}/save`, "POST", {
-    save,
-  });
+  return request(
+    `/api/media/${encodeURIComponent(mediaId)}/save`,
+    "POST",
+    {
+      save,
+    },
+  );
 }
 
 export function addComment(mediaId, text) {
-  return request(`/api/media/${encodeURIComponent(mediaId)}/comments`, "POST", {
-    text,
-  });
+  return request(
+    `/api/media/${encodeURIComponent(mediaId)}/comments`,
+    "POST",
+    {
+      text,
+    },
+  );
 }
 
 export async function loadComments(mediaId) {
@@ -51,7 +68,10 @@ export async function loadComments(mediaId) {
     },
   );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not load comments.");
+  if (!response.ok)
+    throw new Error(
+      data.error || "Could not load comments.",
+    );
   return data.comments || [];
 }
 

@@ -1,6 +1,9 @@
 import { nav } from "../components/nav.js";
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
-import { loadWallet, requestPayout } from "../features/earning/wallet.js";
+import {
+  loadWallet,
+  requestPayout,
+} from "../features/earning/wallet.js";
 
 function escapeHtml(value = "") {
   return String(value).replace(
@@ -27,7 +30,9 @@ function renderPayouts(payouts) {
 }
 export async function renderWallet(app) {
   app.innerHTML = `<div class="app-shell">${renderIndoBrandTopbar()}<main class="settings-page"><button class="profile-direct-edit" type="button" data-screen="settings" style="margin-bottom:18px">‹ Back to Settings</button><section class="wallet-card"><small>Available balance</small><strong data-wallet-balance>$0.00</strong><p data-wallet-status>Loading wallet...</p></section><form id="payout-form" class="upload-form"><label>Amount to request<input name="amount" type="number" min="0.01" step="0.01" placeholder="10.00" required></label><label>Method<select name="method"><option value="manual">Manual review</option><option value="bank">Bank payout</option></select></label><button class="primary-btn" type="submit">Request payout</button><p class="wallet-message" data-wallet-message aria-live="polite"></p></form><div class="settings-group"><h4>Payout history</h4><div data-payout-list><div class="profile-empty">Loading...</div></div></div></main>${nav("profile")}</div>`;
-  const balance = app.querySelector("[data-wallet-balance]");
+  const balance = app.querySelector(
+    "[data-wallet-balance]",
+  );
   const status = app.querySelector("[data-wallet-status]");
   const list = app.querySelector("[data-payout-list]");
   try {
@@ -38,7 +43,8 @@ export async function renderWallet(app) {
       : "Turn Earning ON after eligibility to build payable balance.";
     list.innerHTML = renderPayouts(wallet.payouts || []);
   } catch (error) {
-    status.textContent = error.message || "Could not load wallet.";
+    status.textContent =
+      error.message || "Could not load wallet.";
     list.innerHTML =
       '<div class="profile-empty">Could not load payout history.</div>';
   }

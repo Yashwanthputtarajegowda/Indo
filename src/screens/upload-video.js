@@ -56,10 +56,13 @@ export function renderUploadVideo(app) {
     app
       .querySelector("#comments-toggle")
       .classList.toggle("on", values.allowComments);
-    app.querySelector("#duet-toggle").classList.toggle("on", values.allowDuet);
+    app
+      .querySelector("#duet-toggle")
+      .classList.toggle("on", values.allowDuet);
     app.querySelector("#category-value").textContent =
       values.category || "Select Category";
-    app.querySelector("#tags-value").textContent = values.tags.length
+    app.querySelector("#tags-value").textContent = values
+      .tags.length
       ? values.tags.map((t) => `#${t}`).join(" ")
       : "Add tags";
     app.querySelector("#location-value").textContent =
@@ -75,14 +78,19 @@ export function renderUploadVideo(app) {
             values.privacy,
           ) || values.privacy;
         const normalized = answer.trim().toLowerCase();
-        if (["public", "followers", "private"].includes(normalized))
+        if (
+          ["public", "followers", "private"].includes(
+            normalized,
+          )
+        )
           values.privacy = normalized;
       } else if (option === "comments") {
         values.allowComments = !values.allowComments;
       } else if (option === "duet") {
         values.allowDuet = !values.allowDuet;
       } else if (option === "category") {
-        const answer = window.prompt("Category", values.category) || "";
+        const answer =
+          window.prompt("Category", values.category) || "";
         values.category = answer.trim().slice(0, 60);
       } else if (option === "tags") {
         const answer =
@@ -96,7 +104,8 @@ export function renderUploadVideo(app) {
           .filter(Boolean)
           .slice(0, 20);
       } else if (option === "location") {
-        const answer = window.prompt("Location", values.location) || "";
+        const answer =
+          window.prompt("Location", values.location) || "";
         values.location = answer.trim().slice(0, 120);
       }
       refreshOptions();
@@ -109,8 +118,12 @@ export function renderUploadVideo(app) {
       message.textContent = "Select a video first.";
       return;
     }
-    const title = app.querySelector("#upload-title").value.trim();
-    const more = app.querySelector("#upload-more").value.trim();
+    const title = app
+      .querySelector("#upload-title")
+      .value.trim();
+    const more = app
+      .querySelector("#upload-more")
+      .value.trim();
     if (!title) {
       message.textContent = "Add a title first.";
       app.querySelector("#upload-title").focus();
@@ -136,10 +149,14 @@ export function renderUploadVideo(app) {
       });
       bar.style.width = "100%";
       message.textContent = "Your video is published!";
-      setTimeout(() => window.__indoNavigate?.("video"), 700);
+      setTimeout(
+        () => window.__indoNavigate?.("video"),
+        700,
+      );
     } catch (error) {
       message.textContent =
-        error?.message || "Upload failed. Please try again.";
+        error?.message ||
+        "Upload failed. Please try again.";
       submit.disabled = false;
     }
   });

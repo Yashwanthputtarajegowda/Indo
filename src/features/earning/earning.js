@@ -14,7 +14,10 @@ async function request(path, options = {}) {
     },
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Earning request failed.");
+  if (!response.ok)
+    throw new Error(
+      data.error || "Earning request failed.",
+    );
   return data;
 }
 
@@ -34,9 +37,13 @@ export function toggleEarning(enabled) {
 }
 
 export function recordWatchProgress(mediaId, seconds) {
-  if (!mediaId || !(Number(seconds) > 0)) return Promise.resolve(null);
+  if (!mediaId || !(Number(seconds) > 0))
+    return Promise.resolve(null);
   return request("/api/earnings/watch-progress", {
     method: "POST",
-    body: JSON.stringify({ mediaId, seconds: Number(seconds) }),
+    body: JSON.stringify({
+      mediaId,
+      seconds: Number(seconds),
+    }),
   }).catch(() => null);
 }

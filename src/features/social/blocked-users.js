@@ -2,7 +2,9 @@ const STORAGE_KEY = "indo_blocked_users";
 
 function read() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) || "[]",
+    );
   } catch {
     return [];
   }
@@ -15,12 +17,19 @@ export function loadBlockedUsers() {
   return Promise.resolve({ users: read() });
 }
 
-export function toggleBlockedUser(targetUid, blocked, profile = null) {
-  const users = read().filter((item) => item.uid !== targetUid);
+export function toggleBlockedUser(
+  targetUid,
+  blocked,
+  profile = null,
+) {
+  const users = read().filter(
+    (item) => item.uid !== targetUid,
+  );
   if (blocked)
     users.push({
       uid: targetUid,
-      username: profile?.username || `@${targetUid.slice(0, 8)}`,
+      username:
+        profile?.username || `@${targetUid.slice(0, 8)}`,
       name: profile?.name || "Indo User",
     });
   write(users);

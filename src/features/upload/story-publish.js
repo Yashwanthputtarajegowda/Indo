@@ -7,17 +7,22 @@ async function getStorySignature() {
   if (!user) throw new Error("Please login first.");
   const token = await user.getIdToken();
   const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(`${apiBase}/api/media/signature`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${apiBase}/api/media/signature`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ kind: "story" }),
     },
-    body: JSON.stringify({ kind: "story" }),
-  });
+  );
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(data.error || "Could not prepare story upload.");
+    throw new Error(
+      data.error || "Could not prepare story upload.",
+    );
   return { ...data, token };
 }
 
@@ -34,12 +39,22 @@ async function uploadToCloudinary(file, config) {
   );
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(data.error?.message || "Cloudinary story upload failed.");
+    throw new Error(
+      data.error?.message ||
+        "Cloudinary story upload failed.",
+    );
   return data;
 }
 
-export async function publishStory(file, onProgress = () => {}, editor = {}) {
-  if (!(file instanceof File) || !file.type.startsWith("video/"))
+export async function publishStory(
+  file,
+  onProgress = () => {},
+  editor = {},
+) {
+  if (
+    !(file instanceof File) ||
+    !file.type.startsWith("video/")
+  )
     throw new Error("Please select a video story.");
   onProgress(10, "Preparing story upload...");
   const config = await getStorySignature();
@@ -59,17 +74,25 @@ export async function publishStory(file, onProgress = () => {}, editor = {}) {
     }),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Could not publish story.");
+  if (!response.ok)
+    throw new Error(
+      data.error || "Could not publish story.",
+    );
 
   const user = auth.currentUser;
   if (user) {
     const returned =
-      data.story && typeof data.story === "object" ? data.story : {};
+      data.story && typeof data.story === "object"
+        ? data.story
+        : {};
     const cachedStory = {
       ...returned,
       id: returned.id || uploaded.public_id,
       ownerUid:
-        returned.ownerUid || returned.uid || returned.userId || user.uid,
+        returned.ownerUid ||
+        returned.uid ||
+        returned.userId ||
+        user.uid,
       username:
         returned.username ||
         user.displayName ||
@@ -83,17 +106,24 @@ export async function publishStory(file, onProgress = () => {}, editor = {}) {
       title: String(editor.title || "")
         .trim()
         .slice(0, 80),
-      titleFont: String(editor.titleFont || "Arial, sans-serif"),
+      titleFont: String(
+        editor.titleFont || "Arial, sans-serif",
+      ),
       titleX: Number(editor.titleX ?? 50),
       titleY: Number(editor.titleY ?? 14),
       crop: String(editor.crop || "portrait"),
-      stickerDataUrl: String(editor.stickerDataUrl || "").slice(0, 500000),
+      stickerDataUrl: String(
+        editor.stickerDataUrl || "",
+      ).slice(0, 500000),
       stickerX: Number(editor.stickerX ?? 50),
       stickerY: Number(editor.stickerY ?? 50),
       stickerScale: Number(editor.stickerScale ?? 1),
       createdAt: returned.createdAt || Date.now(),
     };
-    localStorage.setItem(LAST_STORY_KEY, JSON.stringify(cachedStory));
+    localStorage.setItem(
+      LAST_STORY_KEY,
+      JSON.stringify(cachedStory),
+    );
   }
 
   onProgress(100, "Story published.");

@@ -1,4 +1,7 @@
-import { auth, sendPasswordResetEmail } from "./firebase-client.js";
+import {
+  auth,
+  sendPasswordResetEmail,
+} from "./firebase-client.js";
 
 export async function resetPassword(email) {
   const normalized = String(email || "").trim();

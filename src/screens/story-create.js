@@ -11,7 +11,14 @@ const FONTS = [
   ["Pacifico", "Pacifico,cursive"],
   ["Mono", "monospace"],
 ];
-const COLORS = ["#fff", "#ff4bb8", "#ffcf4a", "#70e7ff", "#9b6cff", "#111"];
+const COLORS = [
+  "#fff",
+  "#ff4bb8",
+  "#ffcf4a",
+  "#70e7ff",
+  "#9b6cff",
+  "#111",
+];
 const EMOJIS = [
   "❤️",
   "🔥",
@@ -28,12 +35,21 @@ const EMOJIS = [
 ];
 const FILTERS = [
   ["Original", "none"],
-  ["Glow", "saturate(1.18) brightness(1.05) contrast(1.08)"],
+  [
+    "Glow",
+    "saturate(1.18) brightness(1.05) contrast(1.08)",
+  ],
   ["Dream", "saturate(1.1) brightness(1.08)"],
-  ["Cyber", "contrast(1.25) saturate(1.4) hue-rotate(24deg)"],
+  [
+    "Cyber",
+    "contrast(1.25) saturate(1.4) hue-rotate(24deg)",
+  ],
   ["Mono", "grayscale(1) contrast(1.18)"],
   ["Warm", "sepia(.18) saturate(1.28)"],
-  ["Night", "brightness(.72) contrast(1.28) saturate(1.18)"],
+  [
+    "Night",
+    "brightness(.72) contrast(1.28) saturate(1.18)",
+  ],
 ];
 const esc = (v) =>
   String(v ?? "").replace(
@@ -57,7 +73,11 @@ const fmt = (s) => {
 };
 const readDraft = () => {
   try {
-    return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null") || {};
+    return (
+      JSON.parse(
+        localStorage.getItem(DRAFT_KEY) || "null",
+      ) || {}
+    );
   } catch {
     return {};
   }
@@ -103,12 +123,28 @@ function compressImage(file) {
       const max = 420,
         scale = Math.min(
           1,
-          max / Math.max(img.naturalWidth || 1, img.naturalHeight || 1),
+          max /
+            Math.max(
+              img.naturalWidth || 1,
+              img.naturalHeight || 1,
+            ),
         ),
         c = document.createElement("canvas");
-      c.width = Math.max(1, Math.round((img.naturalWidth || 1) * scale));
-      c.height = Math.max(1, Math.round((img.naturalHeight || 1) * scale));
-      c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+      c.width = Math.max(
+        1,
+        Math.round((img.naturalWidth || 1) * scale),
+      );
+      c.height = Math.max(
+        1,
+        Math.round((img.naturalHeight || 1) * scale),
+      );
+      c.getContext("2d")?.drawImage(
+        img,
+        0,
+        0,
+        c.width,
+        c.height,
+      );
       resolve(c.toDataURL("image/jpeg", 0.82));
     };
     r.readAsDataURL(file);
@@ -129,7 +165,10 @@ function installStyles() {
   document.head.appendChild(st);
 }
 
-export function renderStoryCreate(app, draftFileOverride = null) {
+export function renderStoryCreate(
+  app,
+  draftFileOverride = null,
+) {
   installStyles();
   const initialFile =
     draftFileOverride instanceof File
@@ -176,9 +215,15 @@ export function renderStoryCreate(app, draftFileOverride = null) {
     msg.innerHTML = esc(t);
   };
   const preview = () => {
-    card.classList.toggle("square", state.crop === "square");
+    card.classList.toggle(
+      "square",
+      state.crop === "square",
+    );
     card.classList.toggle("wide", state.crop === "wide");
-    card.classList.toggle("contain", state.crop === "contain");
+    card.classList.toggle(
+      "contain",
+      state.crop === "contain",
+    );
     video.style.filter = state.filter;
     video.playbackRate = state.speed;
     title.textContent = state.title;
@@ -188,7 +233,9 @@ export function renderStoryCreate(app, draftFileOverride = null) {
     title.style.fontFamily = state.titleFont;
     title.style.color = state.titleColor;
     title.style.fontSize = `${state.titleSize}px`;
-    sticker.style.display = state.stickerDataUrl ? "block" : "none";
+    sticker.style.display = state.stickerDataUrl
+      ? "block"
+      : "none";
     sticker.src = state.stickerDataUrl || "";
     sticker.style.left = `${state.stickerX}%`;
     sticker.style.top = `${state.stickerY}%`;
@@ -223,16 +270,20 @@ export function renderStoryCreate(app, draftFileOverride = null) {
   const buildPanel = (tool) => {
     if (tool === "text") {
       panel.innerHTML = `<div class="o1-sec"><div class="o1-label"><span>Story text</span><span>80 max</span></div><input id="o1-text" class="o1-input" maxlength="80" value="${esc(state.title)}" placeholder="Write your story"></div><div class="o1-sec"><div class="o1-label"><span>Font</span></div><div class="o1-fonts">${FONTS.map(([n, f]) => `<button class="o1-font ${state.titleFont === f ? "active" : ""}" data-font="${esc(f)}" style="font-family:${esc(f)}" type="button">${esc(n)}</button>`).join("")}</div></div><div class="o1-sec"><div class="o1-label"><span>Color</span></div><div class="o1-colors">${COLORS.map((c) => `<button class="o1-color ${state.titleColor === c ? "active" : ""}" data-color="${c}" style="background:${c}" type="button"></button>`).join("")}</div></div><div class="o1-sec"><div class="o1-label"><span>Size</span><b>${state.titleSize}px</b></div><input id="o1-size" class="o1-slider" type="range" min="16" max="48" value="${state.titleSize}"></div>`;
-      panel.querySelector("#o1-text").addEventListener("input", (e) => {
-        state.title = e.target.value;
-        preview();
-        saveDraft(state);
-      });
-      panel.querySelector("#o1-size").addEventListener("input", (e) => {
-        state.titleSize = Number(e.target.value);
-        preview();
-        buildPanel("text");
-      });
+      panel
+        .querySelector("#o1-text")
+        .addEventListener("input", (e) => {
+          state.title = e.target.value;
+          preview();
+          saveDraft(state);
+        });
+      panel
+        .querySelector("#o1-size")
+        .addEventListener("input", (e) => {
+          state.titleSize = Number(e.target.value);
+          preview();
+          buildPanel("text");
+        });
       panel.querySelectorAll("[data-font]").forEach((b) =>
         b.addEventListener("click", () => {
           state.titleFont = b.dataset.font;
@@ -269,24 +320,31 @@ export function renderStoryCreate(app, draftFileOverride = null) {
           saveDraft(state);
         }),
       );
-      panel.querySelector("#o1-fill").addEventListener("click", () => {
-        if (state.crop === "contain") state.crop = "portrait";
-        preview();
-        buildPanel("style");
-      });
-      panel.querySelector("#o1-contain").addEventListener("click", () => {
-        state.crop = "contain";
-        preview();
-        buildPanel("style");
-        saveDraft(state);
-      });
-      panel.querySelector("#o1-reset-style").addEventListener("click", () => {
-        state.crop = "portrait";
-        state.speed = 1;
-        preview();
-        buildPanel("style");
-        saveDraft(state);
-      });
+      panel
+        .querySelector("#o1-fill")
+        .addEventListener("click", () => {
+          if (state.crop === "contain")
+            state.crop = "portrait";
+          preview();
+          buildPanel("style");
+        });
+      panel
+        .querySelector("#o1-contain")
+        .addEventListener("click", () => {
+          state.crop = "contain";
+          preview();
+          buildPanel("style");
+          saveDraft(state);
+        });
+      panel
+        .querySelector("#o1-reset-style")
+        .addEventListener("click", () => {
+          state.crop = "portrait";
+          state.speed = 1;
+          preview();
+          buildPanel("style");
+          saveDraft(state);
+        });
       return;
     }
     if (tool === "sticker") {
@@ -326,7 +384,9 @@ export function renderStoryCreate(app, draftFileOverride = null) {
       ["o1-enhance", "o1-glow", "o1-clean"].forEach((id) =>
         panel
           .querySelector(`#${id}`)
-          .addEventListener("click", () => setMsg("Preview effect applied.")),
+          .addEventListener("click", () =>
+            setMsg("Preview effect applied."),
+          ),
       );
       return;
     }
@@ -339,12 +399,16 @@ export function renderStoryCreate(app, draftFileOverride = null) {
       );
   };
   const loadVideo = (file) => {
-    if (!(file instanceof File) || !file.type.startsWith("video/")) {
+    if (
+      !(file instanceof File) ||
+      !file.type.startsWith("video/")
+    ) {
       setMsg("Please choose a video.");
       return;
     }
     state.file = file;
-    if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
+    if (state.objectUrl)
+      URL.revokeObjectURL(state.objectUrl);
     state.objectUrl = URL.createObjectURL(file);
     video.src = state.objectUrl;
     video.load();
@@ -358,8 +422,20 @@ export function renderStoryCreate(app, draftFileOverride = null) {
       if (!down) return;
       e.preventDefault();
       const r = card.getBoundingClientRect(),
-        x = Math.max(6, Math.min(94, ((e.clientX - r.left) / r.width) * 100)),
-        y = Math.max(6, Math.min(94, ((e.clientY - r.top) / r.height) * 100));
+        x = Math.max(
+          6,
+          Math.min(
+            94,
+            ((e.clientX - r.left) / r.width) * 100,
+          ),
+        ),
+        y = Math.max(
+          6,
+          Math.min(
+            94,
+            ((e.clientY - r.top) / r.height) * 100,
+          ),
+        );
       el.style.left = `${x}%`;
       el.style.top = `${y}%`;
       move(x, y);
@@ -374,8 +450,12 @@ export function renderStoryCreate(app, draftFileOverride = null) {
       if (sheet.classList.contains("open")) return;
       down = true;
       e.preventDefault();
-      window.addEventListener("pointermove", mv, { passive: false });
-      window.addEventListener("pointerup", up, { once: true });
+      window.addEventListener("pointermove", mv, {
+        passive: false,
+      });
+      window.addEventListener("pointerup", up, {
+        once: true,
+      });
     });
   };
   async function publishNow() {
@@ -387,65 +467,93 @@ export function renderStoryCreate(app, draftFileOverride = null) {
     app.querySelector("#o1-publish-bottom").disabled = true;
     setMsg("Uploading story...");
     try {
-      await publishStory(state.file, (p, t) => setMsg(`${t} ${p}%`), {
-        title: state.title,
-        titleFont: state.titleFont,
-        titleX: state.titleX,
-        titleY: state.titleY,
-        crop: state.crop,
-        stickerDataUrl: state.stickerDataUrl,
-        stickerX: state.stickerX,
-        stickerY: state.stickerY,
-        stickerScale: state.stickerScale,
-      });
+      await publishStory(
+        state.file,
+        (p, t) => setMsg(`${t} ${p}%`),
+        {
+          title: state.title,
+          titleFont: state.titleFont,
+          titleX: state.titleX,
+          titleY: state.titleY,
+          crop: state.crop,
+          stickerDataUrl: state.stickerDataUrl,
+          stickerX: state.stickerX,
+          stickerY: state.stickerY,
+          stickerScale: state.stickerScale,
+        },
+      );
       clearDraft();
       window[DRAFT_FILE_KEY] = null;
       setMsg("Story published successfully.");
-      setTimeout(() => window.__indoNavigate?.("home"), 650);
+      setTimeout(
+        () => window.__indoNavigate?.("home"),
+        650,
+      );
     } catch (err) {
       setMsg(err?.message || "Story upload failed.");
       publishButton.disabled = false;
-      app.querySelector("#o1-publish-bottom").disabled = false;
+      app.querySelector("#o1-publish-bottom").disabled =
+        false;
     }
   }
-  app.querySelector("#o1-publish-bottom").addEventListener("click", publishNow);
+  app
+    .querySelector("#o1-publish-bottom")
+    .addEventListener("click", publishNow);
   publishButton.addEventListener("click", publishNow);
-  app.querySelector("#o1-draft").addEventListener("click", () => {
-    saveDraft(state);
-    setMsg("Draft saved.");
-  });
-  app.querySelector("#o1-save").addEventListener("click", () => {
-    saveDraft(state);
-    setMsg("Draft saved.");
-  });
-  app.querySelector("#o1-close").addEventListener("click", closeSheet);
+  app
+    .querySelector("#o1-draft")
+    .addEventListener("click", () => {
+      saveDraft(state);
+      setMsg("Draft saved.");
+    });
+  app
+    .querySelector("#o1-save")
+    .addEventListener("click", () => {
+      saveDraft(state);
+      setMsg("Draft saved.");
+    });
+  app
+    .querySelector("#o1-close")
+    .addEventListener("click", closeSheet);
   app
     .querySelector("#o1-edit")
     .addEventListener("click", () => openSheet("text"));
   app
     .querySelectorAll("[data-tool]")
     .forEach((b) =>
-      b.addEventListener("click", () => openSheet(b.dataset.tool)),
+      b.addEventListener("click", () =>
+        openSheet(b.dataset.tool),
+      ),
     );
   app
     .querySelector("#o1-choose")
     .addEventListener("click", () => videoInput.click());
-  app.querySelector("#o1-mute").addEventListener("click", () => {
-    video.muted = !video.muted;
-    app.querySelector("#o1-mute").textContent = video.muted ? "🔇" : "🔊";
-  });
-  app.querySelector("#o1-play").addEventListener("click", () => {
-    if (video.paused) video.play().catch(() => {});
-    else video.pause();
-  });
-  app.querySelector("#o1-fit").addEventListener("click", () => {
-    state.crop = "contain";
-    preview();
-  });
-  app.querySelector("#o1-fullscreen").addEventListener("click", () => {
-    if (document.fullscreenElement) document.exitFullscreen?.();
-    else card.requestFullscreen?.().catch(() => {});
-  });
+  app
+    .querySelector("#o1-mute")
+    .addEventListener("click", () => {
+      video.muted = !video.muted;
+      app.querySelector("#o1-mute").textContent =
+        video.muted ? "🔇" : "🔊";
+    });
+  app
+    .querySelector("#o1-play")
+    .addEventListener("click", () => {
+      if (video.paused) video.play().catch(() => {});
+      else video.pause();
+    });
+  app
+    .querySelector("#o1-fit")
+    .addEventListener("click", () => {
+      state.crop = "contain";
+      preview();
+    });
+  app
+    .querySelector("#o1-fullscreen")
+    .addEventListener("click", () => {
+      if (document.fullscreenElement)
+        document.exitFullscreen?.();
+      else card.requestFullscreen?.().catch(() => {});
+    });
   videoInput.addEventListener("change", () => {
     const f = videoInput.files?.[0];
     if (f) loadVideo(f);
@@ -454,7 +562,8 @@ export function renderStoryCreate(app, draftFileOverride = null) {
   app
     .querySelector("#o1-sticker-input")
     .addEventListener("change", async () => {
-      const f = app.querySelector("#o1-sticker-input").files?.[0];
+      const f = app.querySelector("#o1-sticker-input")
+        .files?.[0];
       if (!f) return;
       try {
         state.stickerDataUrl = await compressImage(f);
@@ -466,26 +575,34 @@ export function renderStoryCreate(app, draftFileOverride = null) {
       }
       app.querySelector("#o1-sticker-input").value = "";
     });
-  app.querySelector("#o1-audio-input").addEventListener("change", () => {
-    const f = app.querySelector("#o1-audio-input").files?.[0];
-    if (!f) return;
-    if (state.audioUrl) URL.revokeObjectURL(state.audioUrl);
-    state.audioUrl = URL.createObjectURL(f);
-    audio.src = state.audioUrl;
-    audio.volume = 0.75;
-    audio.play().catch(() => {});
-    openSheet("music");
-    const n = app.querySelector("#o1-audio-name");
-    if (n) n.textContent = f.name;
-  });
+  app
+    .querySelector("#o1-audio-input")
+    .addEventListener("change", () => {
+      const f = app.querySelector("#o1-audio-input")
+        .files?.[0];
+      if (!f) return;
+      if (state.audioUrl)
+        URL.revokeObjectURL(state.audioUrl);
+      state.audioUrl = URL.createObjectURL(f);
+      audio.src = state.audioUrl;
+      audio.volume = 0.75;
+      audio.play().catch(() => {});
+      openSheet("music");
+      const n = app.querySelector("#o1-audio-name");
+      if (n) n.textContent = f.name;
+    });
   seek.addEventListener("input", () => {
     video.currentTime = Number(seek.value) || 0;
     timeline();
   });
   video.addEventListener("loadedmetadata", timeline);
   video.addEventListener("timeupdate", timeline);
-  video.addEventListener("play", () => play.classList.add("hidden"));
-  video.addEventListener("pause", () => play.classList.remove("hidden"));
+  video.addEventListener("play", () =>
+    play.classList.add("hidden"),
+  );
+  video.addEventListener("pause", () =>
+    play.classList.remove("hidden"),
+  );
   drag(title, (x, y) => {
     state.titleX = x;
     state.titleY = y;
@@ -525,12 +642,15 @@ export function renderStoryCreate(app, draftFileOverride = null) {
   buildPanel("text");
   preview();
   if (state.file) loadVideo(state.file);
-  else setMsg("Full-screen first. Choose a video to start.");
+  else
+    setMsg("Full-screen first. Choose a video to start.");
   window.addEventListener(
     "beforeunload",
     () => {
-      if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
-      if (state.audioUrl) URL.revokeObjectURL(state.audioUrl);
+      if (state.objectUrl)
+        URL.revokeObjectURL(state.objectUrl);
+      if (state.audioUrl)
+        URL.revokeObjectURL(state.audioUrl);
     },
     { once: true },
   );

@@ -10,10 +10,17 @@ async function request(path, options = {}) {
     Authorization: `Bearer ${token}`,
     ...(options.headers || {}),
   };
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
-  const response = await fetch(`${API_BASE()}${path}`, { ...options, headers });
+  if (options.body !== undefined)
+    headers["Content-Type"] = "application/json";
+  const response = await fetch(`${API_BASE()}${path}`, {
+    ...options,
+    headers,
+  });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Messaging request failed.");
+  if (!response.ok)
+    throw new Error(
+      data.error || "Messaging request failed.",
+    );
   return data;
 }
 
@@ -32,25 +39,35 @@ function escapeHtml(value = "") {
 }
 
 async function loadMessages(uid) {
-  const data = await request(`/api/messages/${encodeURIComponent(uid)}`);
+  const data = await request(
+    `/api/messages/${encodeURIComponent(uid)}`,
+  );
   return data.messages || [];
 }
 
 async function sendMessage(uid, text) {
-  return request(`/api/messages/${encodeURIComponent(uid)}`, {
-    method: "POST",
-    body: JSON.stringify({ text }),
-  });
+  return request(
+    `/api/messages/${encodeURIComponent(uid)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    },
+  );
 }
 
 async function markRead(uid) {
-  return request(`/api/messages/${encodeURIComponent(uid)}/read`, {
-    method: "POST",
-  }).catch(() => null);
+  return request(
+    `/api/messages/${encodeURIComponent(uid)}/read`,
+    {
+      method: "POST",
+    },
+  ).catch(() => null);
 }
 
 function openMessageComposer(uid, userId, name) {
-  document.querySelector("[data-indo-message-modal]")?.remove();
+  document
+    .querySelector("[data-indo-message-modal]")
+    ?.remove();
 
   const overlay = document.createElement("div");
   overlay.dataset.indoMessageModal = "true";
@@ -77,9 +94,13 @@ function openMessageComposer(uid, userId, name) {
   overlay
     .querySelector("[data-message-close]")
     .addEventListener("click", close);
-  overlay.firstElementChild.addEventListener("click", (event) => {
-    if (event.target === overlay.firstElementChild) close();
-  });
+  overlay.firstElementChild.addEventListener(
+    "click",
+    (event) => {
+      if (event.target === overlay.firstElementChild)
+        close();
+    },
+  );
 
   const render = (messages) => {
     if (!messages.length) {
@@ -89,7 +110,8 @@ function openMessageComposer(uid, userId, name) {
     }
     list.innerHTML = messages
       .map((message) => {
-        const mine = message.senderUid === auth.currentUser?.uid;
+        const mine =
+          message.senderUid === auth.currentUser?.uid;
         return `<div style="align-self:${mine ? "flex-end" : "flex-start"};max-width:82%;padding:9px 12px;border-radius:14px;background:${mine ? "#2b5cff" : "#20202b"};word-break:break-word">${escapeHtml(message.text)}<small style="display:block;opacity:.65;margin-top:3px;font-size:10px">${new Date(Number(message.createdAt || 0)).toLocaleString()}</small></div>`;
       })
       .join("");
@@ -110,7 +132,9 @@ function openMessageComposer(uid, userId, name) {
     const input = form.elements.text;
     const text = String(input.value || "").trim();
     if (!text) return;
-    const button = form.querySelector('button[type="submit"]');
+    const button = form.querySelector(
+      'button[type="submit"]',
+    );
     button.disabled = true;
     try {
       await sendMessage(uid, text);
@@ -130,34 +154,48 @@ function openMessageComposer(uid, userId, name) {
 
 function addMessageButtons() {
   document
-    .querySelectorAll("[data-search-result] [data-search-follow-uid]")
+    .querySelectorAll(
+      "[data-search-result] [data-search-follow-uid]",
+    )
     .forEach((followButton) => {
-      if (followButton.dataset.messageReady === "true") return;
+      if (followButton.dataset.messageReady === "true")
+        return;
       followButton.dataset.messageReady = "true";
       const uid = followButton.dataset.searchFollowUid;
       if (!uid) return;
       const wrapper = document.createElement("span");
-      wrapper.style.cssText = "display:inline-flex;gap:8px;margin-left:8px;";
-      const messageButton = document.createElement("button");
+      wrapper.style.cssText =
+        "display:inline-flex;gap:8px;margin-left:8px;";
+      const messageButton =
+        document.createElement("button");
       messageButton.type = "button";
       messageButton.className = "follow-btn";
       messageButton.textContent = "Message";
       messageButton.dataset.messageUid = uid;
       messageButton.addEventListener("click", () => {
-        const result = followButton.closest(".search-user-result");
+        const result = followButton.closest(
+          ".search-user-result",
+        );
         const name =
-          result?.querySelector(".search-user-copy small")?.textContent ||
-          "Indo User";
+          result?.querySelector(".search-user-copy small")
+            ?.textContent || "Indo User";
         const userId =
-          result?.querySelector(".search-user-copy b")?.textContent || "";
+          result?.querySelector(".search-user-copy b")
+            ?.textContent || "";
         openMessageComposer(uid, userId, name);
       });
-      followButton.insertAdjacentElement("afterend", messageButton);
+      followButton.insertAdjacentElement(
+        "afterend",
+        messageButton,
+      );
     });
 }
 
 const observer = new MutationObserver(addMessageButtons);
 window.addEventListener("DOMContentLoaded", () => {
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
   addMessageButtons();
 });

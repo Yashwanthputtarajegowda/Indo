@@ -19,7 +19,9 @@ async function loadUnreadCount() {
     if (!response.ok) return 0;
     const data = await response.json().catch(() => ({}));
     return Array.isArray(data.notifications)
-      ? data.notifications.filter((item) => item && item.read !== true).length
+      ? data.notifications.filter(
+          (item) => item && item.read !== true,
+        ).length
       : 0;
   } catch {
     return 0;
@@ -31,7 +33,9 @@ function paintUnreadBadge(count) {
     ".indo-option5-topbar .notification-button",
   );
   if (!button) return;
-  let badge = button.querySelector(".indo-notification-badge");
+  let badge = button.querySelector(
+    ".indo-notification-badge",
+  );
   const n = Math.max(0, Number(count) || 0);
   if (n <= 0) {
     badge?.remove();
@@ -45,7 +49,10 @@ function paintUnreadBadge(count) {
   }
   badge.textContent = n > 99 ? "99+" : String(n);
   button.setAttribute("data-unread-count", String(n));
-  button.setAttribute("aria-label", `Notifications, ${n} unread`);
+  button.setAttribute(
+    "aria-label",
+    `Notifications, ${n} unread`,
+  );
 }
 
 async function refreshUnreadBadge() {

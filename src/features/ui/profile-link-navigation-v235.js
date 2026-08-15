@@ -98,16 +98,22 @@ async function openProfile(userId) {
     );
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data?.ok || !data?.profile)
-      throw new Error(data?.error || "Could not open profile.");
+      throw new Error(
+        data?.error || "Could not open profile.",
+      );
 
     state.profile = {
       ...data.profile,
       uid: data.profile.uid || data.profile.ownerUid || "",
       username: normalizeUserId(
-        data.profile.userId || data.profile.username || normalized,
+        data.profile.userId ||
+          data.profile.username ||
+          normalized,
       ),
       userId: normalizeUserId(
-        data.profile.userId || data.profile.username || normalized,
+        data.profile.userId ||
+          data.profile.username ||
+          normalized,
       ),
       stats: data.stats || {},
       social: data.social || {},
@@ -154,7 +160,10 @@ export function installProfileLinkNavigation() {
   document.addEventListener(
     "click",
     (event) => {
-      const element = event.target instanceof Element ? event.target : null;
+      const element =
+        event.target instanceof Element
+          ? event.target
+          : null;
       if (!element) return;
 
       const target = findIdentityTarget(element);
@@ -191,7 +200,11 @@ export function installProfileLinkNavigation() {
 
 export function bindProfileIdentity(container = document) {
   installProfileLinkNavigation();
-  if (!(container instanceof Element || container instanceof Document)) return;
+  if (!(
+    container instanceof Element ||
+    container instanceof Document
+  ))
+    return;
   container
     .querySelectorAll(
       "[data-profile-user-id],[data-user-id],[data-username],[data-userid],[data-profile-user]",

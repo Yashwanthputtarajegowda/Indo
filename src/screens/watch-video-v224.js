@@ -25,7 +25,8 @@ function count(v) {
 }
 function age(t) {
   const m = Math.floor(
-    Math.max(0, Date.now() - Number(t || Date.now())) / 60000,
+    Math.max(0, Date.now() - Number(t || Date.now())) /
+      60000,
   );
   if (m < 1) return "Just now";
   if (m < 60) return `${m}m ago`;
@@ -40,7 +41,10 @@ function duration(s) {
 }
 function videoSrc(raw) {
   const u = String(raw || "");
-  if (!u.includes("res.cloudinary.com") || !u.includes("/video/upload/"))
+  if (
+    !u.includes("res.cloudinary.com") ||
+    !u.includes("/video/upload/")
+  )
     return u;
   const marker = "/video/upload/";
   const i = u.indexOf(marker);
@@ -52,14 +56,19 @@ function videoSrc(raw) {
 }
 function loadCurrent() {
   try {
-    return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "null");
+    return JSON.parse(
+      sessionStorage.getItem(STORAGE_KEY) || "null",
+    );
   } catch {
     return null;
   }
 }
 function saveCurrent(video) {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(video));
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(video),
+    );
   } catch {}
 }
 async function token(force = false) {
@@ -72,12 +81,15 @@ async function request(
   { method = "GET", body, authRequired = true } = {},
 ) {
   const headers = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (authRequired) headers.Authorization = `Bearer ${await token(false)}`;
+  if (body !== undefined)
+    headers["Content-Type"] = "application/json";
+  if (authRequired)
+    headers.Authorization = `Bearer ${await token(false)}`;
   const r = await fetch(`${API_BASE()}${path}`, {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body:
+      body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
   });
   const d = await r.json().catch(() => ({}));
@@ -109,16 +121,19 @@ function tagsHtml(tags) {
 }
 function renderDetails(video) {
   const description =
-    String(video.description ?? video.caption ?? "").trim() ||
-    "No additional details provided.";
-  const creator = String(video.creator || video.userId || "user").replace(
-    /^@/,
-    "",
-  );
+    String(
+      video.description ?? video.caption ?? "",
+    ).trim() || "No additional details provided.";
+  const creator = String(
+    video.creator || video.userId || "user",
+  ).replace(/^@/, "");
   const lang =
-    String(video.language || video.lang || "").trim() || "Not specified";
-  const category = String(video.category || "").trim() || "Not specified";
-  const location = String(video.location || "").trim() || "Not specified";
+    String(video.language || video.lang || "").trim() ||
+    "Not specified";
+  const category =
+    String(video.category || "").trim() || "Not specified";
+  const location =
+    String(video.location || "").trim() || "Not specified";
   const privacy = String(video.privacy || "public")
     .trim()
     .toLowerCase();
@@ -134,12 +149,15 @@ function renderDetails(video) {
 }
 async function loadUpNext(current) {
   try {
-    const d = await request("/api/media/videos?type=video&limit=12", {
-      authRequired: false,
-    });
-    const list = (Array.isArray(d.videos) ? d.videos : []).filter(
-      (v) => String(v.id) !== String(current.id),
+    const d = await request(
+      "/api/media/videos?type=video&limit=12",
+      {
+        authRequired: false,
+      },
     );
+    const list = (
+      Array.isArray(d.videos) ? d.videos : []
+    ).filter((v) => String(v.id) !== String(current.id));
     return list[0] || null;
   } catch {
     return null;
@@ -173,31 +191,46 @@ export async function renderWatchVideo(app) {
     return;
   }
   saveCurrent(video);
-  const raw = video.secureUrl || video.videoUrl || video.url || "";
+  const raw =
+    video.secureUrl || video.videoUrl || video.url || "";
   const src = videoSrc(raw);
-  const creator = String(video.creator || video.userId || "user").replace(
-    /^@/,
-    "",
-  );
+  const creator = String(
+    video.creator || video.userId || "user",
+  ).replace(/^@/, "");
   const ownerUid = String(
     video.ownerUid || video.creatorUid || video.uid || "",
   ).trim();
   app.innerHTML = `<div class="app-shell indo-watch-shell"><header class="indo-watch-head"><button type="button" data-back aria-label="Back">‹</button><h2>Watch</h2><span class="indo-watch-quality">1080p⌄</span></header><main class="indo-watch-main"><div class="indo-watch-player"><video id="watch-video" controls autoplay playsinline preload="auto" src="${esc(src)}"></video></div><div class="indo-watch-title">${esc(video.title || "Untitled video")}</div><div class="indo-watch-creator"><div class="indo-watch-avatar">${esc(creator.charAt(0).toUpperCase() || "I")}</div><div class="indo-watch-creator-info"><span class="indo-watch-creator-name">@${esc(creator)}</span><span class="indo-watch-followers">Indo creator</span></div><button class="indo-watch-follow" id="watch-follow" type="button">Follow</button></div><div class="indo-watch-actions"><button type="button" data-action="like"><b>♡</b><span>${count(video.likes)}</span></button><button type="button" data-action="comment"><b>◯</b><span>${count(video.comments)}</span></button><button type="button" data-action="share"><b>↗</b><span>Share</span></button><button type="button" data-action="save"><b>▱</b><span>Save</span></button><button type="button" data-action="views"><b>◉</b><span>${count(video.views)}</span></button></div><div class="indo-watch-more-row"><button type="button" class="indo-watch-more" id="watch-more">More <span>⌄</span></button></div><div id="watch-details" hidden></div><section class="indo-watch-comments"><h3>Comments (<span id="comment-count">${count(video.comments)}</span>)</h3><div id="watch-comments-list"><div class="indo-watch-status">Loading comments...</div></div><form class="indo-comment-form" id="comment-form"><input id="comment-input" class="indo-comment-box" placeholder="Add a comment..." ${video.allowComments === false ? "disabled" : ""}/><button class="indo-comment-send" type="submit" ${video.allowComments === false ? "disabled" : ""}>Send</button></form><div id="comment-status" class="indo-comment-status"></div></section><section class="indo-watch-upnext"><div class="indo-watch-upnext-head"><h3>Up next</h3><div class="indo-watch-autoplay"><span>Autoplay</span><span class="indo-toggle"><i></i></span></div></div><div id="watch-upnext"><div class="indo-watch-status">Loading...</div></div></section></main>${nav("video")}</div>`;
   const followBtn = app.querySelector("#watch-follow");
   const likeBtn = app.querySelector('[data-action="like"]');
-  const commentBtn = app.querySelector('[data-action="comment"]');
+  const commentBtn = app.querySelector(
+    '[data-action="comment"]',
+  );
   const saveBtn = app.querySelector('[data-action="save"]');
-  const viewBtn = app.querySelector('[data-action="views"]');
+  const viewBtn = app.querySelector(
+    '[data-action="views"]',
+  );
   app
     .querySelector("[data-back]")
-    ?.addEventListener("click", () => window.__indoNavigate?.("video"));
-  if (!ownerUid || String(auth.currentUser?.uid || "") === ownerUid)
+    ?.addEventListener("click", () =>
+      window.__indoNavigate?.("video"),
+    );
+  if (
+    !ownerUid ||
+    String(auth.currentUser?.uid || "") === ownerUid
+  )
     followBtn.remove();
   else {
     const initial = await loadFollow(ownerUid);
     const paint = (stateValue) => {
-      followBtn.classList.toggle("following", stateValue === "following");
-      followBtn.classList.toggle("pending", stateValue === "pending");
+      followBtn.classList.toggle(
+        "following",
+        stateValue === "following",
+      );
+      followBtn.classList.toggle(
+        "pending",
+        stateValue === "pending",
+      );
       followBtn.dataset.followState = stateValue;
       followBtn.textContent =
         stateValue === "following"
@@ -207,10 +240,15 @@ export async function renderWatchVideo(app) {
             : "Follow";
     };
     paint(
-      initial.pending ? "pending" : initial.following ? "following" : "idle",
+      initial.pending
+        ? "pending"
+        : initial.following
+          ? "following"
+          : "idle",
     );
     followBtn.addEventListener("click", async () => {
-      const current = followBtn.dataset.followState || "idle";
+      const current =
+        followBtn.dataset.followState || "idle";
       const next = current !== "following";
       followBtn.disabled = true;
       try {
@@ -218,7 +256,13 @@ export async function renderWatchVideo(app) {
           method: "POST",
           body: { targetUid: ownerUid, follow: next },
         });
-        paint(d.pending ? "pending" : next ? "following" : "idle");
+        paint(
+          d.pending
+            ? "pending"
+            : next
+              ? "following"
+              : "idle",
+        );
       } catch (e) {
         followBtn.textContent = e.message || "Try again";
       } finally {
@@ -248,13 +292,18 @@ export async function renderWatchVideo(app) {
     saveBtn.classList.toggle("active-save", !!status.saved);
     video.likes = Number(status.likes ?? video.likes);
     video.views = Number(status.views ?? video.views);
-    likeBtn.querySelector("span").textContent = count(video.likes);
-    viewBtn.querySelector("span").textContent = count(video.views);
+    likeBtn.querySelector("span").textContent = count(
+      video.likes,
+    );
+    viewBtn.querySelector("span").textContent = count(
+      video.views,
+    );
   } catch {}
   likeBtn.addEventListener("click", async () => {
     likeBtn.disabled = true;
     try {
-      const liked = !likeBtn.classList.contains("active-like");
+      const liked =
+        !likeBtn.classList.contains("active-like");
       const d = await request(
         `/api/media/${encodeURIComponent(video.id)}/like`,
         {
@@ -263,7 +312,9 @@ export async function renderWatchVideo(app) {
         },
       );
       likeBtn.classList.toggle("active-like", !!d.liked);
-      likeBtn.querySelector("span").textContent = count(d.likes);
+      likeBtn.querySelector("span").textContent = count(
+        d.likes,
+      );
       video.likes = Number(d.likes || 0);
       saveCurrent(video);
     } catch {
@@ -274,7 +325,8 @@ export async function renderWatchVideo(app) {
   saveBtn.addEventListener("click", async () => {
     saveBtn.disabled = true;
     try {
-      const saved = !saveBtn.classList.contains("active-save");
+      const saved =
+        !saveBtn.classList.contains("active-save");
       const d = await request(
         `/api/media/${encodeURIComponent(video.id)}/save`,
         {
@@ -294,7 +346,10 @@ export async function renderWatchVideo(app) {
   viewBtn.addEventListener("click", () =>
     app
       .querySelector(".indo-watch-player")
-      ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      }),
   );
   app
     .querySelector('[data-action="share"]')
@@ -302,14 +357,19 @@ export async function renderWatchVideo(app) {
       const url = location.href;
       try {
         if (navigator.share)
-          await navigator.share({ title: video.title || "Indo video", url });
+          await navigator.share({
+            title: video.title || "Indo video",
+            url,
+          });
         else await navigator.clipboard?.writeText(url);
       } catch {}
     });
   async function refreshComments() {
     const comments = await loadComments(video.id);
     const list = app.querySelector("#watch-comments-list");
-    app.querySelector("#comment-count").textContent = count(comments.length);
+    app.querySelector("#comment-count").textContent = count(
+      comments.length,
+    );
     list.innerHTML = comments.length
       ? comments
           .map(
@@ -320,28 +380,34 @@ export async function renderWatchVideo(app) {
       : '<div class="indo-watch-status">No comments yet.</div>';
   }
   refreshComments();
-  app.querySelector("#comment-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const input = app.querySelector("#comment-input"),
-      status = app.querySelector("#comment-status");
-    const text = input.value.trim();
-    if (!text) return;
-    input.disabled = true;
-    status.textContent = "Sending...";
-    try {
-      await request(`/api/media/${encodeURIComponent(video.id)}/comments`, {
-        method: "POST",
-        body: { text },
-      });
-      input.value = "";
-      status.textContent = "";
-      await refreshComments();
-    } catch (err) {
-      status.textContent = err.message || "Could not send comment.";
-    } finally {
-      input.disabled = video.allowComments === false;
-    }
-  });
+  app
+    .querySelector("#comment-form")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = app.querySelector("#comment-input"),
+        status = app.querySelector("#comment-status");
+      const text = input.value.trim();
+      if (!text) return;
+      input.disabled = true;
+      status.textContent = "Sending...";
+      try {
+        await request(
+          `/api/media/${encodeURIComponent(video.id)}/comments`,
+          {
+            method: "POST",
+            body: { text },
+          },
+        );
+        input.value = "";
+        status.textContent = "";
+        await refreshComments();
+      } catch (err) {
+        status.textContent =
+          err.message || "Could not send comment.";
+      } finally {
+        input.disabled = video.allowComments === false;
+      }
+    });
   try {
     const d = await request(
       `/api/media/videos/${encodeURIComponent(video.id)}/view`,
@@ -350,7 +416,9 @@ export async function renderWatchVideo(app) {
       },
     );
     video.views = Number(d.views ?? video.views);
-    viewBtn.querySelector("span").textContent = count(video.views);
+    viewBtn.querySelector("span").textContent = count(
+      video.views,
+    );
     saveCurrent(video);
   } catch {}
   const up = await loadUpNext(video);
@@ -360,10 +428,15 @@ export async function renderWatchVideo(app) {
   else
     upnext.innerHTML =
       '<div class="indo-watch-status">No more recommendations.</div>';
-  upnext.querySelector("[data-up-id]")?.addEventListener("click", () => {
-    try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(up));
-      window.__indoNavigate?.("watch-video");
-    } catch {}
-  });
+  upnext
+    .querySelector("[data-up-id]")
+    ?.addEventListener("click", () => {
+      try {
+        sessionStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(up),
+        );
+        window.__indoNavigate?.("watch-video");
+      } catch {}
+    });
 }

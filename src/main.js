@@ -13,7 +13,10 @@ async function installLiveAvatars() {
   try {
     await import("./features/profile/profile-avatar-live.js?v=20260815-avatar-v6");
   } catch (error) {
-    console.warn("Live profile avatars unavailable:", error);
+    console.warn(
+      "Live profile avatars unavailable:",
+      error,
+    );
   }
 }
 async function render() {
@@ -47,14 +50,20 @@ if (!window.__indoUniversalNavigation) {
   document.addEventListener(
     "click",
     (event) => {
-      const el = event.target instanceof Element ? event.target : null;
+      const el =
+        event.target instanceof Element
+          ? event.target
+          : null;
       const button = el?.closest("[data-screen]");
       if (!button) return;
       const screen = button.getAttribute("data-screen");
       if (!screen) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (screen === "profile" && button.hasAttribute("data-own-profile")) {
+      if (
+        screen === "profile" &&
+        button.hasAttribute("data-own-profile")
+      ) {
         navigate("profile").catch(console.error);
         return;
       }
@@ -70,7 +79,9 @@ function showBootFailure(
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>${message}</p><button type="button" id="indo-retry-boot" style="margin-top:14px;padding:10px 16px;border-radius:10px;background:#743cff;color:#fff;font-weight:800;cursor:pointer">Retry</button></main>`;
   document
     .getElementById("indo-retry-boot")
-    ?.addEventListener("click", () => window.location.reload());
+    ?.addEventListener("click", () =>
+      window.location.reload(),
+    );
 }
 async function start() {
   if (started) return;
@@ -96,17 +107,24 @@ async function start() {
         state.authenticated = Boolean(user);
         if (
           user &&
-          (state.screen === "auth-login" || state.screen === "auth-signup")
+          (state.screen === "auth-login" ||
+            state.screen === "auth-signup")
         )
           state.screen = "home";
-        if (!user && !String(state.screen || "").startsWith("auth-"))
+        if (
+          !user &&
+          !String(state.screen || "").startsWith("auth-")
+        )
           state.screen = "auth-login";
       }
       try {
         await Promise.race([
           render(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Startup timed out.")), 10000),
+            setTimeout(
+              () => reject(new Error("Startup timed out.")),
+              10000,
+            ),
           ),
         ]);
       } catch (error) {
@@ -125,7 +143,10 @@ async function start() {
     const user = await Promise.race([
       firstAuth,
       new Promise((resolve) =>
-        setTimeout(() => resolve(auth.currentUser || null), 8000),
+        setTimeout(
+          () => resolve(auth.currentUser || null),
+          8000,
+        ),
       ),
     ]);
     try {

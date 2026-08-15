@@ -1,4 +1,8 @@
-export function createPostDraft({ userId, mediaUrl, caption = "" }) {
+export function createPostDraft({
+  userId,
+  mediaUrl,
+  caption = "",
+}) {
   return {
     type: "post",
     userId,

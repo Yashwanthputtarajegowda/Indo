@@ -5,9 +5,12 @@ export async function loadMyProfile() {
   if (!user) return null;
   const apiBase = window.INDO_API_BASE || "";
   const token = await user.getIdToken();
-  const response = await fetch(`${apiBase}/api/account/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetch(
+    `${apiBase}/api/account/me`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   if (!response.ok) return null;
   const data = await response.json();
   return data.profile || null;

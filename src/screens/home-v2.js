@@ -17,18 +17,32 @@ function esc(value = "") {
 function normalizeStory(story) {
   if (!story || typeof story !== "object") return null;
   const secureUrl = String(
-    story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "",
+    story.secureUrl ||
+      story.videoUrl ||
+      story.url ||
+      story.mediaUrl ||
+      "",
   ).trim();
   if (!secureUrl) return null;
-  const createdAt = Number(story.createdAt || story.timestamp || 0);
+  const createdAt = Number(
+    story.createdAt || story.timestamp || 0,
+  );
   const expiresAt = Number(story.expiresAt || 0);
-  if (createdAt && Date.now() - createdAt > STORY_MAX_AGE_MS) return null;
+  if (
+    createdAt &&
+    Date.now() - createdAt > STORY_MAX_AGE_MS
+  )
+    return null;
   if (expiresAt && expiresAt <= Date.now()) return null;
   return {
     ...story,
     secureUrl,
     ownerUid: String(
-      story.ownerUid || story.uid || story.userId || story.creatorUid || "",
+      story.ownerUid ||
+        story.uid ||
+        story.userId ||
+        story.creatorUid ||
+        "",
     ).trim(),
     username: String(
       story.username ||
@@ -42,17 +56,27 @@ function normalizeStory(story) {
 function readCachedOwnStory(uid) {
   try {
     const story = normalizeStory(
-      JSON.parse(localStorage.getItem(LAST_STORY_KEY) || "null"),
+      JSON.parse(
+        localStorage.getItem(LAST_STORY_KEY) || "null",
+      ),
     );
-    return story && String(story.ownerUid) === String(uid || "") ? story : null;
+    return story &&
+      String(story.ownerUid) === String(uid || "")
+      ? story
+      : null;
   } catch {
     return null;
   }
 }
 function storyTime(story) {
-  const value = Number(story.createdAt || story.timestamp || 0);
+  const value = Number(
+    story.createdAt || story.timestamp || 0,
+  );
   if (!value) return "";
-  const minutes = Math.max(0, Math.floor((Date.now() - value) / 60000));
+  const minutes = Math.max(
+    0,
+    Math.floor((Date.now() - value) / 60000),
+  );
   if (minutes < 1) return "Just now";
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
@@ -61,7 +85,9 @@ function storyTime(story) {
 function storyCard(story, own = false) {
   const username = story.username || "Indo User";
   const initial = username.charAt(0).toUpperCase() || "I";
-  const id = String(story.id || story.publicId || story.secureUrl || "");
+  const id = String(
+    story.id || story.publicId || story.secureUrl || "",
+  );
   return `<button class="indo-story-card${own ? " indo-story-card-own" : ""}" type="button" data-story-id="${esc(id)}" data-story-owner="${esc(story.ownerUid)}" data-story-url="${esc(story.secureUrl)}" data-story-name="${esc(username)}"><div class="indo-story-card-media">${own ? '<div class="indo-story-own-bg"><span class="indo-story-plus">+</span></div>' : `<div class="indo-story-avatar">${esc(initial)}</div>`}${!own && story.isOnline ? '<span class="indo-story-online" aria-label="Online"></span>' : ""}</div><div class="indo-story-card-body"><strong>${own ? "Your Story" : `@${esc(username)}`}</strong><span>${own ? "Share a moment" : esc(storyTime(story))}</span></div></button>`;
 }
 function renderTopbarFallback() {
@@ -83,13 +109,14 @@ async function openStoryViewer(story, isOwn = false) {
   const overlay = document.createElement("div");
   overlay.className = "indo-story-viewer";
   const id = String(story.id || story.publicId || "");
-  const username = String(story.username || story.name || "user").replace(
-    /^@/,
-    "",
-  );
+  const username = String(
+    story.username || story.name || "user",
+  ).replace(/^@/, "");
   overlay.innerHTML = `<div class="indo-story-card-viewer"><button class="indo-story-close" type="button">×</button><button class="indo-story-share" type="button">↗</button>${isOwn ? '<button class="indo-story-more" type="button">⋯</button><div class="indo-story-menu"><button class="delete" type="button">Delete story</button></div>' : ""}<div class="indo-story-title">@${esc(username)}</div><video src="${esc(story.secureUrl)}" autoplay playsinline></video></div>`;
   const close = () => overlay.remove();
-  overlay.querySelector(".indo-story-close")?.addEventListener("click", close);
+  overlay
+    .querySelector(".indo-story-close")
+    ?.addEventListener("click", close);
   overlay.addEventListener("click", (event) => {
     if (event.target === overlay) close();
   });
@@ -119,27 +146,35 @@ async function openStoryViewer(story, isOwn = false) {
       event.stopPropagation();
       menu?.classList.toggle("open");
     });
-    overlay.querySelector(".delete")?.addEventListener("click", async () => {
-      const user = (await import("../features/auth/firebase-client.js")).auth
-        .currentUser;
-      if (!user) return;
-      const token = await user.getIdToken();
-      const response = await fetch(
-        `${getApiBase()}/api/stories/${encodeURIComponent(id)}/delete`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        menu.textContent = data.error || "Could not delete story.";
-        return;
-      }
-      localStorage.removeItem(LAST_STORY_KEY);
-      close();
-      loadStories(document.getElementById("root")).catch(() => {});
-    });
+    overlay
+      .querySelector(".delete")
+      ?.addEventListener("click", async () => {
+        const user = (
+          await import("../features/auth/firebase-client.js")
+        ).auth.currentUser;
+        if (!user) return;
+        const token = await user.getIdToken();
+        const response = await fetch(
+          `${getApiBase()}/api/stories/${encodeURIComponent(id)}/delete`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        const data = await response
+          .json()
+          .catch(() => ({}));
+        if (!response.ok) {
+          menu.textContent =
+            data.error || "Could not delete story.";
+          return;
+        }
+        localStorage.removeItem(LAST_STORY_KEY);
+        close();
+        loadStories(document.getElementById("root")).catch(
+          () => {},
+        );
+      });
   }
   document.body.appendChild(overlay);
   overlay
@@ -156,11 +191,13 @@ function bindStories(app) {
         secureUrl: item.dataset.storyUrl,
         username: item.dataset.storyName,
       };
-      const { auth } = await import("../features/auth/firebase-client.js");
+      const { auth } =
+        await import("../features/auth/firebase-client.js");
       await openStoryViewer(
         story,
         Boolean(
-          auth.currentUser?.uid && auth.currentUser.uid === story.ownerUid,
+          auth.currentUser?.uid &&
+          auth.currentUser.uid === story.ownerUid,
         ),
       );
     }),
@@ -194,15 +231,19 @@ async function loadStories(app) {
   const row = app?.querySelector("[data-stories]");
   if (!row) return;
   try {
-    const [{ loadStories: fetchStories }, { auth }] = await Promise.all([
-      import("../features/stories/stories.js?v=20260814-128"),
-      import("../features/auth/firebase-client.js"),
-    ]);
+    const [{ loadStories: fetchStories }, { auth }] =
+      await Promise.all([
+        import("../features/stories/stories.js?v=20260814-128"),
+        import("../features/auth/firebase-client.js"),
+      ]);
     const currentUid = auth.currentUser?.uid || "";
-    const stories = (await fetchStories()).map(normalizeStory).filter(Boolean);
+    const stories = (await fetchStories())
+      .map(normalizeStory)
+      .filter(Boolean);
     const own =
-      stories.find((item) => item.ownerUid === currentUid) ||
-      readCachedOwnStory(currentUid);
+      stories.find(
+        (item) => item.ownerUid === currentUid,
+      ) || readCachedOwnStory(currentUid);
     const seenOwners = new Set();
     const others = stories.filter(
       (item) =>
@@ -217,7 +258,8 @@ async function loadStories(app) {
       cards.push(
         `<button class="indo-story-card indo-story-card-own" type="button" data-story-add><div class="indo-story-card-media"><div class="indo-story-own-bg"><span class="indo-story-plus">+</span></div></div><div class="indo-story-card-body"><strong>Your Story</strong><span>Share a moment</span></div></button>`,
       );
-    for (const story of others) cards.push(storyCard(story));
+    for (const story of others)
+      cards.push(storyCard(story));
     row.innerHTML = cards.join("");
     row
       .querySelector("[data-story-add]")
@@ -235,11 +277,16 @@ async function loadFeed(app) {
   const feed = app.querySelector("[data-home-feed]");
   const status = app.querySelector("[data-feed-status]");
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } =
+    const {
+      loadHomeVideos,
+      renderVideoCard,
+      bindVideoCards,
+    } =
       await import("../features/feed/home-feed.js?v=20260814-128");
     const videos = await loadHomeVideos();
     if (!videos.length) {
-      status.textContent = "No videos yet. Upload your first video.";
+      status.textContent =
+        "No videos yet. Upload your first video.";
       return;
     }
     status.remove();
@@ -252,16 +299,21 @@ async function loadFeed(app) {
 }
 async function loadNotifications(app) {
   try {
-    const button = app.querySelector(".notification-button");
+    const button = app.querySelector(
+      ".notification-button",
+    );
     if (!button) return;
     const { loadNotifications: fetchNotifications } =
       await import("../features/notifications/notifications.js?v=20260814-128");
     const items = await fetchNotifications();
-    const unread = items.filter((item) => !item.read).length;
+    const unread = items.filter(
+      (item) => !item.read,
+    ).length;
     if (!unread) return;
     const badge = document.createElement("span");
     badge.className = "notification-badge";
-    badge.textContent = unread > 99 ? "99+" : String(unread);
+    badge.textContent =
+      unread > 99 ? "99+" : String(unread);
     button.style.position = "relative";
     button.appendChild(badge);
   } catch (error) {

@@ -32,7 +32,8 @@ function count(v) {
 }
 function age(t) {
   const m = Math.floor(
-    Math.max(0, Date.now() - Number(t || Date.now())) / 60000,
+    Math.max(0, Date.now() - Number(t || Date.now())) /
+      60000,
   );
   if (m < 1) return "Just now";
   if (m < 60) return `${m}m ago`;
@@ -48,7 +49,10 @@ function duration(s) {
 }
 function src(raw) {
   const u = String(raw || "");
-  if (!u.includes("res.cloudinary.com") || !u.includes("/video/upload/"))
+  if (
+    !u.includes("res.cloudinary.com") ||
+    !u.includes("/video/upload/")
+  )
     return u;
   const m = "/video/upload/",
     i = u.indexOf(m);
@@ -61,14 +65,19 @@ function src(raw) {
 }
 function seen() {
   try {
-    return JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY) || "{}");
+    return JSON.parse(
+      localStorage.getItem(SEEN_STORAGE_KEY) || "{}",
+    );
   } catch {
     return {};
   }
 }
 function saveSeen(v) {
   try {
-    localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(v));
+    localStorage.setItem(
+      SEEN_STORAGE_KEY,
+      JSON.stringify(v),
+    );
   } catch {}
 }
 function markSeen(id) {
@@ -85,9 +94,12 @@ function installStyles() {
   document.head.appendChild(s);
 }
 async function loadVideos() {
-  const r = await fetch(`${API_BASE()}/api/media/videos?type=video&limit=50`);
+  const r = await fetch(
+    `${API_BASE()}/api/media/videos?type=video&limit=50`,
+  );
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || "Could not load videos.");
+  if (!r.ok)
+    throw new Error(d.error || "Could not load videos.");
   return Array.isArray(d.videos) ? d.videos : [];
 }
 async function loadFollowing() {
@@ -138,7 +150,9 @@ function followedWindow(videos, following) {
       const as = !!m[String(a.id)],
         bs = !!m[String(b.id)];
       if (as !== bs) return as ? 1 : -1;
-      return Number(b.createdAt || 0) - Number(a.createdAt || 0);
+      return (
+        Number(b.createdAt || 0) - Number(a.createdAt || 0)
+      );
     });
 }
 function matches(v, q) {
@@ -164,11 +178,15 @@ function matches(v, q) {
     .includes(q);
 }
 function mini(v) {
-  const creator = String(v.creator || v.userId || "user").replace(/^@/, "");
+  const creator = String(
+    v.creator || v.userId || "user",
+  ).replace(/^@/, "");
   return `<button class="indo-video-mini ${seen()[String(v.id)] ? "" : "is-new"}" type="button" data-open="${esc(v.id)}" aria-label="Open video watch page"><div class="indo-video-mini-media"><video muted playsinline preload="metadata" src="${esc(src(v.secureUrl || v.videoUrl || v.url || ""))}"></video>${duration(v.duration) ? `<span class="indo-video-mini-duration">${esc(duration(v.duration))}</span>` : ""}</div><b class="indo-video-mini-name">@${esc(creator)}</b><small class="indo-video-mini-time">${esc(age(v.createdAt))}</small></button>`;
 }
 function poster(v) {
-  const creator = String(v.creator || v.userId || "user").replace(/^@/, "");
+  const creator = String(
+    v.creator || v.userId || "user",
+  ).replace(/^@/, "");
   return `<article class="indo-video-card"><button class="indo-video-poster" type="button" data-open="${esc(v.id)}" aria-label="Watch ${esc(v.title || "video")}"><video muted playsinline preload="metadata" src="${esc(src(v.secureUrl || v.videoUrl || v.url || ""))}"></video>${duration(v.duration) ? `<span class="indo-video-duration">${esc(duration(v.duration))}</span>` : ""}</button><div class="indo-video-title-block"><h3 class="indo-video-title">${esc(v.title || "Untitled video")}</h3><div class="indo-video-meta"><span class="indo-video-user">@${esc(creator)}</span><span>·</span><span>${esc(age(v.createdAt))}</span><span>·</span><span>${count(v.views)} views</span><button class="indo-video-menu" type="button" aria-label="More video options">⋮</button></div></div></article>`;
 }
 async function openWatch(v) {
@@ -230,7 +248,9 @@ export async function renderVideo(app) {
     app.addEventListener("click", open);
     const draw = (q = "") => {
       if (q) recordSearchQuery(q);
-      const f = followedWindow(videos, following).filter((v) => matches(v, q));
+      const f = followedWindow(videos, following).filter(
+        (v) => matches(v, q),
+      );
       followed.innerHTML = q
         ? '<div class="indo-video-empty">Search results are videos only.</div>'
         : f.length
@@ -240,7 +260,12 @@ export async function renderVideo(app) {
       const fids = new Set(f.map((v) => String(v.id)));
       const ranked = rankMedia(
         base.filter((v) => !fids.has(String(v.id))),
-        { type: "video", query: q, limit: 50, freshness: 1.2 },
+        {
+          type: "video",
+          query: q,
+          limit: 50,
+          freshness: 1.2,
+        },
       );
       recent.innerHTML = ranked.length
         ? ranked.map(poster).join("")

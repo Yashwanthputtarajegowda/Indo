@@ -1,4 +1,6 @@
-const KEY = Symbol.for("indo.profileVideoNativeControlsHidden");
+const KEY = Symbol.for(
+  "indo.profileVideoNativeControlsHidden",
+);
 
 if (!globalThis[KEY]) {
   globalThis[KEY] = true;

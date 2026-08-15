@@ -5,30 +5,46 @@ async function getAuthContext() {
   if (!user) throw new Error("Please login first.");
   const token = await user.getIdToken();
   const apiBase = window.INDO_API_BASE || "";
-  return { apiBase, headers: { Authorization: `Bearer ${token}` } };
+  return {
+    apiBase,
+    headers: { Authorization: `Bearer ${token}` },
+  };
 }
 
 export async function loadNotifications() {
   const { apiBase, headers } = await getAuthContext();
-  const response = await fetch(`${apiBase}/api/notifications`, {
-    headers,
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `${apiBase}/api/notifications`,
+    {
+      headers,
+      cache: "no-store",
+    },
+  );
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(data.error || "Could not load notifications.");
-  return Array.isArray(data.notifications) ? data.notifications : [];
+    throw new Error(
+      data.error || "Could not load notifications.",
+    );
+  return Array.isArray(data.notifications)
+    ? data.notifications
+    : [];
 }
 
 export async function loadUnreadCount() {
   const { apiBase, headers } = await getAuthContext();
-  const response = await fetch(`${apiBase}/api/notifications/unread-count`, {
-    headers,
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `${apiBase}/api/notifications/unread-count`,
+    {
+      headers,
+      cache: "no-store",
+    },
+  );
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(data.error || "Could not load unread notification count.");
+    throw new Error(
+      data.error ||
+        "Could not load unread notification count.",
+    );
   return Number(data.unreadCount || 0);
 }
 
@@ -44,19 +60,26 @@ export async function markNotificationRead(id) {
   );
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(data.error || "Could not update notification.");
+    throw new Error(
+      data.error || "Could not update notification.",
+    );
   return data;
 }
 
 export async function markAllNotificationsRead() {
   const { apiBase, headers } = await getAuthContext();
-  const response = await fetch(`${apiBase}/api/notifications/read-all`, {
-    method: "POST",
-    headers,
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `${apiBase}/api/notifications/read-all`,
+    {
+      method: "POST",
+      headers,
+      cache: "no-store",
+    },
+  );
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(data.error || "Could not mark notifications as read.");
+    throw new Error(
+      data.error || "Could not mark notifications as read.",
+    );
   return data;
 }

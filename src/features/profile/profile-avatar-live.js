@@ -10,13 +10,18 @@ const norm = (v = "") =>
   String(v ?? "")
     .trim()
     .replace(/^@+/, "");
-const valid = (v = "") => /^[A-Za-z0-9._-]{2,80}$/.test(norm(v));
+const valid = (v = "") =>
+  /^[A-Za-z0-9._-]{2,80}$/.test(norm(v));
 
-async function loadProfile(key, { uid = false, force = false } = {}) {
+async function loadProfile(
+  key,
+  { uid = false, force = false } = {},
+) {
   const clean = norm(key);
   if (!clean) return null;
   const cacheKey = `${uid ? "uid" : "id"}:${clean}`;
-  if (!force && CACHE.has(cacheKey)) return CACHE.get(cacheKey);
+  if (!force && CACHE.has(cacheKey))
+    return CACHE.get(cacheKey);
   if (pending.has(cacheKey)) return pending.get(cacheKey);
 
   const promise = (async () => {
@@ -51,7 +56,10 @@ async function loadProfile(key, { uid = false, force = false } = {}) {
 
 function avatarUrl(profile) {
   return String(
-    profile?.avatarUrl || profile?.photoURL || profile?.photoUrl || "",
+    profile?.avatarUrl ||
+      profile?.photoURL ||
+      profile?.photoUrl ||
+      "",
   ).trim();
 }
 
@@ -125,11 +133,15 @@ function textIdentity(el) {
         node.getAttribute?.("data-username") ||
         node.textContent ||
         "";
-      const match = String(raw).match(/@?([A-Za-z0-9._-]{2,80})/);
+      const match = String(raw).match(
+        /@?([A-Za-z0-9._-]{2,80})/,
+      );
       const id = norm(match?.[1] || "");
       if (
         valid(id) &&
-        !["user", "profile", "users", "indo"].includes(id.toLowerCase())
+        !["user", "profile", "users", "indo"].includes(
+          id.toLowerCase(),
+        )
       )
         return id;
     }
@@ -177,7 +189,9 @@ function avatarHosts(root) {
   const out = [];
   for (const selector of selectors) {
     if (root?.matches?.(selector)) out.push(root);
-    root?.querySelectorAll?.(selector).forEach((el) => out.push(el));
+    root
+      ?.querySelectorAll?.(selector)
+      .forEach((el) => out.push(el));
   }
   return [...new Set(out)];
 }
@@ -186,7 +200,9 @@ function paint(host, profile) {
   if (!(host instanceof Element)) return;
   const url = avatarUrl(profile);
   if (!url) return;
-  let image = host.querySelector(":scope > img.indo-live-avatar-img");
+  let image = host.querySelector(
+    ":scope > img.indo-live-avatar-img",
+  );
   if (!image) {
     image = document.createElement("img");
     image.className = "indo-live-avatar-img";
@@ -206,7 +222,11 @@ function paintIdRow(container, profile) {
   const idNode = container.querySelector?.(
     '.search-profile-id,.indo-rel-v7-id,.indo-rel-id,[class*="user-id"],[class*="username"]',
   );
-  if (!idNode || idNode.closest(".indo-live-id-avatar-wrap")) return;
+  if (
+    !idNode ||
+    idNode.closest(".indo-live-id-avatar-wrap")
+  )
+    return;
   if (
     !String(idNode.textContent || "")
       .trim()
@@ -246,7 +266,9 @@ async function hydrateContainer(container, force = false) {
     ? await loadProfile(identity.uid, { uid: true, force })
     : await loadProfile(identity.id, { force });
   if (!profile) return;
-  avatarHosts(container).forEach((host) => paint(host, profile));
+  avatarHosts(container).forEach((host) =>
+    paint(host, profile),
+  );
   paintIdRow(container, profile);
 }
 
@@ -259,7 +281,9 @@ function scan(root = document, force = false) {
     hydrateContainer(root, force).catch(() => {});
   root
     .querySelectorAll?.(USER_CONTAINERS)
-    .forEach((container) => hydrateContainer(container, force).catch(() => {}));
+    .forEach((container) =>
+      hydrateContainer(container, force).catch(() => {}),
+    );
 }
 
 function invalidate(uid, userId) {
@@ -276,7 +300,10 @@ function publish(profile) {
     ts: Date.now(),
   };
   try {
-    localStorage.setItem("indo:profile-avatar-update", JSON.stringify(payload));
+    localStorage.setItem(
+      "indo:profile-avatar-update",
+      JSON.stringify(payload),
+    );
   } catch {}
   try {
     window.__indoProfileAvatarChannel?.postMessage(payload);
@@ -312,19 +339,33 @@ function install() {
       });
     }
   });
-  observer.observe(document.body || document.documentElement, {
-    childList: true,
-    subtree: true,
-  });
+  observer.observe(
+    document.body || document.documentElement,
+    {
+      childList: true,
+      subtree: true,
+    },
+  );
 
-  window.addEventListener("indo:profile-updated", (event) => {
-    const profile = event.detail?.profile || event.detail || {};
-    invalidate(profile.uid, profile.username || profile.userId);
-    publish(profile);
-  });
+  window.addEventListener(
+    "indo:profile-updated",
+    (event) => {
+      const profile =
+        event.detail?.profile || event.detail || {};
+      invalidate(
+        profile.uid,
+        profile.username || profile.userId,
+      );
+      publish(profile);
+    },
+  );
 
   window.addEventListener("storage", (event) => {
-    if (event.key !== "indo:profile-avatar-update" || !event.newValue) return;
+    if (
+      event.key !== "indo:profile-avatar-update" ||
+      !event.newValue
+    )
+      return;
     try {
       const payload = JSON.parse(event.newValue);
       invalidate(payload.uid, payload.userId);
@@ -332,11 +373,15 @@ function install() {
   });
 
   try {
-    window.__indoProfileAvatarChannel = new BroadcastChannel(CHANNEL_NAME);
-    window.__indoProfileAvatarChannel.addEventListener("message", (event) => {
-      const payload = event.data || {};
-      invalidate(payload.uid, payload.userId);
-    });
+    window.__indoProfileAvatarChannel =
+      new BroadcastChannel(CHANNEL_NAME);
+    window.__indoProfileAvatarChannel.addEventListener(
+      "message",
+      (event) => {
+        const payload = event.data || {};
+        invalidate(payload.uid, payload.userId);
+      },
+    );
   } catch {}
 
   setInterval(() => {

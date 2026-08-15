@@ -16,8 +16,10 @@ function makeBrowserVideoUrl(rawUrl) {
   const after = url.slice(index + marker.length);
   if (after.startsWith("f_mp4,vc_h264,ac_aac/")) return "";
   const queryIndex = after.indexOf("?");
-  const pathPart = queryIndex >= 0 ? after.slice(0, queryIndex) : after;
-  const query = queryIndex >= 0 ? after.slice(queryIndex) : "";
+  const pathPart =
+    queryIndex >= 0 ? after.slice(0, queryIndex) : after;
+  const query =
+    queryIndex >= 0 ? after.slice(queryIndex) : "";
   return `${before}f_mp4,vc_h264,ac_aac/${pathPart}${query}${query ? "&" : "?"}__indo_fmp4=1`;
 }
 
@@ -36,13 +38,16 @@ function fixVideo(video, restart = false) {
     "";
   rememberOriginal(video, original);
   const fixed = makeBrowserVideoUrl(original);
-  if (!fixed || video.dataset[FIXED_ATTR] === "1") return false;
+  if (!fixed || video.dataset[FIXED_ATTR] === "1")
+    return false;
 
   video.dataset[FIXED_ATTR] = "1";
   video.dataset.videoSrcOriginal = original;
-  if (video.dataset.videoSrc) video.dataset.videoSrc = fixed;
+  if (video.dataset.videoSrc)
+    video.dataset.videoSrc = fixed;
   video.src = fixed;
-  video.preload = video.preload === "none" ? "metadata" : video.preload;
+  video.preload =
+    video.preload === "none" ? "metadata" : video.preload;
   video.load();
 
   if (restart) video.play().catch(() => {});
@@ -50,15 +55,21 @@ function fixVideo(video, restart = false) {
 }
 
 function retryOriginal(video) {
-  if (!(video instanceof HTMLVideoElement) || video.dataset[RETRY_ATTR] === "1")
+  if (
+    !(video instanceof HTMLVideoElement) ||
+    video.dataset[RETRY_ATTR] === "1"
+  )
     return false;
   const original = String(
-    video.dataset.indoOriginalSrc || video.dataset.videoSrcOriginal || "",
+    video.dataset.indoOriginalSrc ||
+      video.dataset.videoSrcOriginal ||
+      "",
   ).trim();
   if (!original) return false;
   video.dataset[RETRY_ATTR] = "1";
   video.dataset[FIXED_ATTR] = "0";
-  if (video.dataset.videoSrc) video.dataset.videoSrc = original;
+  if (video.dataset.videoSrc)
+    video.dataset.videoSrc = original;
   video.src = original;
   video.load();
   return true;
@@ -72,7 +83,9 @@ export function installCloudinaryVideoCompatibility() {
     "loadstart",
     (event) => {
       const video =
-        event.target instanceof HTMLVideoElement ? event.target : null;
+        event.target instanceof HTMLVideoElement
+          ? event.target
+          : null;
       if (!video) return;
       const source =
         video.dataset.indoOriginalSrc ||
@@ -90,7 +103,9 @@ export function installCloudinaryVideoCompatibility() {
     "error",
     (event) => {
       const video =
-        event.target instanceof HTMLVideoElement ? event.target : null;
+        event.target instanceof HTMLVideoElement
+          ? event.target
+          : null;
       if (!video) return;
       const original =
         video.dataset.indoOriginalSrc ||
@@ -99,12 +114,18 @@ export function installCloudinaryVideoCompatibility() {
         video.dataset.videoSrc ||
         "";
       if (!original.includes("res.cloudinary.com")) return;
-      if (video.dataset[FIXED_ATTR] === "1" && retryOriginal(video)) {
+      if (
+        video.dataset[FIXED_ATTR] === "1" &&
+        retryOriginal(video)
+      ) {
         event.preventDefault();
         event.stopImmediatePropagation();
         return;
       }
-      if (makeBrowserVideoUrl(original) && video.dataset[FIXED_ATTR] !== "1") {
+      if (
+        makeBrowserVideoUrl(original) &&
+        video.dataset[FIXED_ATTR] !== "1"
+      ) {
         event.preventDefault();
         event.stopImmediatePropagation();
         fixVideo(video, true);
@@ -117,7 +138,9 @@ export function installCloudinaryVideoCompatibility() {
     "canplay",
     (event) => {
       const video =
-        event.target instanceof HTMLVideoElement ? event.target : null;
+        event.target instanceof HTMLVideoElement
+          ? event.target
+          : null;
       if (!video) return;
       const source =
         video.dataset.indoOriginalSrc ||
@@ -126,7 +149,8 @@ export function installCloudinaryVideoCompatibility() {
         video.src ||
         "";
       rememberOriginal(video, source);
-      if (video.dataset[FIXED_ATTR] !== "1") fixVideo(video, false);
+      if (video.dataset[FIXED_ATTR] !== "1")
+        fixVideo(video, false);
     },
     true,
   );

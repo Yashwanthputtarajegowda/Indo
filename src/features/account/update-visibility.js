@@ -10,17 +10,22 @@ export async function updateAccountVisibility(accountType) {
 
   const token = await user.getIdToken();
   const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(`${apiBase}/api/account/visibility`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${apiBase}/api/account/visibility`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ accountType }),
     },
-    body: JSON.stringify({ accountType }),
-  });
+  );
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(data.error || "Could not update account visibility.");
+    throw new Error(
+      data.error || "Could not update account visibility.",
+    );
   return data;
 }

@@ -565,8 +565,10 @@ function cloudinaryBrowserUrl(rawUrl) {
   }
 
   const queryIndex = rest.indexOf("?");
-  const path = queryIndex >= 0 ? rest.slice(0, queryIndex) : rest;
-  const query = queryIndex >= 0 ? rest.slice(queryIndex) : "";
+  const path =
+    queryIndex >= 0 ? rest.slice(0, queryIndex) : rest;
+  const query =
+    queryIndex >= 0 ? rest.slice(queryIndex) : "";
 
   return `${prefix}f_mp4,vc_h264,ac_aac/${path}${query}`;
 }
@@ -577,7 +579,9 @@ function getFeedSeenKey() {
 
 function readFeedSeen() {
   try {
-    const value = JSON.parse(localStorage.getItem(getFeedSeenKey()) || "{}");
+    const value = JSON.parse(
+      localStorage.getItem(getFeedSeenKey()) || "{}",
+    );
 
     return value && typeof value === "object" ? value : {};
   } catch {
@@ -586,7 +590,11 @@ function readFeedSeen() {
 }
 
 function markFeedSeen(videos) {
-  if (!auth.currentUser || !Array.isArray(videos) || !videos.length) {
+  if (
+    !auth.currentUser ||
+    !Array.isArray(videos) ||
+    !videos.length
+  ) {
     return;
   }
 
@@ -650,15 +658,19 @@ function filterAndTakeOnce(videos, limit) {
 }
 
 async function fetchVideos(apiBase, headers, query) {
-  const response = await fetch(`${apiBase}/api/media/videos${query}`, {
-    headers,
-  });
+  const response = await fetch(
+    `${apiBase}/api/media/videos${query}`,
+    {
+      headers,
+    },
+  );
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
 
     throw new Error(
-      data.error || `Could not load videos (${response.status}).`,
+      data.error ||
+        `Could not load videos (${response.status}).`,
     );
   }
 
@@ -667,7 +679,9 @@ async function fetchVideos(apiBase, headers, query) {
   return Array.isArray(data.videos) ? data.videos : [];
 }
 
-export async function loadHomeVideos(limit = DEFAULT_FEED_LIMIT) {
+export async function loadHomeVideos(
+  limit = DEFAULT_FEED_LIMIT,
+) {
   const apiBase = window.INDO_API_BASE || "";
   const headers = {};
 
@@ -692,12 +706,18 @@ export async function loadHomeVideos(limit = DEFAULT_FEED_LIMIT) {
     return filterAndTakeOnce(typed, requested);
   }
 
-  const fallback = await fetchVideos(apiBase, headers, `?limit=${fetchLimit}`);
+  const fallback = await fetchVideos(
+    apiBase,
+    headers,
+    `?limit=${fetchLimit}`,
+  );
 
   return filterAndTakeOnce(
     fallback.filter((item) =>
       ["video", "mp4", "reel"].includes(
-        String(item.mediaType || item.resourceType || "video").toLowerCase(),
+        String(
+          item.mediaType || item.resourceType || "video",
+        ).toLowerCase(),
       ),
     ),
     requested,
@@ -742,7 +762,9 @@ export async function deleteVideo(videoId) {
 
   if (!response.ok) {
     throw new Error(
-      data.detail || data.error || `Delete failed (${response.status}).`,
+      data.detail ||
+        data.error ||
+        `Delete failed (${response.status}).`,
     );
   }
 
@@ -758,7 +780,10 @@ function maybeRecordVideoView(videoId) {
   const now = Date.now();
   const last = Number(localStorage.getItem(key) || 0);
 
-  if (Number.isFinite(last) && now - last < VIEW_COOLDOWN_MS) {
+  if (
+    Number.isFinite(last) &&
+    now - last < VIEW_COOLDOWN_MS
+  ) {
     return;
   }
 
@@ -829,7 +854,9 @@ function bindGlobalAudioUnlock() {
       return;
     }
 
-    const current = document.querySelector(".post-video:not([hidden])");
+    const current = document.querySelector(
+      ".post-video:not([hidden])",
+    );
 
     if (current instanceof HTMLVideoElement) {
       enableAudioFromInteraction(current);
@@ -863,7 +890,9 @@ function enforceSingleVideoPlayback() {
     "play",
     (event) => {
       const current =
-        event.target instanceof HTMLVideoElement ? event.target : null;
+        event.target instanceof HTMLVideoElement
+          ? event.target
+          : null;
 
       if (!current) return;
 
@@ -877,7 +906,9 @@ function enforceSingleVideoPlayback() {
     "playing",
     (event) => {
       const current =
-        event.target instanceof HTMLVideoElement ? event.target : null;
+        event.target instanceof HTMLVideoElement
+          ? event.target
+          : null;
 
       if (!current) return;
 
@@ -919,7 +950,9 @@ export function renderVideoCard(video) {
 
   const creator = escapeHtml(creatorRaw);
 
-  const usernameKey = escapeHtml(creatorRaw.replace(/^@/, ""));
+  const usernameKey = escapeHtml(
+    creatorRaw.replace(/^@/, ""),
+  );
 
   const ownerUid = escapeHtml(video.ownerUid || "");
 
@@ -944,25 +977,31 @@ export function renderVideoCard(video) {
 
   const likes = Number(video.likes || 0).toLocaleString();
 
-  const comments = Number(video.comments || 0).toLocaleString();
+  const comments = Number(
+    video.comments || 0,
+  ).toLocaleString();
 
   const shares = Number(video.shares || 0).toLocaleString();
 
   const saves = Number(video.saves || 0).toLocaleString();
 
-  const rawMediaUrl = video.secureUrl || video.videoUrl || video.url || "";
+  const rawMediaUrl =
+    video.secureUrl || video.videoUrl || video.url || "";
 
   const mediaUrl = cloudinaryBrowserUrl(rawMediaUrl);
 
   const fallbackUrl =
-    rawMediaUrl && mediaUrl !== rawMediaUrl ? rawMediaUrl : "";
+    rawMediaUrl && mediaUrl !== rawMediaUrl
+      ? rawMediaUrl
+      : "";
 
   const poster = video.thumbnailUrl
     ? ` poster="${escapeHtml(video.thumbnailUrl)}"`
     : "";
 
   const initial = escapeHtml(
-    creatorRaw.replace(/^@/, "").charAt(0).toUpperCase() || "I",
+    creatorRaw.replace(/^@/, "").charAt(0).toUpperCase() ||
+      "I",
   );
 
   const avatar = creatorAvatar
@@ -1143,11 +1182,15 @@ export function renderVideoCard(video) {
 function openPostDetails(card) {
   if (!card) return;
 
-  document.querySelector(".indo-post-details-backdrop")?.remove();
+  document
+    .querySelector(".indo-post-details-backdrop")
+    ?.remove();
 
   const title = String(card.dataset.postTitle || "").trim();
 
-  const description = String(card.dataset.postDescription || title).trim();
+  const description = String(
+    card.dataset.postDescription || title,
+  ).trim();
 
   const likes = card.dataset.postLikes || "0";
 
@@ -1160,7 +1203,9 @@ function openPostDetails(card) {
   const saves = card.dataset.postSaves || "0";
 
   const creator =
-    card.querySelector(".neon-edge-name")?.textContent?.trim() || "";
+    card
+      .querySelector(".neon-edge-name")
+      ?.textContent?.trim() || "";
 
   const backdrop = document.createElement("div");
 
@@ -1237,38 +1282,46 @@ function openPostDetails(card) {
 }
 
 function bindPostDetailsButtons(root) {
-  root.querySelectorAll("[data-post-more]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
+  root
+    .querySelectorAll("[data-post-more]")
+    .forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-      const card = button.closest("[data-video-id]");
+        const card = button.closest("[data-video-id]");
 
-      openPostDetails(card);
+        openPostDetails(card);
+      });
     });
-  });
 
   if (!window.__indoPostDetailsEscapeBound) {
     window.__indoPostDetailsEscapeBound = true;
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
-        document.querySelector(".indo-post-details-backdrop")?.remove();
+        document
+          .querySelector(".indo-post-details-backdrop")
+          ?.remove();
       }
     });
   }
 }
 
 function closeAllFeedMenus(except = null) {
-  document.querySelectorAll(".indo-feed-menu").forEach((menu) => {
-    if (menu !== except) {
-      menu.remove();
-    }
-  });
+  document
+    .querySelectorAll(".indo-feed-menu")
+    .forEach((menu) => {
+      if (menu !== except) {
+        menu.remove();
+      }
+    });
 }
 
 async function handleFeedDelete(button, card, menu) {
-  const videoId = String(card?.dataset.videoId || "").trim();
+  const videoId = String(
+    card?.dataset.videoId || "",
+  ).trim();
 
   if (!videoId) {
     menu.remove();
@@ -1277,7 +1330,11 @@ async function handleFeedDelete(button, card, menu) {
 
   const user = auth.currentUser;
 
-  if (!user || String(card.dataset.ownerUid || "") !== String(user.uid || "")) {
+  if (
+    !user ||
+    String(card.dataset.ownerUid || "") !==
+      String(user.uid || "")
+  ) {
     menu.remove();
     return;
   }
@@ -1296,7 +1353,10 @@ async function handleFeedDelete(button, card, menu) {
 
     delete seen[videoId];
 
-    localStorage.setItem(getFeedSeenKey(), JSON.stringify(seen));
+    localStorage.setItem(
+      getFeedSeenKey(),
+      JSON.stringify(seen),
+    );
 
     menu.remove();
 
@@ -1334,7 +1394,9 @@ async function setSaved(card) {
 
   if (!user) return;
 
-  const button = card.querySelector('[data-engagement="save"]');
+  const button = card.querySelector(
+    '[data-engagement="save"]',
+  );
 
   const next = button?.dataset.saved !== "1";
 
@@ -1375,7 +1437,8 @@ function openFeedMoreMenu(button, card) {
 
   const isOwner = Boolean(
     auth.currentUser?.uid &&
-    String(card.dataset.ownerUid || "") === String(auth.currentUser.uid),
+    String(card.dataset.ownerUid || "") ===
+      String(auth.currentUser.uid),
   );
 
   menu.innerHTML = `
@@ -1449,29 +1512,35 @@ function openFeedMoreMenu(button, card) {
 }
 
 function bindFeedMoreMenus(root) {
-  root.querySelectorAll("[data-feed-more]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
+  root
+    .querySelectorAll("[data-feed-more]")
+    .forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-      const card = button.closest("[data-video-id]");
+        const card = button.closest("[data-video-id]");
 
-      if (!card) return;
+        if (!card) return;
 
-      const existing = card.querySelector(".indo-feed-menu");
+        const existing = card.querySelector(
+          ".indo-feed-menu",
+        );
 
-      if (existing) {
-        existing.remove();
-      } else {
-        openFeedMoreMenu(button, card);
-      }
+        if (existing) {
+          existing.remove();
+        } else {
+          openFeedMoreMenu(button, card);
+        }
+      });
     });
-  });
 
   if (!window.__indoFeedMenuGlobalBound) {
     window.__indoFeedMenuGlobalBound = true;
 
-    document.addEventListener("click", () => closeAllFeedMenus());
+    document.addEventListener("click", () =>
+      closeAllFeedMenus(),
+    );
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
@@ -1505,9 +1574,13 @@ function bindLazyVideo(video, videoId) {
 
   const card = video.closest("[data-video-id]");
 
-  const originalSource = String(video.dataset.originalVideoSrc || "");
+  const originalSource = String(
+    video.dataset.originalVideoSrc || "",
+  );
 
-  const transformedSource = String(video.dataset.videoSrc || "");
+  const transformedSource = String(
+    video.dataset.videoSrc || "",
+  );
 
   const hideBrokenCard = () => {
     observer?.disconnect();
@@ -1576,9 +1649,13 @@ function bindLazyVideo(video, videoId) {
     }
   });
 
-  video.addEventListener("play", () => maybeRecordVideoView(videoId), {
-    passive: true,
-  });
+  video.addEventListener(
+    "play",
+    () => maybeRecordVideoView(videoId),
+    {
+      passive: true,
+    },
+  );
 
   video.addEventListener(
     "pointerdown",
@@ -1590,7 +1667,10 @@ function bindLazyVideo(video, videoId) {
     observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.45) {
+          if (
+            entry.isIntersecting &&
+            entry.intersectionRatio >= 0.45
+          ) {
             playIfVisible();
           } else {
             pause();
@@ -1654,7 +1734,9 @@ async function setLike(card) {
 
   if (!user) return;
 
-  const button = card.querySelector('[data-engagement="like"]');
+  const button = card.querySelector(
+    '[data-engagement="like"]',
+  );
 
   const next = button?.dataset.liked !== "1";
 
@@ -1677,7 +1759,9 @@ async function setLike(card) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(data.error || "Could not update like.");
+      throw new Error(
+        data.error || "Could not update like.",
+      );
     }
 
     button.dataset.liked = next ? "1" : "0";
@@ -1687,7 +1771,9 @@ async function setLike(card) {
     const small = button.querySelector("small");
 
     if (small) {
-      small.textContent = String(Number(data.likes ?? small.textContent ?? 0));
+      small.textContent = String(
+        Number(data.likes ?? small.textContent ?? 0),
+      );
     }
   } catch (error) {
     console.warn("Like failed:", error);
@@ -1699,7 +1785,9 @@ async function openComments(card) {
 
   if (!user) return;
 
-  document.querySelector(".indo-comments-backdrop")?.remove();
+  document
+    .querySelector(".indo-comments-backdrop")
+    ?.remove();
 
   const backdrop = document.createElement("div");
 
@@ -1768,7 +1856,9 @@ async function openComments(card) {
     }
   });
 
-  const list = backdrop.querySelector("[data-comment-list]");
+  const list = backdrop.querySelector(
+    "[data-comment-list]",
+  );
 
   try {
     const token = await user.getIdToken();
@@ -1784,7 +1874,9 @@ async function openComments(card) {
 
     const data = await response.json().catch(() => ({}));
 
-    const comments = Array.isArray(data.comments) ? data.comments : [];
+    const comments = Array.isArray(data.comments)
+      ? data.comments
+      : [];
 
     list.innerHTML = comments.length
       ? comments
@@ -1809,106 +1901,128 @@ async function openComments(card) {
     list.textContent = "Could not load comments.";
   }
 
-  backdrop.querySelector("form")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  backdrop
+    .querySelector("form")
+    ?.addEventListener("submit", async (event) => {
+      event.preventDefault();
 
-    const input = backdrop.querySelector("input");
+      const input = backdrop.querySelector("input");
 
-    const text = String(input?.value || "").trim();
+      const text = String(input?.value || "").trim();
 
-    if (!text) return;
+      if (!text) return;
 
-    const response = await fetch(
-      `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/comments`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/comments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
 
-          Authorization: `Bearer ${await user.getIdToken()}`,
+            Authorization: `Bearer ${await user.getIdToken()}`,
+          },
+          body: JSON.stringify({
+            text,
+          }),
         },
-        body: JSON.stringify({
-          text,
-        }),
-      },
-    );
+      );
 
-    if (response.ok) {
-      input.value = "";
+      if (response.ok) {
+        input.value = "";
 
-      await openComments(card);
-    }
-  });
+        await openComments(card);
+      }
+    });
 }
 
 async function bindEngagementButtons(root) {
-  root.querySelectorAll("[data-video-id]").forEach(async (card) => {
-    const like = card.querySelector('[data-engagement="like"]');
+  root
+    .querySelectorAll("[data-video-id]")
+    .forEach(async (card) => {
+      const like = card.querySelector(
+        '[data-engagement="like"]',
+      );
 
-    const save = card.querySelector('[data-engagement="save"]');
+      const save = card.querySelector(
+        '[data-engagement="save"]',
+      );
 
-    const comment = card.querySelector('[data-engagement="comment"]');
+      const comment = card.querySelector(
+        '[data-engagement="comment"]',
+      );
 
-    const share = card.querySelector('[data-engagement="share"]');
+      const share = card.querySelector(
+        '[data-engagement="share"]',
+      );
 
-    if (like) {
-      like.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
+      if (like) {
+        like.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
 
-        setLike(card);
-      });
-    }
-
-    if (save) {
-      save.addEventListener("click", async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        await setSaved(card);
-      });
-    }
-
-    if (comment) {
-      comment.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        openComments(card);
-      });
-    }
-
-    if (share) {
-      share.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        shareVideo(card);
-      });
-    }
-
-    const data = await getEngagement(card.dataset.videoId);
-
-    if (!data) return;
-
-    if (like) {
-      like.dataset.liked = data.liked ? "1" : "0";
-
-      like.classList.toggle("is-active", Boolean(data.liked));
-
-      const small = like.querySelector("small");
-
-      if (small) {
-        small.textContent = String(Number(data.likes || 0));
+          setLike(card);
+        });
       }
-    }
 
-    if (save) {
-      save.dataset.saved = data.saved ? "1" : "0";
+      if (save) {
+        save.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
 
-      save.classList.toggle("is-active", Boolean(data.saved));
-    }
-  });
+          await setSaved(card);
+        });
+      }
+
+      if (comment) {
+        comment.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          openComments(card);
+        });
+      }
+
+      if (share) {
+        share.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          shareVideo(card);
+        });
+      }
+
+      const data = await getEngagement(
+        card.dataset.videoId,
+      );
+
+      if (!data) return;
+
+      if (like) {
+        like.dataset.liked = data.liked ? "1" : "0";
+
+        like.classList.toggle(
+          "is-active",
+          Boolean(data.liked),
+        );
+
+        const small = like.querySelector("small");
+
+        if (small) {
+          small.textContent = String(
+            Number(data.likes || 0),
+          );
+        }
+      }
+
+      if (save) {
+        save.dataset.saved = data.saved ? "1" : "0";
+
+        save.classList.toggle(
+          "is-active",
+          Boolean(data.saved),
+        );
+      }
+    });
 }
 
 export function bindVideoCards(root) {
@@ -1919,7 +2033,9 @@ export function bindVideoCards(root) {
   enforceSingleVideoPlayback();
 
   root
-    .querySelectorAll("[data-video-id] .post-video[data-video-src]")
+    .querySelectorAll(
+      "[data-video-id] .post-video[data-video-src]",
+    )
     .forEach((video) => {
       const card = video.closest("[data-video-id]");
 

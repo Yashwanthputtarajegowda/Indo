@@ -10,7 +10,8 @@ export async function loadReels(limit = 20) {
     `${apiBase}/api/media/videos?type=reel&limit=${limit}`,
     { headers },
   );
-  if (!response.ok) throw new Error("Could not load reels.");
+  if (!response.ok)
+    throw new Error("Could not load reels.");
   const data = await response.json();
   return Array.isArray(data.videos) ? data.videos : [];
 }
@@ -27,7 +28,8 @@ export async function recordReelView(reelId) {
       headers,
     },
   );
-  if (!response.ok) throw new Error("Could not record reel view.");
+  if (!response.ok)
+    throw new Error("Could not record reel view.");
   return response.json();
 }
 
@@ -62,7 +64,9 @@ function bindWatchProgress(videoElement, mediaId) {
 
 export function renderReel(video) {
   const creator = escapeHtml(video.creator || "@indo");
-  const caption = escapeHtml(video.caption || video.title || "");
+  const caption = escapeHtml(
+    video.caption || video.title || "",
+  );
   const id = escapeHtml(video.id);
   const targetUid = escapeHtml(video.ownerUid || "");
   const likes = Number(video.likes || 0).toLocaleString();
@@ -75,8 +79,11 @@ export function renderReel(video) {
 }
 
 export function bindReelWatchProgress(root) {
-  root.querySelectorAll(".reel-view .reel-video").forEach((video) => {
-    const card = video.closest("[data-video-id]");
-    if (card) bindWatchProgress(video, card.dataset.videoId);
-  });
+  root
+    .querySelectorAll(".reel-view .reel-video")
+    .forEach((video) => {
+      const card = video.closest("[data-video-id]");
+      if (card)
+        bindWatchProgress(video, card.dataset.videoId);
+    });
 }

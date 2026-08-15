@@ -24,7 +24,10 @@ async function token() {
 
 async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
-  if (options.body !== undefined && !(options.body instanceof FormData))
+  if (
+    options.body !== undefined &&
+    !(options.body instanceof FormData)
+  )
     headers["Content-Type"] = "application/json";
   headers.Authorization = `Bearer ${await token()}`;
   const response = await fetch(`${API_BASE()}${path}`, {
@@ -34,7 +37,9 @@ async function api(path, options = {}) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new Error(data.error || `Request failed (${response.status}).`);
+    throw new Error(
+      data.error || `Request failed (${response.status}).`,
+    );
   return data;
 }
 
@@ -59,13 +64,20 @@ async function loadProfile() {
 
 async function uploadAvatar(file) {
   if (file.size > 5 * 1024 * 1024)
-    throw new Error("Profile photo must be 5MB or smaller.");
+    throw new Error(
+      "Profile photo must be 5MB or smaller.",
+    );
   if (!/^image\/(png|jpeg|webp)$/.test(file.type))
-    throw new Error("Use PNG, JPG or WebP for profile photo.");
-  const signature = await api("/api/account/profile/avatar-signature", {
-    method: "POST",
-    body: JSON.stringify({ contentType: file.type }),
-  });
+    throw new Error(
+      "Use PNG, JPG or WebP for profile photo.",
+    );
+  const signature = await api(
+    "/api/account/profile/avatar-signature",
+    {
+      method: "POST",
+      body: JSON.stringify({ contentType: file.type }),
+    },
+  );
   const form = new FormData();
   form.append("file", file);
   form.append("api_key", signature.apiKey);
@@ -78,7 +90,9 @@ async function uploadAvatar(file) {
   );
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.secure_url)
-    throw new Error(data.error?.message || "Profile photo upload failed.");
+    throw new Error(
+      data.error?.message || "Profile photo upload failed.",
+    );
   return data.secure_url;
 }
 
@@ -96,9 +110,14 @@ export async function renderEditProfile(app) {
     profile = await loadProfile();
   } catch {}
   const name = String(
-    user.displayName || profile.name || profile.displayName || "",
+    user.displayName ||
+      profile.name ||
+      profile.displayName ||
+      "",
   ).trim();
-  const id = String(profile.userId || profile.username || "").replace(/^@/, "");
+  const id = String(
+    profile.userId || profile.username || "",
+  ).replace(/^@/, "");
   const avatar = String(
     profile.avatarUrl ||
       profile.photoURL ||
@@ -106,7 +125,9 @@ export async function renderEditProfile(app) {
       user.photoURL ||
       "",
   ).trim();
-  const initial = (name || id || "I").charAt(0).toUpperCase();
+  const initial = (name || id || "I")
+    .charAt(0)
+    .toUpperCase();
   const bio = String(profile.bio || "");
   const location = String(profile.location || "");
   const website = String(profile.website || "");
@@ -130,7 +151,8 @@ export async function renderEditProfile(app) {
     const localUrl = URL.createObjectURL(file);
     app.querySelector("[data-avatar]").innerHTML =
       `<img src="${esc(localUrl)}" alt="Profile">`;
-    message.textContent = "Photo selected. Save to publish it everywhere.";
+    message.textContent =
+      "Photo selected. Save to publish it everywhere.";
     message.className = "indo-edit-msg";
   });
 
@@ -144,18 +166,28 @@ export async function renderEditProfile(app) {
       const payload = {
         name: app.querySelector("[name=name]").value.trim(),
         bio: app.querySelector("[name=bio]").value.trim(),
-        location: app.querySelector("[name=location]").value.trim(),
-        website: app.querySelector("[name=website]").value.trim(),
+        location: app
+          .querySelector("[name=location]")
+          .value.trim(),
+        website: app
+          .querySelector("[name=website]")
+          .value.trim(),
         role: app.querySelector("[name=role]").value,
-        interests: app.querySelector("[name=interests]").value.trim(),
-        language: app.querySelector("[name=language]").value,
-        visibility: app.querySelector("[name=visibility]").value,
+        interests: app
+          .querySelector("[name=interests]")
+          .value.trim(),
+        language: app.querySelector("[name=language]")
+          .value,
+        visibility: app.querySelector("[name=visibility]")
+          .value,
       };
-      if (!payload.name) throw new Error("Name is required.");
+      if (!payload.name)
+        throw new Error("Name is required.");
       const selectedPhoto = photoInput?.files?.[0];
       if (selectedPhoto) {
         message.textContent = "Uploading profile photo...";
-        payload.avatarUrl = await uploadAvatar(selectedPhoto);
+        payload.avatarUrl =
+          await uploadAvatar(selectedPhoto);
         payload.photoURL = payload.avatarUrl;
       }
       const result = await api("/api/account/profile", {
@@ -164,23 +196,37 @@ export async function renderEditProfile(app) {
       });
       await updateProfile(user, {
         displayName: payload.name,
-        ...(payload.avatarUrl ? { photoURL: payload.avatarUrl } : {}),
+        ...(payload.avatarUrl
+          ? { photoURL: payload.avatarUrl }
+          : {}),
       });
       window.dispatchEvent(
         new CustomEvent("indo:profile-updated", {
-          detail: { uid: user.uid, userId: id, profile: result.profile },
+          detail: {
+            uid: user.uid,
+            userId: id,
+            profile: result.profile,
+          },
         }),
       );
       message.textContent = "Profile saved everywhere.";
       message.className = "indo-edit-msg indo-edit-ok";
-      setTimeout(() => window.__indoNavigate?.("profile"), 350);
+      setTimeout(
+        () => window.__indoNavigate?.("profile"),
+        350,
+      );
     } catch (error) {
-      message.textContent = error?.message || "Could not save profile.";
+      message.textContent =
+        error?.message || "Could not save profile.";
       message.className = "indo-edit-msg indo-edit-err";
     } finally {
       top.disabled = button.disabled = false;
     }
   };
-  app.querySelector("[data-save]")?.addEventListener("click", save);
-  app.querySelector("[data-save-top]")?.addEventListener("click", save);
+  app
+    .querySelector("[data-save]")
+    ?.addEventListener("click", save);
+  app
+    .querySelector("[data-save-top]")
+    ?.addEventListener("click", save);
 }

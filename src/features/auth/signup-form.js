@@ -1,4 +1,7 @@
-import { createUserWithEmailAndPassword, auth } from "./firebase-client.js";
+import {
+  createUserWithEmailAndPassword,
+  auth,
+} from "./firebase-client.js";
 import { validateSignup } from "./signup-validation.js";
 import { saveAccountContact } from "./save-contact.js";
 
@@ -26,21 +29,26 @@ export async function submitSignup(form) {
   const apiBase = window.INDO_API_BASE || "";
 
   try {
-    const response = await fetch(`${apiBase}/api/account/claim-user-id`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const response = await fetch(
+      `${apiBase}/api/account/claim-user-id`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: validation.userId,
+          name: values.username.trim(),
+          accountType: "public",
+        }),
       },
-      body: JSON.stringify({
-        userId: validation.userId,
-        name: values.username.trim(),
-        accountType: "public",
-      }),
-    });
+    );
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.error || "Could not create the Indo profile.");
+      throw new Error(
+        data.error || "Could not create the Indo profile.",
+      );
     }
 
     await saveAccountContact({
@@ -50,10 +58,13 @@ export async function submitSignup(form) {
     return { ...data, mobile: values.mobile.trim() };
   } catch (error) {
     try {
-      const cleanupToken = await credential.user.getIdToken(true);
+      const cleanupToken =
+        await credential.user.getIdToken(true);
       await fetch(`${apiBase}/api/account/delete`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${cleanupToken}` },
+        headers: {
+          Authorization: `Bearer ${cleanupToken}`,
+        },
       });
     } catch {}
     await credential.user.delete().catch(() => {});

@@ -19,12 +19,15 @@ async function request(
   { method = "GET", body, authRequired = true } = {},
 ) {
   const headers = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (authRequired) headers.Authorization = `Bearer ${await token()}`;
+  if (body !== undefined)
+    headers["Content-Type"] = "application/json";
+  if (authRequired)
+    headers.Authorization = `Bearer ${await token()}`;
   const r = await fetch(`${API_BASE()}${path}`, {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body:
+      body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
   });
   const d = await r.json().catch(() => ({}));
@@ -43,7 +46,9 @@ function showStatus(app, text) {
   if (!el) {
     el = document.createElement("div");
     el.className = "indo-watch-live-status";
-    const actions = app.querySelector(".indo-watch-actions");
+    const actions = app.querySelector(
+      ".indo-watch-actions",
+    );
     actions?.after(el);
   }
   el.textContent = text || "";
@@ -55,7 +60,9 @@ function showStatus(app, text) {
 async function notifyPoll() {
   try {
     const d = await request("/api/notifications");
-    return Array.isArray(d.notifications) ? d.notifications : [];
+    return Array.isArray(d.notifications)
+      ? d.notifications
+      : [];
   } catch {
     return [];
   }
@@ -65,9 +72,13 @@ function installNotificationLiveRefresh() {
   window.__indoNotificationLiveRefresh = true;
   let lastFingerprint = "";
   const poll = async () => {
-    if (String(location.hash || "").includes("notification")) return;
+    if (
+      String(location.hash || "").includes("notification")
+    )
+      return;
     const root = document.getElementById("root");
-    if (!root || !root.querySelector(".notifications")) return;
+    if (!root || !root.querySelector(".notifications"))
+      return;
     const items = await notifyPoll();
     const fp = items
       .slice(0, 8)
@@ -75,7 +86,9 @@ function installNotificationLiveRefresh() {
       .join("|");
     if (lastFingerprint && fp !== lastFingerprint)
       window.dispatchEvent(
-        new CustomEvent("indo:notification-updated", { detail: { items } }),
+        new CustomEvent("indo:notification-updated", {
+          detail: { items },
+        }),
       );
     lastFingerprint = fp;
   };
@@ -94,11 +107,14 @@ function setButtonState(button, active, countValue) {
     active && button.dataset.action === "save",
   );
   const v = valueSpan(button);
-  if (v && countValue !== undefined) v.textContent = String(countValue);
+  if (v && countValue !== undefined)
+    v.textContent = String(countValue);
 }
 async function wireActions(app, video) {
   const original = [
-    ...app.querySelectorAll(".indo-watch-actions button[data-action]"),
+    ...app.querySelectorAll(
+      ".indo-watch-actions button[data-action]",
+    ),
   ];
   const buttons = {};
   for (const b of original) {
@@ -121,7 +137,8 @@ async function wireActions(app, video) {
     likeBtn.classList.add("is-working");
     likeBtn.disabled = true;
     try {
-      const next = !likeBtn.classList.contains("active-like");
+      const next =
+        !likeBtn.classList.contains("active-like");
       const d = await request(
         `/api/media/${encodeURIComponent(video.id)}/like`,
         {
@@ -142,13 +159,20 @@ async function wireActions(app, video) {
     saveBtn.classList.add("is-working");
     saveBtn.disabled = true;
     try {
-      const next = !saveBtn.classList.contains("active-save");
-      await request(`/api/media/${encodeURIComponent(video.id)}/save`, {
-        method: "POST",
-        body: { save: next },
-      });
+      const next =
+        !saveBtn.classList.contains("active-save");
+      await request(
+        `/api/media/${encodeURIComponent(video.id)}/save`,
+        {
+          method: "POST",
+          body: { save: next },
+        },
+      );
       setButtonState(saveBtn, next, 0);
-      showStatus(app, next ? "Saved" : "Removed from saved");
+      showStatus(
+        app,
+        next ? "Saved" : "Removed from saved",
+      );
     } catch (error) {
       showStatus(app, error.message || "Save failed.");
     } finally {
@@ -163,17 +187,25 @@ async function wireActions(app, video) {
     try {
       const url = location.href;
       if (navigator.share)
-        await navigator.share({ title: video.title || "Indo video", url });
-      else if (navigator.clipboard) await navigator.clipboard.writeText(url);
+        await navigator.share({
+          title: video.title || "Indo video",
+          url,
+        });
+      else if (navigator.clipboard)
+        await navigator.clipboard.writeText(url);
       showStatus(app, "Link shared");
     } catch (error) {
-      if (error?.name !== "AbortError") showStatus(app, "Share failed.");
+      if (error?.name !== "AbortError")
+        showStatus(app, "Share failed.");
     }
   });
   viewsBtn?.addEventListener("click", () =>
     app
       .querySelector(".indo-watch-player")
-      ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      }),
   );
 }
 async function wireFollow(app, video) {
@@ -196,7 +228,10 @@ async function wireFollow(app, video) {
       ? "following"
       : "idle";
   const paint = () => {
-    btn.classList.toggle("following", state === "following");
+    btn.classList.toggle(
+      "following",
+      state === "following",
+    );
     btn.classList.toggle("pending", state === "pending");
     btn.textContent =
       state === "following"
@@ -215,11 +250,19 @@ async function wireFollow(app, video) {
         method: "POST",
         body: { targetUid: ownerUid, follow: next },
       });
-      state = d.pending ? "pending" : next ? "following" : "idle";
+      state = d.pending
+        ? "pending"
+        : next
+          ? "following"
+          : "idle";
       paint();
       showStatus(
         app,
-        next ? (d.pending ? "Follow request sent" : "Following") : "Unfollowed",
+        next
+          ? d.pending
+            ? "Follow request sent"
+            : "Following"
+          : "Unfollowed",
       );
     } catch (error) {
       showStatus(app, error.message || "Follow failed.");
@@ -241,8 +284,11 @@ async function wireComments(app, video) {
       const d = await request(
         `/api/media/${encodeURIComponent(video.id)}/comments`,
       );
-      const comments = Array.isArray(d.comments) ? d.comments : [];
-      if (countEl) countEl.textContent = String(comments.length);
+      const comments = Array.isArray(d.comments)
+        ? d.comments
+        : [];
+      if (countEl)
+        countEl.textContent = String(comments.length);
       if (list)
         list.innerHTML = comments.length
           ? comments
@@ -269,16 +315,21 @@ async function wireComments(app, video) {
     input.disabled = true;
     if (status) status.textContent = "Sending...";
     try {
-      await request(`/api/media/${encodeURIComponent(video.id)}/comments`, {
-        method: "POST",
-        body: { text },
-      });
+      await request(
+        `/api/media/${encodeURIComponent(video.id)}/comments`,
+        {
+          method: "POST",
+          body: { text },
+        },
+      );
       input.value = "";
       if (status) status.textContent = "";
       await refresh();
       showStatus(app, "Comment added");
     } catch (error) {
-      if (status) status.textContent = error.message || "Comment failed.";
+      if (status)
+        status.textContent =
+          error.message || "Comment failed.";
     } finally {
       input.disabled = video.allowComments === false;
     }
@@ -290,7 +341,9 @@ export async function renderWatchVideo(app) {
   const raw = (() => {
     try {
       return JSON.parse(
-        sessionStorage.getItem("indo:watch-video-current") || "null",
+        sessionStorage.getItem(
+          "indo:watch-video-current",
+        ) || "null",
       );
     } catch {
       return null;

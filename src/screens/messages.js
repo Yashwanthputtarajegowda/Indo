@@ -23,14 +23,18 @@ async function request(path, options = {}) {
     Authorization: `Bearer ${await user.getIdToken()}`,
     ...(options.headers || {}),
   };
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.body !== undefined)
+    headers["Content-Type"] = "application/json";
   const response = await fetch(`${API()}${path}`, {
     ...options,
     headers,
     cache: "no-store",
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Messaging request failed.");
+  if (!response.ok)
+    throw new Error(
+      data.error || "Messaging request failed.",
+    );
   return data;
 }
 
@@ -40,31 +44,47 @@ function formatTime(value) {
   const date = new Date(ts);
   const now = new Date();
   if (date.toDateString() === now.toDateString())
-    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+    return date.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  return date.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 async function loadConversations() {
   const data = await request("/api/messages");
-  return Array.isArray(data.conversations) ? data.conversations : [];
+  return Array.isArray(data.conversations)
+    ? data.conversations
+    : [];
 }
 
 async function loadConversation(uid) {
-  const data = await request(`/api/messages/${encodeURIComponent(uid)}`);
+  const data = await request(
+    `/api/messages/${encodeURIComponent(uid)}`,
+  );
   return Array.isArray(data.messages) ? data.messages : [];
 }
 
 async function markRead(uid) {
-  return request(`/api/messages/${encodeURIComponent(uid)}/read`, {
-    method: "POST",
-  }).catch(() => null);
+  return request(
+    `/api/messages/${encodeURIComponent(uid)}/read`,
+    {
+      method: "POST",
+    },
+  ).catch(() => null);
 }
 
 async function sendMessage(uid, text) {
-  return request(`/api/messages/${encodeURIComponent(uid)}`, {
-    method: "POST",
-    body: JSON.stringify({ text }),
-  });
+  return request(
+    `/api/messages/${encodeURIComponent(uid)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    },
+  );
 }
 
 function installStyles() {
@@ -87,16 +107,22 @@ async function openConversation(conversation) {
   const overlay = document.createElement("div");
   overlay.dataset.indoChat = "1";
   const name = String(
-    conversation.name || conversation.username || "Indo User",
+    conversation.name ||
+      conversation.username ||
+      "Indo User",
   );
-  const userId = String(conversation.username || "").replace(/^@/, "");
+  const userId = String(
+    conversation.username || "",
+  ).replace(/^@/, "");
   overlay.className = "indo-chat-backdrop";
   overlay.innerHTML = `<section class="indo-chat"><header class="indo-chat-head"><div class="indo-chat-head-title"><b>${esc(name)}</b><span>${esc(userId ? `@${userId}` : "")}</span></div><button class="indo-chat-close" type="button" aria-label="Close">×</button></header><div class="indo-chat-list" data-chat-list><div style="color:#7f8798;font-size:11px;text-align:center;padding:24px">Loading...</div></div><form class="indo-chat-form" data-chat-form><input name="text" maxlength="1000" autocomplete="off" placeholder="Write a message..."><button type="submit">➤</button></form></section>`;
   document.body.appendChild(overlay);
   const list = overlay.querySelector("[data-chat-list]");
   const form = overlay.querySelector("[data-chat-form]");
   const close = () => overlay.remove();
-  overlay.querySelector(".indo-chat-close")?.addEventListener("click", close);
+  overlay
+    .querySelector(".indo-chat-close")
+    ?.addEventListener("click", close);
   overlay.addEventListener("click", (event) => {
     if (event.target === overlay) close();
   });
@@ -126,7 +152,9 @@ async function openConversation(conversation) {
     const input = form.elements.text;
     const text = String(input.value || "").trim();
     if (!text) return;
-    const button = form.querySelector('button[type="submit"]');
+    const button = form.querySelector(
+      'button[type="submit"]',
+    );
     button.disabled = true;
     try {
       await sendMessage(uid, text);
@@ -157,21 +185,30 @@ export async function renderMessages(app) {
     }
     list.innerHTML = conversations
       .map((item) => {
-        const displayName = String(item.name || item.username || "Indo User");
+        const displayName = String(
+          item.name || item.username || "Indo User",
+        );
         const initial =
-          displayName.replace(/^@/, "").charAt(0).toUpperCase() || "I";
+          displayName
+            .replace(/^@/, "")
+            .charAt(0)
+            .toUpperCase() || "I";
         const unread = Number(item.unreadCount || 0);
         return `<button class="indo-msg-card" type="button" data-conversation-uid="${esc(item.uid || "")}"><span class="indo-msg-avatar">${esc(initial)}</span><span class="indo-msg-copy"><span class="indo-msg-name">${esc(displayName)}${unread ? `<span class="indo-msg-badge">${unread > 99 ? "99+" : unread}</span>` : ""}</span><span class="indo-msg-last">${esc(item.lastMessage || "Start a conversation")}</span></span><span class="indo-msg-time">${esc(formatTime(item.lastMessageAt))}</span></button>`;
       })
       .join("");
-    list.querySelectorAll("[data-conversation-uid]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const item = conversations.find(
-          (row) => String(row.uid) === String(button.dataset.conversationUid),
-        );
-        openConversation(item).catch(() => {});
+    list
+      .querySelectorAll("[data-conversation-uid]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const item = conversations.find(
+            (row) =>
+              String(row.uid) ===
+              String(button.dataset.conversationUid),
+          );
+          openConversation(item).catch(() => {});
+        });
       });
-    });
   } catch (error) {
     list.innerHTML = `<div class="indo-msg-empty">${esc(error.message || "Could not load messages.")}</div>`;
   }

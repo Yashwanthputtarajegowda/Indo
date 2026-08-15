@@ -54,7 +54,11 @@ body:has(.auth-page) {
       rgba(255, 0, 180, 0.06),
       transparent 30%
     ),
-    radial-gradient(circle at 90% 45%, rgba(100, 0, 255, 0.06), transparent 32%);
+    radial-gradient(
+      circle at 90% 45%,
+      rgba(100, 0, 255, 0.06),
+      transparent 32%
+    );
   pointer-events: none;
 }
 .auth-ambient {
@@ -403,7 +407,12 @@ body:has(.auth-page) {
   height: 40px;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(100deg, #8c20ff, #d918df 48%, #ff25b6);
+  background: linear-gradient(
+    100deg,
+    #8c20ff,
+    #d918df 48%,
+    #ff25b6
+  );
   color: #fff;
   font-size: 14px;
   font-weight: 800;

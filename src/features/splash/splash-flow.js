@@ -3,7 +3,8 @@ import { renderLogin } from "../../screens/auth.js";
 
 function renderTransitionError(app, error) {
   const message =
-    error?.message || String(error || "Unknown navigation error.");
+    error?.message ||
+    String(error || "Unknown navigation error.");
   app.innerHTML = `
     <main class="splash-screen splash-error">
       <div class="splash-logo">I</div>
@@ -25,7 +26,10 @@ export function startSplash(app, nextScreen, delay = 2500) {
     try {
       nextScreen();
     } catch (error) {
-      console.error("Indo splash transition failed:", error);
+      console.error(
+        "Indo splash transition failed:",
+        error,
+      );
       try {
         renderLogin(app);
       } catch (fallbackError) {

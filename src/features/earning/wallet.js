@@ -14,7 +14,8 @@ async function request(path, options = {}) {
     },
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Wallet request failed.");
+  if (!response.ok)
+    throw new Error(data.error || "Wallet request failed.");
   return data;
 }
 
@@ -23,5 +24,8 @@ export const loadWallet = () => request("/api/wallet");
 export const requestPayout = (amount, method = "manual") =>
   request("/api/wallet/payout-request", {
     method: "POST",
-    body: JSON.stringify({ amount: Number(amount), method }),
+    body: JSON.stringify({
+      amount: Number(amount),
+      method,
+    }),
   });

@@ -76,17 +76,22 @@ function setReferenceIcons(actions) {
     views:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.3-6 9.5-6 9.5 6 9.5 6-3.3 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>',
   };
-  actions.querySelectorAll("button[data-action]").forEach((button) => {
-    const action = button.dataset.action;
-    const icon = button.querySelector("b");
-    if (icon && icons[action]) icon.innerHTML = icons[action];
-    const value = button.querySelector("span");
-    if (!value) return;
-    if (action === "share" || action === "save") {
-      const numeric = Number(value.textContent.trim());
-      value.textContent = Number.isFinite(numeric) ? String(numeric) : "0";
-    }
-  });
+  actions
+    .querySelectorAll("button[data-action]")
+    .forEach((button) => {
+      const action = button.dataset.action;
+      const icon = button.querySelector("b");
+      if (icon && icons[action])
+        icon.innerHTML = icons[action];
+      const value = button.querySelector("span");
+      if (!value) return;
+      if (action === "share" || action === "save") {
+        const numeric = Number(value.textContent.trim());
+        value.textContent = Number.isFinite(numeric)
+          ? String(numeric)
+          : "0";
+      }
+    });
 }
 
 export async function renderWatchVideo(app) {

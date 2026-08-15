@@ -27,7 +27,10 @@ function escapeHtml(value = "") {
 }
 
 function timeAgo(timestamp) {
-  const diff = Math.max(0, Date.now() - Number(timestamp || Date.now()));
+  const diff = Math.max(
+    0,
+    Date.now() - Number(timestamp || Date.now()),
+  );
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "now";
   if (mins < 60) return `${mins}m ago`;
@@ -37,7 +40,10 @@ function timeAgo(timestamp) {
 }
 
 function notificationKind(item) {
-  if (item?.type === "follow-request" || item?.type === "follow")
+  if (
+    item?.type === "follow-request" ||
+    item?.type === "follow"
+  )
     return "follow";
   if (item?.type === "comment") return "comment";
   if (item?.type === "like") return "like";
@@ -59,12 +65,18 @@ function renderKindBadge(kind) {
 function renderNotification(item) {
   const actor = escapeHtml(item.actorUserId || "@user");
   const actorName = escapeHtml(
-    item.actorName || actor.replace(/^@/, "") || "Indo User",
+    item.actorName ||
+      actor.replace(/^@/, "") ||
+      "Indo User",
   );
   const initial = escapeHtml(
-    (item.actorName || actor.replace(/^@/, "I")).charAt(0).toUpperCase() || "I",
+    (item.actorName || actor.replace(/^@/, "I"))
+      .charAt(0)
+      .toUpperCase() || "I",
   );
-  const message = escapeHtml(item.text || "sent you a notification.");
+  const message = escapeHtml(
+    item.text || "sent you a notification.",
+  );
   const kind = notificationKind(item);
   const unread = item.read !== true;
   const requesterUid = escapeHtml(item.actorUid || "");
@@ -132,52 +144,76 @@ function installStyles() {
   document.head.appendChild(style);
 }
 
-export async function renderNotifications(app, mode = "all") {
+export async function renderNotifications(
+  app,
+  mode = "all",
+) {
   installStyles();
   installHomeTopbarStyles();
   const isActivity = mode === "activity";
   app.innerHTML = `<div class="indo-notifications-shell">${renderHomeTopbar()}<main class="indo-notifications-main"><section class="indo-notifications-heading"><h1 class="indo-notifications-title">${isActivity ? "Activity" : "Notifications"}</h1><button class="indo-notifications-readall" type="button" data-mark-all>✓ Mark all as read</button></section><div class="indo-notifications-list" data-notifications-list><div class="indo-notifications-status">Loading...</div></div></main>${nav("home")}</div>`;
-  const list = app.querySelector("[data-notifications-list]");
-  const readAllButton = app.querySelector("[data-mark-all]");
+  const list = app.querySelector(
+    "[data-notifications-list]",
+  );
+  const readAllButton = app.querySelector(
+    "[data-mark-all]",
+  );
 
   const attachEvents = () => {
-    list.querySelectorAll("[data-notification-id]").forEach((card) => {
-      if (card.dataset.bound === "1") return;
-      card.dataset.bound = "1";
-      card.addEventListener("click", async (event) => {
-        if (event.target.closest("[data-follow-response]")) return;
-        if (!card.classList.contains("is-unread")) return;
-        try {
-          await markNotificationRead(card.dataset.notificationId);
-          card.classList.remove("is-unread");
-          card.classList.add("is-read");
-          window.dispatchEvent(new CustomEvent("indo:notifications-read"));
-        } catch {}
+    list
+      .querySelectorAll("[data-notification-id]")
+      .forEach((card) => {
+        if (card.dataset.bound === "1") return;
+        card.dataset.bound = "1";
+        card.addEventListener("click", async (event) => {
+          if (
+            event.target.closest("[data-follow-response]")
+          )
+            return;
+          if (!card.classList.contains("is-unread")) return;
+          try {
+            await markNotificationRead(
+              card.dataset.notificationId,
+            );
+            card.classList.remove("is-unread");
+            card.classList.add("is-read");
+            window.dispatchEvent(
+              new CustomEvent("indo:notifications-read"),
+            );
+          } catch {}
+        });
       });
-    });
-    list.querySelectorAll("[data-follow-response]").forEach((button) => {
-      if (button.dataset.bound === "1") return;
-      button.dataset.bound = "1";
-      button.addEventListener("click", async (event) => {
-        event.stopPropagation();
-        const requesterUid = button.dataset.requesterUid;
-        button.disabled = true;
-        try {
-          await respondToFollowRequest(requesterUid, true);
-          button.textContent = "Following";
-        } catch (error) {
-          button.disabled = false;
-          button.title = error?.message || "Could not follow back.";
-        }
+    list
+      .querySelectorAll("[data-follow-response]")
+      .forEach((button) => {
+        if (button.dataset.bound === "1") return;
+        button.dataset.bound = "1";
+        button.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          const requesterUid = button.dataset.requesterUid;
+          button.disabled = true;
+          try {
+            await respondToFollowRequest(
+              requesterUid,
+              true,
+            );
+            button.textContent = "Following";
+          } catch (error) {
+            button.disabled = false;
+            button.title =
+              error?.message || "Could not follow back.";
+          }
+        });
       });
-    });
   };
 
   const refresh = async () => {
     try {
       const items = await loadNotifications();
       const visible = isActivity
-        ? items.filter((item) => ["like", "comment"].includes(item.type))
+        ? items.filter((item) =>
+            ["like", "comment"].includes(item.type),
+          )
         : items;
       list.innerHTML = visible.length
         ? visible.map(renderNotification).join("")
@@ -193,22 +229,30 @@ export async function renderNotifications(app, mode = "all") {
   if (!isActivity) {
     try {
       await markAllNotificationsRead();
-      app.querySelectorAll(".indo-notice-card.is-unread").forEach((card) => {
-        card.classList.remove("is-unread");
-        card.classList.add("is-read");
-      });
-      window.dispatchEvent(new CustomEvent("indo:notifications-read"));
+      app
+        .querySelectorAll(".indo-notice-card.is-unread")
+        .forEach((card) => {
+          card.classList.remove("is-unread");
+          card.classList.add("is-read");
+        });
+      window.dispatchEvent(
+        new CustomEvent("indo:notifications-read"),
+      );
     } catch {}
   }
 
   readAllButton.addEventListener("click", async () => {
     try {
       await markAllNotificationsRead();
-      app.querySelectorAll(".indo-notice-card.is-unread").forEach((card) => {
-        card.classList.remove("is-unread");
-        card.classList.add("is-read");
-      });
-      window.dispatchEvent(new CustomEvent("indo:notifications-read"));
+      app
+        .querySelectorAll(".indo-notice-card.is-unread")
+        .forEach((card) => {
+          card.classList.remove("is-unread");
+          card.classList.add("is-read");
+        });
+      window.dispatchEvent(
+        new CustomEvent("indo:notifications-read"),
+      );
     } catch {}
   });
 }

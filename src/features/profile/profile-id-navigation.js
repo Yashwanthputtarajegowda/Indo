@@ -31,7 +31,9 @@ function validId(value = "") {
   const id = clean(value);
   return (
     ID_RE.test(id) &&
-    !["user", "profile", "users", "indo"].includes(id.toLowerCase())
+    !["user", "profile", "users", "indo"].includes(
+      id.toLowerCase(),
+    )
   );
 }
 function findIdentity(start) {
@@ -59,22 +61,29 @@ function findIdentity(start) {
         node.dataset?.profileLink ||
         "",
     );
-    if (validId(userId)) return { uid: fallbackUid || uid, userId };
+    if (validId(userId))
+      return { uid: fallbackUid || uid, userId };
     node = node.parentElement;
   }
   const exact = String(start.textContent || "").trim();
-  if (validId(exact)) return { uid: fallbackUid, userId: clean(exact) };
-  return fallbackUid ? { uid: fallbackUid, userId: "" } : null;
+  if (validId(exact))
+    return { uid: fallbackUid, userId: clean(exact) };
+  return fallbackUid
+    ? { uid: fallbackUid, userId: "" }
+    : null;
 }
 async function authHeaders() {
   const user = auth.currentUser;
   if (!user) throw new Error("Please login first.");
-  return { Authorization: `Bearer ${await user.getIdToken()}` };
+  return {
+    Authorization: `Bearer ${await user.getIdToken()}`,
+  };
 }
 async function fetchProfile(identity) {
   const userId = clean(identity?.userId || "");
   const uid = clean(identity?.uid || "");
-  if (!userId && !uid) throw new Error("User ID is missing.");
+  if (!userId && !uid)
+    throw new Error("User ID is missing.");
   const headers = await authHeaders();
   const candidates = [];
   if (userId)
@@ -100,7 +109,8 @@ async function fetchProfile(identity) {
           social: data.social || {},
         };
       lastError = new Error(
-        data?.error || `Could not open profile (${response.status}).`,
+        data?.error ||
+          `Could not open profile (${response.status}).`,
       );
     } catch (error) {
       lastError = error;
@@ -112,13 +122,18 @@ async function openProfile(identity) {
   const profile = await fetchProfile(identity);
   state.profile = profile;
   state.screen = "profile";
-  const { render } = await import("../../router.js?v=20260815-profile-id-v3");
+  const { render } =
+    await import("../../router.js?v=20260815-profile-id-v3");
   await render(document.getElementById("root"));
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 function shouldHandle(target) {
   if (!(target instanceof Element)) return false;
-  if (target.closest('input,textarea,select,[contenteditable="true"]'))
+  if (
+    target.closest(
+      'input,textarea,select,[contenteditable="true"]',
+    )
+  )
     return false;
   if (
     target.closest(
@@ -132,13 +147,17 @@ function shouldHandle(target) {
   );
 }
 function install() {
-  if (window.__indoProfileIdNavigationInstalled === "v4") return;
+  if (window.__indoProfileIdNavigationInstalled === "v4")
+    return;
   window.__indoProfileIdNavigationInstalled = "v4";
   window.__indoOpenProfile = openProfile;
   document.addEventListener(
     "click",
     async (event) => {
-      const target = event.target instanceof Element ? event.target : null;
+      const target =
+        event.target instanceof Element
+          ? event.target
+          : null;
       if (!shouldHandle(target)) return;
       const identity = findIdentity(target);
       if (!identity) return;
@@ -155,11 +174,17 @@ function install() {
   document.addEventListener(
     "keydown",
     async (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      const target = event.target instanceof Element ? event.target : null;
+      if (event.key !== "Enter" && event.key !== " ")
+        return;
+      const target =
+        event.target instanceof Element
+          ? event.target
+          : null;
       if (
         !target ||
-        !target.matches(".search-profile-id-link,[data-profile-link]")
+        !target.matches(
+          ".search-profile-id-link,[data-profile-link]",
+        )
       )
         return;
       const identity = findIdentity(target);

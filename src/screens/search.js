@@ -1,6 +1,12 @@
 import { nav } from "../components/nav.js";
-import { renderHomeTopbar, installHomeTopbarStyles } from "./home-topbar-v2.js";
-import { loadFollowStatus, toggleFollow } from "../features/social/follow.js";
+import {
+  renderHomeTopbar,
+  installHomeTopbarStyles,
+} from "./home-topbar-v2.js";
+import {
+  loadFollowStatus,
+  toggleFollow,
+} from "../features/social/follow.js";
 import { state } from "../state.js";
 
 const VERSION = "235";
@@ -49,7 +55,8 @@ async function searchUsers(q) {
     },
   );
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || "Could not search users.");
+  if (!r.ok)
+    throw new Error(d.error || "Could not search users.");
   return Array.isArray(d.users) ? d.users : [];
 }
 async function openUserProfile(id) {
@@ -69,7 +76,9 @@ async function openUserProfile(id) {
   throw new Error("Profile navigation is unavailable.");
 }
 function renderCard(user) {
-  const id = String(user.userId || user.username || "").replace(/^@+/, "");
+  const id = String(
+    user.userId || user.username || "",
+  ).replace(/^@+/, "");
   const uid = String(user.uid || "");
   const avatar = user.avatarUrl
     ? `<img class="search-profile-avatar" data-profile-username="${escapeHtml(id)}" src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(user.name || id)}" loading="lazy">`
@@ -88,61 +97,69 @@ export async function renderSearch(app) {
   installHomeTopbarStyles();
   injectStyles();
   app.innerHTML = `<div class="app-shell">${renderHomeTopbar()}<main class="search-v232"><div class="search-v232-box"><span aria-hidden="true">⌕</span><input id="user-search-input-v232" autocomplete="off" placeholder="Search @User ID..." aria-label="Search User ID"><button class="search-v232-clear" id="search-clear-v232" type="button" aria-label="Clear search">×</button></div><h4 class="search-v232-users-title">Users</h4><div class="search-v232-results" id="search-results-v232"><div class="search-v232-empty">Search a User ID to see matching profiles.</div></div></main>${nav("search")}</div>`;
-  const input = app.querySelector("#user-search-input-v232");
+  const input = app.querySelector(
+    "#user-search-input-v232",
+  );
   const clear = app.querySelector("#search-clear-v232");
   const results = app.querySelector("#search-results-v232");
   let timer = null,
     requestId = 0;
   const bindFollowButtons = () => {
-    results.querySelectorAll("[data-follow-user]").forEach(async (b) => {
-      if (b.dataset.bound === "1") return;
-      b.dataset.bound = "1";
-      const uid = b.dataset.followUser;
-      if (!uid) {
-        b.hidden = true;
-        return;
-      }
-      try {
-        const s = await loadFollowStatus(uid);
-        b.dataset.following = s?.following ? "1" : "0";
-        b.textContent = s?.requested
-          ? "Requested"
-          : s?.following
-            ? "Following"
-            : "Follow";
-      } catch {}
-      b.addEventListener("click", async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const following = b.dataset.following === "1";
-        b.disabled = true;
+    results
+      .querySelectorAll("[data-follow-user]")
+      .forEach(async (b) => {
+        if (b.dataset.bound === "1") return;
+        b.dataset.bound = "1";
+        const uid = b.dataset.followUser;
+        if (!uid) {
+          b.hidden = true;
+          return;
+        }
         try {
-          const d = await toggleFollow(uid, !following);
-          b.dataset.following = d?.following ? "1" : "0";
-          b.textContent = d?.requested
+          const s = await loadFollowStatus(uid);
+          b.dataset.following = s?.following ? "1" : "0";
+          b.textContent = s?.requested
             ? "Requested"
-            : d?.following
+            : s?.following
               ? "Following"
               : "Follow";
-        } catch (err) {
-          b.title = err.message || "Could not update follow status.";
-        } finally {
-          b.disabled = false;
-        }
+        } catch {}
+        b.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const following = b.dataset.following === "1";
+          b.disabled = true;
+          try {
+            const d = await toggleFollow(uid, !following);
+            b.dataset.following = d?.following ? "1" : "0";
+            b.textContent = d?.requested
+              ? "Requested"
+              : d?.following
+                ? "Following"
+                : "Follow";
+          } catch (err) {
+            b.title =
+              err.message ||
+              "Could not update follow status.";
+          } finally {
+            b.disabled = false;
+          }
+        });
       });
-    });
   };
   const openFromTarget = (target) => {
     const t = target?.closest?.("[data-open-profile]");
     if (!t) return null;
     return (
       t.getAttribute("data-open-profile") ||
-      t.closest(".search-profile-card")?.dataset.profileUser ||
+      t.closest(".search-profile-card")?.dataset
+        .profileUser ||
       ""
     );
   };
   results.addEventListener("click", (e) => {
-    const target = e.target instanceof Element ? e.target : null;
+    const target =
+      e.target instanceof Element ? e.target : null;
     if (target?.closest(".search-follow-button")) return;
     const id = target?.closest(".search-profile-id-link");
     const card = target?.closest(".search-profile-main");
@@ -166,9 +183,9 @@ export async function renderSearch(app) {
     if (!target) return;
     e.preventDefault();
     e.stopPropagation();
-    openUserProfile(target.getAttribute("data-open-profile") || "").catch(
-      () => {},
-    );
+    openUserProfile(
+      target.getAttribute("data-open-profile") || "",
+    ).catch(() => {});
   });
   const runSearch = async () => {
     const value = input.value.trim();
@@ -179,7 +196,8 @@ export async function renderSearch(app) {
         '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>';
       return;
     }
-    results.innerHTML = '<div class="search-v232-empty">Searching...</div>';
+    results.innerHTML =
+      '<div class="search-v232-empty">Searching...</div>';
     try {
       const users = await searchUsers(value);
       if (current !== requestId) return;
