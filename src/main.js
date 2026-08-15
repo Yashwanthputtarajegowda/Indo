@@ -1,4 +1,5 @@
 import { bindAuthSwitches, bindLoginForm, bindSignupForm } from './features/auth/auth-controller.js';
+import './features/profile/profile-avatar-live.js';
 
 const app=document.getElementById('root');
 let busy=false;
