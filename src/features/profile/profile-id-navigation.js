@@ -1,7 +1,4 @@
 import { state } from "../../state.js";
-import { auth } from "../auth/firebase-client.js";
-
-const API = () => window.INDO_API_BASE || "";
 
 const PROFILE_SELECTOR = [
   "[data-open-profile]",
@@ -99,83 +96,6 @@ function findIdentity(start) {
     : null;
 }
 
-async function authHeaders() {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error("Please login first.");
-  }
-
-  return {
-    Authorization: `Bearer ${await user.getIdToken()}`,
-  };
-}
-
-async function fetchProfile(identity) {
-  const userId = clean(identity?.userId || "");
-  const uid = clean(identity?.uid || "");
-
-  if (!userId && !uid) {
-    throw new Error("User ID is missing.");
-  }
-
-  const headers = await authHeaders();
-  const candidates = [];
-
-  if (userId) {
-    candidates.push(
-      `/api/account/profile/${encodeURIComponent(userId)}?t=${Date.now()}`,
-    );
-  }
-
-  if (uid) {
-    candidates.push(
-      `/api/account/public-profile/${encodeURIComponent(uid)}?t=${Date.now()}`,
-    );
-  }
-
-  let lastError = null;
-
-  for (const path of candidates) {
-    try {
-      const response = await fetch(`${API()}${path}`, {
-        headers,
-        cache: "no-store",
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (response.ok && data?.profile) {
-        return {
-          ...data.profile,
-          stats: data.stats || {},
-          social: data.social || {},
-        };
-      }
-
-      lastError = new Error(
-        data?.error ||
-          `Could not open profile (${response.status}).`,
-      );
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  throw lastError || new Error("Could not open profile.");
-}
-
-async function openProfile(identity) {
-  const profile = await fetchProfile(identity);
-  state.profile = profile;
-  state.screen = "profile";
-
-  const { render } = await import(
-    "../../router.js?v=20260815-profile-id-v7"
-  );
-
-  await render(document.getElementById("root"));
-  window.scrollTo({ top: 0, behavior: "auto" });
-}
-
 function shouldHandle(target) {
   if (!(target instanceof Element)) return false;
 
@@ -204,20 +124,38 @@ function shouldHandle(target) {
   return true;
 }
 
+async function openProfile(identity) {
+  const target = {
+    uid: clean(identity?.uid),
+    userId: clean(identity?.userId),
+    profileLoading: true,
+  };
+
+  state.profile = target;
+  state.screen = "profile";
+
+  const { render } = await import(
+    "../../router.js?v=20260815-profile-fast-v1"
+  );
+
+  await render(document.getElementById("root"));
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
 function install() {
   if (
     window.__indoProfileIdNavigationInstalled ===
-    "v7"
+    "v8"
   ) {
     return;
   }
 
-  window.__indoProfileIdNavigationInstalled = "v7";
+  window.__indoProfileIdNavigationInstalled = "v8";
   window.__indoOpenProfile = openProfile;
 
   document.addEventListener(
     "click",
-    async (event) => {
+    (event) => {
       const target =
         event.target instanceof Element
           ? event.target
@@ -231,21 +169,19 @@ function install() {
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      try {
-        await openProfile(identity);
-      } catch (error) {
+      openProfile(identity).catch((error) => {
         console.warn(
           "Profile navigation failed:",
           error,
         );
-      }
+      });
     },
     true,
   );
 
   document.addEventListener(
     "keydown",
-    async (event) => {
+    (event) => {
       if (event.key !== "Enter" && event.key !== " ") {
         return;
       }
@@ -263,14 +199,7 @@ function install() {
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      try {
-        await openProfile(identity);
-      } catch (error) {
-        console.warn(
-          "Profile navigation failed:",
-          error,
-        );
-      }
+      openProfile(identity).catch(() => {});
     },
     true,
   );
