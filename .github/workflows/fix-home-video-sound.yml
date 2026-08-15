@@ -22,9 +22,7 @@ jobs:
           fi
 
           python scripts/indo-video-patch.py
-
           git rm scripts/indo-video-patch.py
-          git checkout HEAD^ -- .github/workflows/fix-home-video-sound.yml
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
