@@ -7,7 +7,7 @@ import {
 import {
   enhanceProfileIdentity,
   installProfileIdentityEnhancer,
-} from "./features/profile/profile-identity.js?v=20260815-profile-identity-v2";
+} from "./features/profile/profile-identity.js?v=20260815-profile-identity-v3";
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
