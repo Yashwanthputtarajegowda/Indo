@@ -1,5 +1,5 @@
 import { bindAuthSwitches, bindLoginForm, bindSignupForm, hasLocalSession } from './features/auth/auth-controller.js';
-import './features/profile/profile-id-navigation.js';
+import './features/profile/profile-id-navigation.js?v=20260815-profile-id-v3';
 const app=document.getElementById('root');let busy=false;let started=false;
 async function installLiveAvatars(){try{await import('./features/profile/profile-avatar-live.js?v=20260815-avatar-v6')}catch(error){console.warn('Live profile avatars unavailable:',error)}}
 async function render(){const{state}=await import('./state.js');const{render}=await import('./router.js');await render(app);await installLiveAvatars();bindAuthSwitches();bindLoginForm();bindSignupForm()}
