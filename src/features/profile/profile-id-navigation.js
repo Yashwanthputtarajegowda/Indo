@@ -22,6 +22,7 @@ const PROFILE_SELECTOR = [
   ".conversation-user-id",
   ".reel-user-id",
   ".story-user-id",
+  ".indo-story-card-body strong",
 ].join(",");
 
 const ID_RE = /^@?[A-Za-z0-9._-]{2,80}$/;
@@ -53,6 +54,7 @@ function findIdentity(start) {
       node.dataset?.profileUid ||
         node.dataset?.ownerUid ||
         node.dataset?.actorUid ||
+        node.dataset?.storyOwner ||
         node.dataset?.userUid ||
         node.dataset?.uid ||
         "",
@@ -66,6 +68,7 @@ function findIdentity(start) {
         node.dataset?.profileUsername ||
         node.dataset?.userId ||
         node.dataset?.username ||
+        node.dataset?.storyName ||
         node.dataset?.relUser ||
         node.dataset?.actorUserId ||
         node.dataset?.profileLink ||
@@ -166,7 +169,7 @@ async function openProfile(identity) {
   state.screen = "profile";
 
   const { render } = await import(
-    "../../router.js?v=20260815-profile-id-v6"
+    "../../router.js?v=20260815-profile-id-v7"
   );
 
   await render(document.getElementById("root"));
@@ -204,12 +207,12 @@ function shouldHandle(target) {
 function install() {
   if (
     window.__indoProfileIdNavigationInstalled ===
-    "v6"
+    "v7"
   ) {
     return;
   }
 
-  window.__indoProfileIdNavigationInstalled = "v6";
+  window.__indoProfileIdNavigationInstalled = "v7";
   window.__indoOpenProfile = openProfile;
 
   document.addEventListener(
