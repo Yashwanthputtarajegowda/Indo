@@ -1,99 +1,59 @@
 import { auth } from "../auth/firebase-client.js";
 
-async function getUploadSignature() {
-  const user = auth.currentUser;
-  if (!user) throw new Error("Please login first.");
-  const token = await user.getIdToken();
+function buildUploadUrl(formValues, mediaType) {
   const apiBase = window.INDO_API_BASE || "";
-  try {
-    const response = await fetch(`${apiBase}/api/media/signature`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error("Video upload is temporarily unavailable.");
-    return { ...data, token };
-  } catch (error) {
-    if (error?.message === "Video upload is temporarily unavailable.") throw error;
-    throw new Error("Video upload is temporarily unavailable.");
-  }
-}
-
-async function uploadToStorage(file, config) {
-  const form = new FormData();
-  form.append("file", file);
-  form.append("api_key", config.apiKey);
-  form.append("timestamp", String(config.timestamp));
-  form.append("signature", config.signature);
-  form.append("folder", config.folder || "indo/videos");
-  try {
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`,
-      { method: "POST", body: form },
-    );
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error("Video upload is temporarily unavailable.");
-    return data;
-  } catch {
-    throw new Error("Video upload is temporarily unavailable.");
-  }
-}
-
-async function saveMedia(uploaded, formValues, token, mediaType = "video") {
-  const apiBase = window.INDO_API_BASE || "";
-  const description = String(formValues.description ?? formValues.caption ?? "").trim().slice(0, 500);
-  const tags = Array.isArray(formValues.tags)
-    ? formValues.tags.map((t) => String(t).trim().replace(/^#/, "")).filter(Boolean).slice(0, 20)
-    : [];
-  try {
-    const response = await fetch(`${apiBase}/api/media/videos`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        mediaType,
-        publicId: uploaded.public_id,
-        secureUrl: uploaded.secure_url,
-        title: formValues.title,
-        description,
-        caption: description,
-        privacy: formValues.privacy || "public",
-        allowComments: formValues.allowComments !== false,
-        allowDuet: formValues.allowDuet !== false,
-        category: String(formValues.category || "").trim().slice(0, 60),
-        tags,
-        location: String(formValues.location || "").trim().slice(0, 120),
-        mention: String(formValues.mention || "").trim().replace(/^@/, "").slice(0, 80),
-        duration: uploaded.duration,
-        width: uploaded.width,
-        height: uploaded.height,
-        storage: "video-storage",
-        resourceType: uploaded.resource_type || "video",
-      }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error("Could not finish publishing the video.");
-    return data.video;
-  } catch (error) {
-    if (error?.message === "Could not finish publishing the video.") throw error;
-    throw new Error("Could not finish publishing the video.");
-  }
+  const params = new URLSearchParams();
+  params.set("mediaType", mediaType === "reel" ? "reel" : "video");
+  params.set("title", String(formValues.title || "").trim().slice(0, 120));
+  params.set("caption", String(formValues.description ?? formValues.caption ?? "").trim().slice(0, 500));
+  params.set("privacy", String(formValues.privacy || "public"));
+  params.set("allowComments", String(formValues.allowComments !== false));
+  params.set("allowDuet", String(formValues.allowDuet !== false));
+  params.set("category", String(formValues.category || "").trim().slice(0, 60));
+  params.set("tags", Array.isArray(formValues.tags) ? formValues.tags.join(",") : "");
+  params.set("location", String(formValues.location || "").trim().slice(0, 120));
+  params.set("duration", String(Number(formValues.duration || 0)));
+  params.set("width", String(Number(formValues.width || 0)));
+  params.set("height", String(Number(formValues.height || 0)));
+  return `${apiBase}/api/media/videos/upload-telegram?${params.toString()}`;
 }
 
 export async function uploadMedia(file, mediaType = "video", options = {}) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
+
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please login first.");
+
   const onProgress = options.onProgress || (() => {});
+  const maxBytes = 50 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    throw new Error("This video is larger than the current Telegram upload limit of 50 MB.");
+  }
+
   onProgress(5, "Preparing your upload...");
-  const config = await getUploadSignature();
-  onProgress(15, mediaType === "reel" ? "Uploading your reel..." : "Uploading your video...");
-  const uploaded = await uploadToStorage(file, config);
-  onProgress(85, mediaType === "reel" ? "Finishing your reel..." : "Finishing your video...");
-  const media = await saveMedia(uploaded, options, config.token, mediaType);
+  const token = await user.getIdToken();
+  onProgress(15, mediaType === "reel" ? "Uploading your reel to Telegram..." : "Uploading your video to Telegram...");
+
+  const url = buildUploadUrl({ ...options, duration: options.duration || 0, width: options.width || 0, height: options.height || 0 }, mediaType);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": file.type || "video/mp4",
+      "X-File-Name": encodeURIComponent(file.name || `${mediaType}.mp4`),
+    },
+    body: file,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Video upload failed.");
+  }
+
   onProgress(100, "Published successfully.");
-  return media;
+  return data.video;
 }
 
 export async function uploadVideo(file, options = {}) {
