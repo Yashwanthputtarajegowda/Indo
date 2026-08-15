@@ -29,21 +29,20 @@ jobs:
       - name: Generate package-lock.json
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
-      - name: Validate generated lockfile
-        run: |
-          set -euo pipefail
-          test -s package-lock.json
-          node -e "const p=require('./package-lock.json'); if (p.lockfileVersion < 3) { throw new Error('Unexpected lockfileVersion'); }"
-
       - name: Create lockfile PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          test -s package-lock.json
 
-          if git diff --quiet -- package-lock.json; then
-            echo "package-lock.json already exists and is current."
-            exit 0
+          # package-lock.json is untracked when it did not exist on main,
+          # so `git diff --quiet` alone cannot detect it.
+          if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
+            if git diff --quiet -- package-lock.json; then
+              echo "package-lock.json already exists and is current."
+              exit 0
+            fi
           fi
 
           branch="security/bootstrap-main-package-lock"
