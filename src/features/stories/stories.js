@@ -8,9 +8,7 @@ function normalizeStory(story, currentUid = "") {
   if (!story || typeof story !== "object") return null;
   return {
     ...story,
-    ownerUid: String(
-      story.ownerUid || story.uid || story.userId || story.creatorUid || currentUid || "",
-    ),
+    ownerUid: String(story.ownerUid || story.uid || story.userId || story.creatorUid || currentUid || ""),
     secureUrl: story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "",
   };
 }
@@ -44,19 +42,10 @@ export async function loadStories() {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Could not load stories.");
 
-    const stories = Array.isArray(data.stories)
-      ? data.stories.map((story) => normalizeStory(story, user.uid)).filter(Boolean)
-      : [];
+    const stories = Array.isArray(data.stories) ? data.stories.map((story) => normalizeStory(story, user.uid)).filter(Boolean) : [];
 
     const localStory = readLocalStory(user.uid);
-    if (
-      localStory &&
-      !stories.some(
-        (story) =>
-          String(story.ownerUid) === user.uid &&
-          String(story.id || "") === String(localStory.id || ""),
-      )
-    ) {
+    if (localStory && !stories.some((story) => String(story.ownerUid) === user.uid && String(story.id || "") === String(localStory.id || ""))) {
       stories.unshift(localStory);
     }
 
@@ -113,9 +102,7 @@ export function bindStoryButtons(root) {
       const overlay = document.createElement("div");
       overlay.className = "story-viewer";
       overlay.innerHTML = `<button type="button" class="story-viewer-close" aria-label="Close">×</button><div class="story-viewer-card"><b>${escapeHtml(name)}</b><video src="${escapeHtml(url)}" controls autoplay playsinline></video></div>`;
-      overlay
-        .querySelector(".story-viewer-close")
-        .addEventListener("click", () => overlay.remove());
+      overlay.querySelector(".story-viewer-close").addEventListener("click", () => overlay.remove());
       overlay.addEventListener("click", (event) => {
         if (event.target === overlay) overlay.remove();
       });

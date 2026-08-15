@@ -15,9 +15,7 @@ async function loadUnreadCount() {
     });
     if (!response.ok) return 0;
     const data = await response.json().catch(() => ({}));
-    return Array.isArray(data.notifications)
-      ? data.notifications.reduce((n, item) => n + (item?.read === false ? 1 : 0), 0)
-      : 0;
+    return Array.isArray(data.notifications) ? data.notifications.reduce((n, item) => n + (item?.read === false ? 1 : 0), 0) : 0;
   } catch {
     return 0;
   }

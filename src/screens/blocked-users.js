@@ -38,8 +38,7 @@ export async function renderBlockedUsers(app) {
         try {
           await toggleBlockedUser(button.dataset.unblockUid, false);
           button.closest(".search-user")?.remove();
-          if (!list.children.length)
-            list.innerHTML = '<div class="profile-empty">No blocked users.</div>';
+          if (!list.children.length) list.innerHTML = '<div class="profile-empty">No blocked users.</div>';
         } catch (error) {
           message.textContent = error.message || "Could not unblock user.";
           button.disabled = false;

@@ -42,9 +42,7 @@ async function request(path, options = {}) {
 }
 
 function followIcon(following = false) {
-  return following
-    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>'
-    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  return following ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
 }
 
 function buttonLabel(stateValue) {
@@ -123,8 +121,7 @@ function install() {
   style();
   process(document);
   const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations)
-      for (const node of mutation.addedNodes) if (node.nodeType === 1) process(node);
+    for (const mutation of mutations) for (const node of mutation.addedNodes) if (node.nodeType === 1) process(node);
   });
   observer.observe(document.getElementById("root") || document.body, {
     childList: true,
@@ -173,16 +170,11 @@ async function openProfileRelation(root, relation) {
     const token = await relationToken();
     const p = state.profile || {};
     let uid = String(p.uid || p.ownerUid || "").trim();
-    let username = String(
-      p.username || root.querySelector(".profile-direct-head h2")?.textContent || "",
-    )
+    let username = String(p.username || root.querySelector(".profile-direct-head h2")?.textContent || "")
       .replace(/^@/, "")
       .trim();
     if (!uid && username) {
-      const r = await fetch(
-        `${window.INDO_API_BASE || ""}/api/account/profile/${encodeURIComponent(username)}?t=${Date.now()}`,
-        { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
-      );
+      const r = await fetch(`${window.INDO_API_BASE || ""}/api/account/profile/${encodeURIComponent(username)}?t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
       const d = await r.json().catch(() => ({}));
       if (r.ok && d.profile) {
         uid = String(d.profile.uid || "");
@@ -202,10 +194,7 @@ async function openProfileRelation(root, relation) {
     if (!items.length && p[relation]) items = relationEntries(p[relation]);
     if (!items.length) {
       try {
-        const r = await fetch(
-          `${window.INDO_API_BASE || ""}/api/social/${relation}/${encodeURIComponent(uid)}?t=${Date.now()}`,
-          { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
-        );
+        const r = await fetch(`${window.INDO_API_BASE || ""}/api/social/${relation}/${encodeURIComponent(uid)}?t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
         const d = await r.json().catch(() => ({}));
         if (r.ok) items = Array.isArray(d.items) ? d.items : [];
       } catch {}
@@ -242,10 +231,7 @@ function installRelationOverride() {
   document.addEventListener(
     "click",
     (event) => {
-      const stat =
-        event.target instanceof Element
-          ? event.target.closest(".profile-direct-stats > div")
-          : null;
+      const stat = event.target instanceof Element ? event.target.closest(".profile-direct-stats > div") : null;
       if (!stat) return;
       const root = document.getElementById("root");
       const stats = stat.parentElement;

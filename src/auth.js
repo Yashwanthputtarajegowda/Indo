@@ -3,16 +3,14 @@ const icon = (name) => {
     mail: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>',
     lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
     user: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.2-6 8-6s6.5 2 8 6"/></svg>',
-    phone:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5 10 3l2 4-2.2 1.8a14 14 0 0 0 5.4 5.4L17 12l4 2-.5 3c-.3 1.8-1.7 3-3.5 3C10.4 20 4 13.6 4 6.9 4 5 5.2 3.8 7 3.5Z"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5 10 3l2 4-2.2 1.8a14 14 0 0 0 5.4 5.4L17 12l4 2-.5 3c-.3 1.8-1.7 3-3.5 3C10.4 20 4 13.6 4 6.9 4 5 5.2 3.8 7 3.5Z"/></svg>',
     eye: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>',
     eyeOff:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.2A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.2 3.8M6.2 6.8C3.7 8.7 2.5 12 2.5 12s3.5 6 9.5 6c1.3 0 2.5-.3 3.5-.7"/></svg>',
     arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
     back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
     check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>',
-    shield:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>',
+    shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>',
   };
   return icons[name] || "";
 };
@@ -115,11 +113,7 @@ export function renderAuth(app, go) {
   app.querySelector("#auth-userid")?.addEventListener("input", (event) => {
     const value = event.target.value.trim();
     const available = app.querySelector(".auth-available");
-    if (available)
-      available.classList.toggle(
-        "show",
-        value.startsWith("@") && value.length > 1 && !value.includes(" "),
-      );
+    if (available) available.classList.toggle("show", value.startsWith("@") && value.length > 1 && !value.includes(" "));
   });
 
   const submit = app.querySelector("[data-auth-submit]");

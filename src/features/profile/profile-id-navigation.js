@@ -36,14 +36,7 @@ function findIdentity(start) {
   let node = start;
   let fallbackUid = "";
   for (let i = 0; i < 8 && node; i += 1) {
-    const uid = clean(
-      node.dataset?.profileUid ||
-        node.dataset?.ownerUid ||
-        node.dataset?.actorUid ||
-        node.dataset?.userUid ||
-        node.dataset?.uid ||
-        "",
-    );
+    const uid = clean(node.dataset?.profileUid || node.dataset?.ownerUid || node.dataset?.actorUid || node.dataset?.userUid || node.dataset?.uid || "");
     if (uid && !fallbackUid) fallbackUid = uid;
     const userId = clean(
       node.dataset?.openProfile ||
@@ -75,8 +68,7 @@ async function fetchProfile(identity) {
   const headers = await authHeaders();
   const candidates = [];
   if (userId) candidates.push(`/api/account/profile/${encodeURIComponent(userId)}?t=${Date.now()}`);
-  if (uid)
-    candidates.push(`/api/account/public-profile/${encodeURIComponent(uid)}?t=${Date.now()}`);
+  if (uid) candidates.push(`/api/account/public-profile/${encodeURIComponent(uid)}?t=${Date.now()}`);
   let lastError = null;
   for (const path of candidates) {
     try {
@@ -109,11 +101,8 @@ async function openProfile(identity) {
 function shouldHandle(target) {
   if (!(target instanceof Element)) return false;
   if (target.closest('input,textarea,select,[contenteditable="true"]')) return false;
-  if (target.closest(".search-follow-button,.profile-follow-button,button[data-follow-user]"))
-    return false;
-  return (
-    Boolean(target.closest(PROFILE_SELECTOR)) || validId(String(target.textContent || "").trim())
-  );
+  if (target.closest(".search-follow-button,.profile-follow-button,button[data-follow-user]")) return false;
+  return Boolean(target.closest(PROFILE_SELECTOR)) || validId(String(target.textContent || "").trim());
 }
 function install() {
   if (window.__indoProfileIdNavigationInstalled === "v4") return;

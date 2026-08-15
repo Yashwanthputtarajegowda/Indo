@@ -1,10 +1,5 @@
 import { state } from "../../state.js";
-import {
-  auth,
-  authPersistenceReady,
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-} from "./firebase-client.js";
+import { auth, authPersistenceReady, signInWithEmailAndPassword, sendPasswordResetEmail } from "./firebase-client.js";
 import { submitSignup } from "./signup-form.js";
 
 const ROUTER_VERSION = "20260815-211";
@@ -40,17 +35,11 @@ async function goTo(screen) {
 
 function loginErrorText(error) {
   const code = error?.code || "";
-  if (
-    code === "auth/invalid-credential" ||
-    code === "auth/user-not-found" ||
-    code === "auth/wrong-password"
-  )
-    return "Email ID or password is incorrect.";
+  if (code === "auth/invalid-credential" || code === "auth/user-not-found" || code === "auth/wrong-password") return "Email ID or password is incorrect.";
   if (code === "auth/invalid-email") return "Enter a valid email ID.";
   if (code === "auth/user-disabled") return "This account has been disabled.";
   if (code === "auth/too-many-requests") return "Too many login attempts. Please try again later.";
-  if (code === "auth/network-request-failed")
-    return "Network error. Check your internet connection and try again.";
+  if (code === "auth/network-request-failed") return "Network error. Check your internet connection and try again.";
   return error?.message || "Could not login. Please try again.";
 }
 

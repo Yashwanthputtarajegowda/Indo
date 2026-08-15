@@ -27,18 +27,14 @@ async function uploadToCloudinary(file, config) {
   form.append("timestamp", String(config.timestamp));
   form.append("signature", config.signature);
   form.append("folder", config.folder || "indo/stories");
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`,
-    { method: "POST", body: form },
-  );
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`, { method: "POST", body: form });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error?.message || "Cloudinary story upload failed.");
   return data;
 }
 
 export async function publishStory(file, onProgress = () => {}, editor = {}) {
-  if (!(file instanceof File) || !file.type.startsWith("video/"))
-    throw new Error("Please select a video story.");
+  if (!(file instanceof File) || !file.type.startsWith("video/")) throw new Error("Please select a video story.");
   onProgress(10, "Preparing story upload...");
   const config = await getStorySignature();
   onProgress(20, "Uploading story...");

@@ -48,15 +48,11 @@ async function authRequest(path) {
 
 function getTargetUid() {
   const profile = state.profile || {};
-  return String(
-    profile.uid || profile.ownerUid || profile.userId || auth.currentUser?.uid || "",
-  ).trim();
+  return String(profile.uid || profile.ownerUid || profile.userId || auth.currentUser?.uid || "").trim();
 }
 
 async function fetchRelation(targetUid, relation) {
-  const response = await authRequest(
-    `/api/social/${encodeURIComponent(relation)}/${encodeURIComponent(targetUid)}`,
-  );
+  const response = await authRequest(`/api/social/${encodeURIComponent(relation)}/${encodeURIComponent(targetUid)}`);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `Could not load ${relation}.`);
   const items = Array.isArray(data.items) ? data.items : [];
@@ -75,10 +71,7 @@ async function refreshStats(root = document.getElementById("root")) {
   if (!targetUid || root.dataset.profileRelationsV7Uid === targetUid) return;
   root.dataset.profileRelationsV7Uid = targetUid;
   try {
-    const [followers, following] = await Promise.all([
-      fetchRelation(targetUid, "followers"),
-      fetchRelation(targetUid, "following"),
-    ]);
+    const [followers, following] = await Promise.all([fetchRelation(targetUid, "followers"), fetchRelation(targetUid, "following")]);
     const followersCount = followersButton?.querySelector("[data-followers-count]");
     const followingCount = followingButton?.querySelector("[data-following-count]");
     if (followersCount) followersCount.textContent = String(followers.count);
@@ -140,10 +133,7 @@ function install() {
   document.addEventListener(
     "click",
     (event) => {
-      const target =
-        event.target instanceof Element
-          ? event.target.closest(".profile-direct-stat[data-relation]")
-          : null;
+      const target = event.target instanceof Element ? event.target.closest(".profile-direct-stat[data-relation]") : null;
       if (!target) return;
       const relation = target.dataset.relation;
       if (relation !== "followers" && relation !== "following") return;

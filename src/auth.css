@@ -42,9 +42,7 @@ body:has(.auth-page) {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 15% 90%, rgba(255, 0, 180, 0.06), transparent 30%),
-    radial-gradient(circle at 90% 45%, rgba(100, 0, 255, 0.06), transparent 32%);
+  background: radial-gradient(circle at 15% 90%, rgba(255, 0, 180, 0.06), transparent 30%), radial-gradient(circle at 90% 45%, rgba(100, 0, 255, 0.06), transparent 32%);
   pointer-events: none;
 }
 .auth-ambient {

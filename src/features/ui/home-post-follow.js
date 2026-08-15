@@ -25,12 +25,9 @@ async function getFollowStatus(targetUid) {
   try {
     const token = await user.getIdToken();
     const apiBase = window.INDO_API_BASE || "";
-    const response = await fetch(
-      `${apiBase}/api/social/follow-status/${encodeURIComponent(targetUid)}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    );
+    const response = await fetch(`${apiBase}/api/social/follow-status/${encodeURIComponent(targetUid)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const data = await response.json().catch(() => ({}));
     return Boolean(data.following || data.isFollowing);
   } catch {
@@ -63,14 +60,7 @@ function enhanceCard(card) {
   const menu = head?.querySelector("[data-feed-more]");
   const targetUid = String(card.dataset.ownerUid || "").trim();
   const currentUid = String(auth.currentUser?.uid || "").trim();
-  if (
-    !head ||
-    !menu ||
-    !targetUid ||
-    targetUid === currentUid ||
-    head.querySelector("[data-post-follow]")
-  )
-    return;
+  if (!head || !menu || !targetUid || targetUid === currentUid || head.querySelector("[data-post-follow]")) return;
 
   const button = document.createElement("button");
   button.type = "button";
@@ -88,9 +78,7 @@ function enhanceCard(card) {
 }
 
 export function enhanceHomePostFollowButtons(root = document) {
-  root
-    .querySelectorAll(".video-post[data-owner-uid], .post-card[data-owner-uid]")
-    .forEach(enhanceCard);
+  root.querySelectorAll(".video-post[data-owner-uid], .post-card[data-owner-uid]").forEach(enhanceCard);
 }
 
 function install() {
@@ -99,8 +87,7 @@ function install() {
   document.addEventListener(
     "click",
     async (event) => {
-      const button =
-        event.target instanceof Element ? event.target.closest("[data-post-follow]") : null;
+      const button = event.target instanceof Element ? event.target.closest("[data-post-follow]") : null;
       if (!button) return;
       event.preventDefault();
       event.stopPropagation();

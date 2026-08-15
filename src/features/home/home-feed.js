@@ -1,8 +1,6 @@
 export async function loadHomeVideos(limit = 20) {
   const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(
-    `${apiBase}/api/media/videos?limit=${encodeURIComponent(limit)}&type=video`,
-  );
+  const response = await fetch(`${apiBase}/api/media/videos?limit=${encodeURIComponent(limit)}&type=video`);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Could not load videos.");
   return Array.isArray(data.videos) ? data.videos : [];

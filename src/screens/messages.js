@@ -39,8 +39,7 @@ function formatTime(value) {
   if (!ts) return "";
   const date = new Date(ts);
   const now = new Date();
-  if (date.toDateString() === now.toDateString())
-    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
@@ -100,8 +99,7 @@ async function openConversation(conversation) {
   });
   const render = (messages) => {
     if (!messages.length) {
-      list.innerHTML =
-        '<div style="color:#7f8798;font-size:11px;text-align:center;padding:24px">No messages yet.</div>';
+      list.innerHTML = '<div style="color:#7f8798;font-size:11px;text-align:center;padding:24px">No messages yet.</div>';
       return;
     }
     const me = auth.currentUser?.uid || "";
@@ -131,10 +129,7 @@ async function openConversation(conversation) {
       input.value = "";
       render(await loadConversation(uid));
     } catch (error) {
-      list.insertAdjacentHTML(
-        "beforeend",
-        `<div style="color:#ff8b8b;font-size:11px;padding:8px">${esc(error.message || "Could not send message.")}</div>`,
-      );
+      list.insertAdjacentHTML("beforeend", `<div style="color:#ff8b8b;font-size:11px;padding:8px">${esc(error.message || "Could not send message.")}</div>`);
     } finally {
       button.disabled = false;
       input.focus();
@@ -162,9 +157,7 @@ export async function renderMessages(app) {
       .join("");
     list.querySelectorAll("[data-conversation-uid]").forEach((button) => {
       button.addEventListener("click", () => {
-        const item = conversations.find(
-          (row) => String(row.uid) === String(button.dataset.conversationUid),
-        );
+        const item = conversations.find((row) => String(row.uid) === String(button.dataset.conversationUid));
         openConversation(item).catch(() => {});
       });
     });

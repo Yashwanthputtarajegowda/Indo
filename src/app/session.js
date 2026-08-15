@@ -43,8 +43,7 @@ export function createSessionController(app) {
         state.authenticated = true;
         await refreshProfile().catch(() => {});
         await refreshEarning().catch(() => {});
-        if (splashFinished && (state.screen === "auth-login" || state.screen === "auth-signup"))
-          goTo(app, "home");
+        if (splashFinished && (state.screen === "auth-login" || state.screen === "auth-signup")) goTo(app, "home");
       },
       () => {
         sessionUser = null;

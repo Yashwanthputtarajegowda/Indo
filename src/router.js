@@ -23,8 +23,7 @@ function activeNav() {
   return "home";
 }
 function ensureUniversalNav(app) {
-  if (!app || ["auth-login", "auth-signup", "edit-profile", "watch-video"].includes(state.screen))
-    return;
+  if (!app || ["auth-login", "auth-signup", "edit-profile", "watch-video"].includes(state.screen)) return;
   installNavStyles();
   app.querySelectorAll(".bottom-nav,.indo-global-bottom-nav").forEach((n) => n.remove());
   const wrapper = document.createElement("div");
@@ -83,9 +82,7 @@ export async function render(app) {
         await lazy(app, "./screens/upload-video.js", "renderUploadVideo");
         break;
       case "story-create":
-        await lazy(app, "./screens/story-create.js", "renderStoryCreate", [
-          window.__indoStoryDraftFile instanceof File ? window.__indoStoryDraftFile : null,
-        ]);
+        await lazy(app, "./screens/story-create.js", "renderStoryCreate", [window.__indoStoryDraftFile instanceof File ? window.__indoStoryDraftFile : null]);
         break;
       case "profile":
         await lazy(app, "./screens/profile.js", "renderProfile", [state.profile]);
@@ -94,11 +91,7 @@ export async function render(app) {
         await lazy(app, "./screens/edit-profile.js", "renderEditProfile", [state.profile]);
         break;
       case "settings":
-        await lazy(app, "./screens/settings.js", "renderSettings", [
-          state.accountType,
-          state.earning,
-          state.earningSummary,
-        ]);
+        await lazy(app, "./screens/settings.js", "renderSettings", [state.accountType, state.earning, state.earningSummary]);
         break;
       case "search":
         await lazy(app, "./screens/search.js?v=20260815-search-v7", "renderSearch");

@@ -11,14 +11,7 @@ function removeCard(video) {
 async function validateVideo(video) {
   if (!(video instanceof HTMLVideoElement)) return;
   if (video.dataset[CHECKED_KEY] === "1" || video.dataset[CHECKING_KEY] === "1") return;
-  const source = String(
-    video.dataset.originalVideoSrc ||
-      video.dataset.indoOriginalSrc ||
-      video.dataset.videoSrc ||
-      video.currentSrc ||
-      video.src ||
-      "",
-  ).trim();
+  const source = String(video.dataset.originalVideoSrc || video.dataset.indoOriginalSrc || video.dataset.videoSrc || video.currentSrc || video.src || "").trim();
   if (!source || !source.includes("res.cloudinary.com/")) return;
 
   video.dataset[CHECKING_KEY] = "1";
@@ -39,12 +32,7 @@ async function validateVideo(video) {
       removeCard(video);
       return;
     }
-    if (
-      response.ok ||
-      response.status === 206 ||
-      response.status === 403 ||
-      response.status === 405
-    ) {
+    if (response.ok || response.status === 206 || response.status === 403 || response.status === 405) {
       video.dataset[CHECKED_KEY] = "1";
     }
   } catch {

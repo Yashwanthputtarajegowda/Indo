@@ -44,10 +44,7 @@ async function searchUsers(query) {
     .toLowerCase();
   if (!value) return [];
   const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(
-    `${apiBase}/api/account/search-users?q=${encodeURIComponent(value)}`,
-    { cache: "no-store" },
-  );
+  const response = await fetch(`${apiBase}/api/account/search-users?q=${encodeURIComponent(value)}`, { cache: "no-store" });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Could not search users.");
   return Array.isArray(data.users) ? data.users : [];
@@ -144,11 +141,7 @@ export async function renderSearch(app) {
         try {
           const data = await toggleFollow(targetUid, !following);
           button.dataset.following = data?.following ? "1" : "0";
-          button.textContent = data?.requested
-            ? "Requested"
-            : data?.following
-              ? "Following"
-              : "Follow";
+          button.textContent = data?.requested ? "Requested" : data?.following ? "Following" : "Follow";
         } catch (error) {
           button.title = error.message || "Could not update follow status.";
         } finally {
@@ -163,10 +156,7 @@ export async function renderSearch(app) {
     const cardButton = target?.closest("[data-open-profile]");
     if (!cardButton) return;
     openUserProfile(cardButton.dataset.openProfile).catch((error) => {
-      results.insertAdjacentHTML(
-        "afterbegin",
-        `<div class="search-v232-empty">${escapeHtml(error.message || "Could not open profile.")}</div>`,
-      );
+      results.insertAdjacentHTML("afterbegin", `<div class="search-v232-empty">${escapeHtml(error.message || "Could not open profile.")}</div>`);
     });
   });
 
@@ -175,17 +165,14 @@ export async function renderSearch(app) {
     clear.style.display = value ? "block" : "none";
     const current = ++requestId;
     if (!value) {
-      results.innerHTML =
-        '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>';
+      results.innerHTML = '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>';
       return;
     }
     results.innerHTML = '<div class="search-v232-empty">Searching...</div>';
     try {
       const users = await searchUsers(value);
       if (current !== requestId) return;
-      results.innerHTML = users.length
-        ? users.map(renderCard).join("")
-        : '<div class="search-v232-empty">No matching users found.</div>';
+      results.innerHTML = users.length ? users.map(renderCard).join("") : '<div class="search-v232-empty">No matching users found.</div>';
       bindFollowButtons();
     } catch (error) {
       if (current !== requestId) return;

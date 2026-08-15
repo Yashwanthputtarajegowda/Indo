@@ -1,10 +1,6 @@
 import { auth } from "../features/auth/firebase-client.js";
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
-import {
-  rankMedia,
-  recordMediaInteraction,
-  recordSearchQuery,
-} from "../features/feed/recommendation.js?v=223";
+import { rankMedia, recordMediaInteraction, recordSearchQuery } from "../features/feed/recommendation.js?v=223";
 
 const STYLE_ID = "indo-video-section-v223";
 const FOLLOWED_TTL_MS = 24 * 60 * 60 * 1000;
@@ -99,14 +95,7 @@ async function loadFollowing() {
 }
 function followedWindow(videos, following) {
   const keys = new Set(
-    following.flatMap((f) =>
-      [
-        String(f.uid || ""),
-        String(f.userId || "").replace(/^@/, ""),
-        String(f.username || "").replace(/^@/, ""),
-        String(f.creatorUid || ""),
-      ].filter(Boolean),
-    ),
+    following.flatMap((f) => [String(f.uid || ""), String(f.userId || "").replace(/^@/, ""), String(f.username || "").replace(/^@/, ""), String(f.creatorUid || "")].filter(Boolean)),
   );
   const cutoff = Date.now() - FOLLOWED_TTL_MS;
   const m = seen();
@@ -114,15 +103,7 @@ function followedWindow(videos, following) {
     .filter(
       (v) =>
         Number(v.createdAt || 0) >= cutoff &&
-        [
-          v.ownerUid,
-          v.uid,
-          v.creatorUid,
-          String(v.userId || "").replace(/^@/, ""),
-          String(v.creator || "").replace(/^@/, ""),
-        ]
-          .filter(Boolean)
-          .some((k) => keys.has(String(k))),
+        [v.ownerUid, v.uid, v.creatorUid, String(v.userId || "").replace(/^@/, ""), String(v.creator || "").replace(/^@/, "")].filter(Boolean).some((k) => keys.has(String(k))),
     )
     .sort((a, b) => {
       const as = !!m[String(a.id)],
@@ -136,17 +117,7 @@ function matches(v, q) {
     .trim()
     .toLowerCase();
   if (!q) return true;
-  return [
-    v.title,
-    v.caption,
-    v.description,
-    v.creator,
-    v.creatorName,
-    v.userId,
-    v.username,
-    v.category,
-    v.tags,
-  ]
+  return [v.title, v.caption, v.description, v.creator, v.creatorName, v.userId, v.username, v.category, v.tags]
     .flatMap((x) => (Array.isArray(x) ? x : [x]))
     .filter(Boolean)
     .join(" ")
@@ -226,9 +197,7 @@ export async function renderVideo(app) {
         base.filter((v) => !fids.has(String(v.id))),
         { type: "video", query: q, limit: 50, freshness: 1.2 },
       );
-      recent.innerHTML = ranked.length
-        ? ranked.map(poster).join("")
-        : '<div class="indo-video-no-results">No matching video uploads found.</div>';
+      recent.innerHTML = ranked.length ? ranked.map(poster).join("") : '<div class="indo-video-no-results">No matching video uploads found.</div>';
     };
     draw("");
     let t;

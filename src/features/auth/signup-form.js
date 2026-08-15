@@ -17,11 +17,7 @@ export async function submitSignup(form) {
   // Canonical source of truth is the authenticated user's UID branch.
   // Do not block signup on a separate availability probe; the backend claim
   // endpoint performs the authoritative uniqueness check against users/{uid}.
-  const credential = await createUserWithEmailAndPassword(
-    auth,
-    values.email.trim(),
-    values.password,
-  );
+  const credential = await createUserWithEmailAndPassword(auth, values.email.trim(), values.password);
   const token = await credential.user.getIdToken(true);
   const apiBase = window.INDO_API_BASE || "";
 

@@ -1,10 +1,6 @@
 import { nav } from "../components/nav.js";
 import { renderHomeTopbar, installHomeTopbarStyles } from "./home-topbar-v230.js";
-import {
-  loadNotifications,
-  markNotificationRead,
-  markAllNotificationsRead,
-} from "../features/notifications/notifications.js";
+import { loadNotifications, markNotificationRead, markAllNotificationsRead } from "../features/notifications/notifications.js";
 import { respondToFollowRequest } from "../features/social/follow.js";
 
 const STYLE_ID = "indo-notifications-screen-v232";
@@ -50,19 +46,14 @@ function renderKindBadge(kind) {
 function renderNotification(item) {
   const actor = escapeHtml(item.actorUserId || "@user");
   const actorName = escapeHtml(item.actorName || actor.replace(/^@/, "") || "Indo User");
-  const initial = escapeHtml(
-    (item.actorName || actor.replace(/^@/, "I")).charAt(0).toUpperCase() || "I",
-  );
+  const initial = escapeHtml((item.actorName || actor.replace(/^@/, "I")).charAt(0).toUpperCase() || "I");
   const message = escapeHtml(item.text || "sent you a notification.");
   const kind = notificationKind(item);
   const unread = item.read !== true;
   const requesterUid = escapeHtml(item.actorUid || "");
   const actorUid = escapeHtml(item.actorUid || "");
   const actorUserId = escapeHtml(item.actorUserId || "");
-  const followAction =
-    kind === "follow"
-      ? `<button class="indo-notice-action" type="button" data-follow-response="accept" data-requester-uid="${requesterUid}">Follow back</button>`
-      : "";
+  const followAction = kind === "follow" ? `<button class="indo-notice-action" type="button" data-follow-response="accept" data-requester-uid="${requesterUid}">Follow back</button>` : "";
   return `<article class="indo-notice-card ${unread ? "is-unread" : "is-read"}" data-notification-id="${escapeHtml(item.id || "")}" data-actor-uid="${actorUid}" data-actor-user-id="${actorUserId}">
     <span class="indo-notice-unread-dot" aria-hidden="true"></span>
     <div class="indo-notice-avatar" data-profile-uid="${actorUid}" data-profile-username="${actorUserId}" aria-hidden="true"><span>${initial}</span>${renderKindBadge(kind)}</div>
@@ -120,12 +111,8 @@ export async function renderNotifications(app, mode = "all") {
   const refresh = async () => {
     try {
       const items = await loadNotifications();
-      const visible = isActivity
-        ? items.filter((item) => ["like", "comment"].includes(item.type))
-        : items;
-      list.innerHTML = visible.length
-        ? visible.map(renderNotification).join("")
-        : `<div class="indo-notifications-empty">No ${isActivity ? "activity" : "notifications"} yet.</div>`;
+      const visible = isActivity ? items.filter((item) => ["like", "comment"].includes(item.type)) : items;
+      list.innerHTML = visible.length ? visible.map(renderNotification).join("") : `<div class="indo-notifications-empty">No ${isActivity ? "activity" : "notifications"} yet.</div>`;
       attachEvents();
     } catch (error) {
       list.innerHTML = `<div class="indo-notifications-empty">${escapeHtml(error?.message || "Could not load notifications.")}</div>`;

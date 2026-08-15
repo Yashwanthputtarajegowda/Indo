@@ -1,18 +1,7 @@
 import { icons } from "../data.js";
 import { nav } from "../components/nav.js";
-import {
-  loadReels,
-  recordReelView,
-  renderReel,
-  bindReelWatchProgress,
-} from "../features/feed/reels-feed.js";
-import {
-  loadEngagement,
-  toggleLike,
-  toggleSave,
-  addComment,
-  shareMedia,
-} from "../features/feed/media-engagement.js";
+import { loadReels, recordReelView, renderReel, bindReelWatchProgress } from "../features/feed/reels-feed.js";
+import { loadEngagement, toggleLike, toggleSave, addComment, shareMedia } from "../features/feed/media-engagement.js";
 import { loadFollowStatus, toggleFollow } from "../features/social/follow.js";
 
 async function bindReelActions(root) {
@@ -26,8 +15,7 @@ async function bindReelActions(root) {
     if (kind === "like" || kind === "save") {
       loadEngagement(mediaId)
         .then((data) => {
-          button.dataset.active =
-            kind === "like" ? (data.liked ? "1" : "0") : data.saved ? "1" : "0";
+          button.dataset.active = kind === "like" ? (data.liked ? "1" : "0") : data.saved ? "1" : "0";
           button.classList.toggle("active", button.dataset.active === "1");
           if (kind === "like") {
             const small = button.querySelector("small");
@@ -101,8 +89,7 @@ export function renderReels(app) {
   loadReels()
     .then((reels) => {
       if (!reels.length) {
-        list.innerHTML =
-          '<div class="feed-status">No reels yet. Upload your first reel from Create.</div>';
+        list.innerHTML = '<div class="feed-status">No reels yet. Upload your first reel from Create.</div>';
         return;
       }
       list.innerHTML = reels.map(renderReel).join("");

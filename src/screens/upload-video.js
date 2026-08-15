@@ -47,27 +47,18 @@ export function renderUploadVideo(app) {
     message.textContent = `${f.name} • ${(f.size / (1024 * 1024)).toFixed(1)} MB`;
   });
   function refreshOptions() {
-    app.querySelector("#privacy-value").textContent =
-      values.privacy === "followers"
-        ? "Followers"
-        : values.privacy === "private"
-          ? "Private"
-          : "Public";
+    app.querySelector("#privacy-value").textContent = values.privacy === "followers" ? "Followers" : values.privacy === "private" ? "Private" : "Public";
     app.querySelector("#comments-toggle").classList.toggle("on", values.allowComments);
     app.querySelector("#duet-toggle").classList.toggle("on", values.allowDuet);
     app.querySelector("#category-value").textContent = values.category || "Select Category";
-    app.querySelector("#tags-value").textContent = values.tags.length
-      ? values.tags.map((t) => `#${t}`).join(" ")
-      : "Add tags";
+    app.querySelector("#tags-value").textContent = values.tags.length ? values.tags.map((t) => `#${t}`).join(" ") : "Add tags";
     app.querySelector("#location-value").textContent = values.location || "Add location";
   }
   app.querySelectorAll("[data-option]").forEach((row) =>
     row.addEventListener("click", () => {
       const option = row.dataset.option;
       if (option === "privacy") {
-        const answer =
-          window.prompt("Privacy: enter public, followers, or private.", values.privacy) ||
-          values.privacy;
+        const answer = window.prompt("Privacy: enter public, followers, or private.", values.privacy) || values.privacy;
         const normalized = answer.trim().toLowerCase();
         if (["public", "followers", "private"].includes(normalized)) values.privacy = normalized;
       } else if (option === "comments") {
@@ -78,9 +69,7 @@ export function renderUploadVideo(app) {
         const answer = window.prompt("Category", values.category) || "";
         values.category = answer.trim().slice(0, 60);
       } else if (option === "tags") {
-        const answer =
-          window.prompt("Tags: separate with commas.", values.tags.join(", ")) ??
-          values.tags.join(", ");
+        const answer = window.prompt("Tags: separate with commas.", values.tags.join(", ")) ?? values.tags.join(", ");
         values.tags = answer
           .split(",")
           .map((t) => t.trim().replace(/^#/, ""))

@@ -11,13 +11,7 @@ async function refresh() {
   const postsCount = root.querySelector("[data-posts]");
   if (!followersCount && !followingCount && !postsCount) return;
 
-  const targetUid = String(
-    state.profile?.uid ||
-      state.profile?.ownerUid ||
-      state.profile?.userId ||
-      auth.currentUser?.uid ||
-      "",
-  ).trim();
+  const targetUid = String(state.profile?.uid || state.profile?.ownerUid || state.profile?.userId || auth.currentUser?.uid || "").trim();
   if (!targetUid || !auth.currentUser) return;
 
   try {

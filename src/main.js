@@ -1,9 +1,4 @@
-import {
-  bindAuthSwitches,
-  bindLoginForm,
-  bindSignupForm,
-  hasLocalSession,
-} from "./features/auth/auth-controller.js";
+import { bindAuthSwitches, bindLoginForm, bindSignupForm, hasLocalSession } from "./features/auth/auth-controller.js";
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
 import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v4";
 const app = document.getElementById("root");
@@ -66,18 +61,14 @@ if (!window.__indoUniversalNavigation) {
 function showBootFailure(message = "Could not start Indo. Please reload the app.") {
   if (!app) return;
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>${message}</p><button type="button" id="indo-retry-boot" style="margin-top:14px;padding:10px 16px;border-radius:10px;background:#743cff;color:#fff;font-weight:800;cursor:pointer">Retry</button></main>`;
-  document
-    .getElementById("indo-retry-boot")
-    ?.addEventListener("click", () => window.location.reload());
+  document.getElementById("indo-retry-boot")?.addEventListener("click", () => window.location.reload());
 }
 async function start() {
   if (started) return;
   started = true;
   try {
-    const { auth, authPersistenceReady } =
-      await import("./features/auth/firebase-client.js?v=20260815-auth-v4");
-    const { signOut, onAuthStateChanged } =
-      await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js");
+    const { auth, authPersistenceReady } = await import("./features/auth/firebase-client.js?v=20260815-auth-v4");
+    const { signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js");
     await authPersistenceReady;
     let settled = false;
     const bootWithUser = async (user) => {
@@ -92,17 +83,11 @@ async function start() {
         state.screen = "auth-login";
       } else {
         state.authenticated = Boolean(user);
-        if (user && (state.screen === "auth-login" || state.screen === "auth-signup"))
-          state.screen = "home";
+        if (user && (state.screen === "auth-login" || state.screen === "auth-signup")) state.screen = "home";
         if (!user && !String(state.screen || "").startsWith("auth-")) state.screen = "auth-login";
       }
       try {
-        await Promise.race([
-          render(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Startup timed out.")), 10000),
-          ),
-        ]);
+        await Promise.race([render(), new Promise((_, reject) => setTimeout(() => reject(new Error("Startup timed out.")), 10000))]);
       } catch (error) {
         console.error("Indo startup failed:", error);
         showBootFailure();
@@ -116,10 +101,7 @@ async function start() {
         () => resolve(auth.currentUser || null),
       );
     });
-    const user = await Promise.race([
-      firstAuth,
-      new Promise((resolve) => setTimeout(() => resolve(auth.currentUser || null), 8000)),
-    ]);
+    const user = await Promise.race([firstAuth, new Promise((resolve) => setTimeout(() => resolve(auth.currentUser || null), 8000))]);
     try {
       unsubscribe?.();
     } catch {}

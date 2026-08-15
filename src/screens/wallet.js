@@ -32,9 +32,7 @@ export async function renderWallet(app) {
   try {
     const wallet = await loadWallet();
     balance.textContent = `$${Number(wallet.balance || 0).toFixed(2)}`;
-    status.textContent = wallet.earningEnabled
-      ? `Minimum payout: $${Number(wallet.minimumPayoutUsd || 10).toFixed(2)}`
-      : "Turn Earning ON after eligibility to build payable balance.";
+    status.textContent = wallet.earningEnabled ? `Minimum payout: $${Number(wallet.minimumPayoutUsd || 10).toFixed(2)}` : "Turn Earning ON after eligibility to build payable balance.";
     list.innerHTML = renderPayouts(wallet.payouts || []);
   } catch (error) {
     status.textContent = error.message || "Could not load wallet.";

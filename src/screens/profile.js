@@ -19,11 +19,7 @@ const esc = (v) =>
   );
 const count = (v) => {
   const n = Number(v) || 0;
-  return n >= 1e6
-    ? `${(n / 1e6).toFixed(1).replace(".0", "")}M`
-    : n >= 1e3
-      ? `${(n / 1e3).toFixed(1).replace(".0", "")}K`
-      : String(n);
+  return n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(".0", "")}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1).replace(".0", "")}K` : String(n);
 };
 
 async function token() {
@@ -58,9 +54,7 @@ async function ownProfile() {
   return d?.profile ? { ...d.profile, stats: d.stats || {}, social: d.social || {} } : null;
 }
 async function profileById(id) {
-  const d = await api(
-    `/api/account/profile/${encodeURIComponent(String(id || "").replace(/^@/, ""))}`,
-  );
+  const d = await api(`/api/account/profile/${encodeURIComponent(String(id || "").replace(/^@/, ""))}`);
   return d?.profile ? { ...d.profile, stats: d.stats || {}, social: d.social || {} } : null;
 }
 async function loadVideos(uid) {
@@ -98,11 +92,7 @@ function applyLiveProfile(app, profile, own, id) {
   const emailName = String(me?.email || "")
     .split("@")[0]
     .trim();
-  const nextName =
-    (own
-      ? firebaseName || backendName || emailName || id
-      : backendName || firebaseName || id || emailName || "Profile"
-    ).trim() || "Profile";
+  const nextName = (own ? firebaseName || backendName || emailName || id : backendName || firebaseName || id || emailName || "Profile").trim() || "Profile";
   const nextId = String(profile?.userId || profile?.username || id || "").replace(/^@/, "");
   const avatar = String(profile?.avatarUrl || profile?.photoURL || profile?.photoUrl || "").trim();
   const bio = String(profile?.bio || "").trim();
@@ -135,9 +125,7 @@ export async function renderProfile(app, profileArg = null) {
   let profile = null,
     own = false;
   try {
-    const requested = String(
-      profileArg?.userId || profileArg?.username || profileArg?.uid || "",
-    ).replace(/^@/, "");
+    const requested = String(profileArg?.userId || profileArg?.username || profileArg?.uid || "").replace(/^@/, "");
     if (requested && String(profileArg?.uid || "") === String(me?.uid || "")) {
       own = true;
       profile = await ownProfile();
@@ -155,20 +143,13 @@ export async function renderProfile(app, profileArg = null) {
   }
 
   const uid = String(profile.uid || me?.uid || "");
-  const id = String(profile.userId || profile.username || me?.email?.split("@")[0] || "").replace(
-    /^@/,
-    "",
-  );
+  const id = String(profile.userId || profile.username || me?.email?.split("@")[0] || "").replace(/^@/, "");
   const firebaseName = String(me?.displayName || "").trim();
   const backendName = String(profile.name || profile.displayName || "").trim();
   const emailName = String(me?.email || "")
     .split("@")[0]
     .trim();
-  const name =
-    (own
-      ? firebaseName || backendName || emailName || id
-      : backendName || firebaseName || id || emailName || "Profile"
-    ).trim() || "Profile";
+  const name = (own ? firebaseName || backendName || emailName || id : backendName || firebaseName || id || emailName || "Profile").trim() || "Profile";
   const bio = String(profile.bio || "").trim();
   const location = String(profile.location || "").trim();
   const st = profile.stats || {},

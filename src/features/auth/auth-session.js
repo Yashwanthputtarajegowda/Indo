@@ -1,7 +1,4 @@
-import {
-  onAuthStateChanged,
-  signOut,
-} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { auth } from "./firebase-client.js";
 
 const LOCAL_SESSION_KEY = "indo:auth-session-v1";

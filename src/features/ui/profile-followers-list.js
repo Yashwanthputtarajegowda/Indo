@@ -50,10 +50,7 @@ async function readFirebaseRelation(targetUid, relation, idToken) {
 }
 
 async function readBackendRelation(apiBase, targetUid, relation, idToken) {
-  const response = await fetch(
-    `${apiBase}/api/social/${relation}/${encodeURIComponent(targetUid)}`,
-    { headers: { Authorization: `Bearer ${idToken}` }, cache: "no-store" },
-  );
+  const response = await fetch(`${apiBase}/api/social/${relation}/${encodeURIComponent(targetUid)}`, { headers: { Authorization: `Bearer ${idToken}` }, cache: "no-store" });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `Could not load ${relation}.`);
   return Array.isArray(data.items) ? data.items : [];
@@ -64,18 +61,13 @@ async function loadRelation(root, relation) {
   const idToken = await getToken();
   const profileState = state.profile || {};
   let targetUid = String(profileState.uid || profileState.ownerUid || "").trim();
-  let username = String(
-    profileState.username || root.querySelector(".profile-direct-head h2")?.textContent || "",
-  )
+  let username = String(profileState.username || root.querySelector(".profile-direct-head h2")?.textContent || "")
     .trim()
     .replace(/^@/, "");
 
   if (!targetUid && username) {
     try {
-      const response = await fetch(
-        `${apiBase}/api/account/profile/${encodeURIComponent(username)}?t=${Date.now()}`,
-        { headers: { Authorization: `Bearer ${idToken}` }, cache: "no-store" },
-      );
+      const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(username)}?t=${Date.now()}`, { headers: { Authorization: `Bearer ${idToken}` }, cache: "no-store" });
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.profile) {
         targetUid = String(data.profile.uid || data.profile.ownerUid || "");
@@ -111,10 +103,7 @@ async function loadRelation(root, relation) {
 
   if (username) {
     try {
-      const response = await fetch(
-        `${apiBase}/api/account/profile/${encodeURIComponent(username)}?t=${Date.now()}`,
-        { headers: { Authorization: `Bearer ${idToken}` }, cache: "no-store" },
-      );
+      const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(username)}?t=${Date.now()}`, { headers: { Authorization: `Bearer ${idToken}` }, cache: "no-store" });
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.profile) {
         const local = mapEntries(data.profile[relation]);
@@ -175,10 +164,7 @@ function install() {
   document.addEventListener(
     "click",
     (event) => {
-      const stat =
-        event.target instanceof Element
-          ? event.target.closest(".profile-direct-stats > div")
-          : null;
+      const stat = event.target instanceof Element ? event.target.closest(".profile-direct-stats > div") : null;
       if (!stat) return;
       const stats = stat.parentElement;
       const root = document.getElementById("root");

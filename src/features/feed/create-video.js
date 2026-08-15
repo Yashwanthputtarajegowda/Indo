@@ -27,10 +27,7 @@ async function uploadToStorage(file, config) {
   form.append("signature", config.signature);
   form.append("folder", config.folder || "indo/videos");
   try {
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`,
-      { method: "POST", body: form },
-    );
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/video/upload`, { method: "POST", body: form });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error("Video upload is temporarily unavailable.");
     return data;
@@ -92,18 +89,7 @@ async function saveVideo(uploaded, formValues, token) {
 
 export async function uploadVideo(
   file,
-  {
-    title = "",
-    caption = "",
-    description = "",
-    privacy = "public",
-    allowComments = true,
-    allowDuet = true,
-    category = "",
-    tags = [],
-    location = "",
-    onProgress = () => {},
-  } = {},
+  { title = "", caption = "", description = "", privacy = "public", allowComments = true, allowDuet = true, category = "", tags = [], location = "", onProgress = () => {} } = {},
 ) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");

@@ -95,8 +95,7 @@ function tagsHtml(tags) {
   );
 }
 function renderDetails(video) {
-  const description =
-    String(video.description ?? video.caption ?? "").trim() || "No additional details provided.";
+  const description = String(video.description ?? video.caption ?? "").trim() || "No additional details provided.";
   const creator = String(video.creator || video.userId || "user").replace(/^@/, "");
   const lang = String(video.language || video.lang || "").trim() || "Not specified";
   const category = String(video.category || "").trim() || "Not specified";
@@ -104,8 +103,7 @@ function renderDetails(video) {
   const privacy = String(video.privacy || "public")
     .trim()
     .toLowerCase();
-  const privacyLabel =
-    privacy === "followers" ? "Followers" : privacy === "private" ? "Private" : "Public";
+  const privacyLabel = privacy === "followers" ? "Followers" : privacy === "private" ? "Private" : "Public";
   const allowComments = video.allowComments !== false;
   const allowDuet = video.allowDuet !== false;
   return `<div class="indo-watch-details"><h3>Details</h3><div class="indo-detail"><span class="indo-detail-label">Description</span><span class="indo-detail-value">${esc(description)}</span></div><div class="indo-detail"><span class="indo-detail-label">Privacy</span><span class="indo-detail-value">${esc(privacyLabel)}</span></div><div class="indo-detail"><span class="indo-detail-label">Allow Comments</span><span class="indo-detail-value">${allowComments ? "Enabled" : "Disabled"}</span></div><div class="indo-detail"><span class="indo-detail-label">Allow Duet</span><span class="indo-detail-value">${allowDuet ? "Enabled" : "Disabled"}</span></div><div class="indo-detail"><span class="indo-detail-label">Category</span><span class="indo-detail-value">${esc(category)}</span></div><div class="indo-detail"><span class="indo-detail-label">Tags</span><span class="indo-detail-value">${tagsHtml(video.tags)}</span></div><div class="indo-detail"><span class="indo-detail-label">Location</span><span class="indo-detail-value">${esc(location)}</span></div><div class="indo-detail"><span class="indo-detail-label">Uploaded</span><span class="indo-detail-value">${esc(new Date(Number(video.createdAt || Date.now())).toLocaleString())}</span></div><div class="indo-detail"><span class="indo-detail-label">Duration</span><span class="indo-detail-value">${esc(duration(video.duration) || "Not specified")}</span></div><div class="indo-detail"><span class="indo-detail-label">Language</span><span class="indo-detail-value">${esc(lang)}</span></div><div class="indo-detail"><span class="indo-detail-label">Views</span><span class="indo-detail-value">${count(video.views)}</span></div><div class="indo-detail"><span class="indo-detail-label">Likes</span><span class="indo-detail-value">${count(video.likes)}</span></div><div class="indo-detail"><span class="indo-detail-label">Creator</span><span class="indo-detail-value">@${esc(creator)}</span></div></div>`;
@@ -115,9 +113,7 @@ async function loadUpNext(current) {
     const d = await request("/api/media/videos?type=video&limit=12", {
       authRequired: false,
     });
-    const list = (Array.isArray(d.videos) ? d.videos : []).filter(
-      (v) => String(v.id) !== String(current.id),
-    );
+    const list = (Array.isArray(d.videos) ? d.videos : []).filter((v) => String(v.id) !== String(current.id));
     return list[0] || null;
   } catch {
     return null;
@@ -142,8 +138,7 @@ export async function renderWatchVideo(app) {
   styles();
   const video = loadCurrent();
   if (!video) {
-    app.innerHTML =
-      '<main class="indo-watch-shell"><div class="indo-watch-status">Video not found.</div></main>';
+    app.innerHTML = '<main class="indo-watch-shell"><div class="indo-watch-status">Video not found.</div></main>';
     return;
   }
   saveCurrent(video);
@@ -157,9 +152,7 @@ export async function renderWatchVideo(app) {
   const commentBtn = app.querySelector('[data-action="comment"]');
   const saveBtn = app.querySelector('[data-action="save"]');
   const viewBtn = app.querySelector('[data-action="views"]');
-  app
-    .querySelector("[data-back]")
-    ?.addEventListener("click", () => window.__indoNavigate?.("video"));
+  app.querySelector("[data-back]")?.addEventListener("click", () => window.__indoNavigate?.("video"));
   if (!ownerUid || String(auth.currentUser?.uid || "") === ownerUid) followBtn.remove();
   else {
     const initial = await loadFollow(ownerUid);
@@ -167,12 +160,7 @@ export async function renderWatchVideo(app) {
       followBtn.classList.toggle("following", stateValue === "following");
       followBtn.classList.toggle("pending", stateValue === "pending");
       followBtn.dataset.followState = stateValue;
-      followBtn.textContent =
-        stateValue === "following"
-          ? "Following"
-          : stateValue === "pending"
-            ? "Requested"
-            : "Follow";
+      followBtn.textContent = stateValue === "following" ? "Following" : stateValue === "pending" ? "Requested" : "Follow";
     };
     paint(initial.pending ? "pending" : initial.following ? "following" : "idle");
     followBtn.addEventListener("click", async () => {
@@ -247,11 +235,7 @@ export async function renderWatchVideo(app) {
     }
   });
   commentBtn.addEventListener("click", () => app.querySelector("#comment-input")?.focus());
-  viewBtn.addEventListener("click", () =>
-    app
-      .querySelector(".indo-watch-player")
-      ?.scrollIntoView({ behavior: "smooth", block: "center" }),
-  );
+  viewBtn.addEventListener("click", () => app.querySelector(".indo-watch-player")?.scrollIntoView({ behavior: "smooth", block: "center" }));
   app.querySelector('[data-action="share"]').addEventListener("click", async () => {
     const url = location.href;
     try {

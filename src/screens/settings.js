@@ -20,11 +20,7 @@ export function renderSettings(app, accountType = "public", earning = null, summ
   const eligible = Boolean(earning?.eligible);
   const enabled = Boolean(earning?.earningEnabled);
   const status = eligible ? (enabled ? "ON" : "READY") : "OFF";
-  const actionLabel = enabled
-    ? "Turn Earning OFF"
-    : eligible
-      ? "Turn Earning ON"
-      : "View Earning Requirements";
+  const actionLabel = enabled ? "Turn Earning OFF" : eligible ? "Turn Earning ON" : "View Earning Requirements";
   const videoHours = Number(earning?.videoWatchHours || 0).toFixed(2);
   const reelHours = Number(earning?.reelWatchHours || 0).toFixed(2);
   const videoRequirement = Number(earning?.requirements?.videoWatchHours || 5000);

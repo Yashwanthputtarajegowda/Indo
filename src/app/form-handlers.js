@@ -20,8 +20,7 @@ export function createFormHandlers({ goTo, refreshProfile, refreshEarning }) {
 
         try {
           const result = await requestPayout(amount, method);
-          if (message)
-            message.textContent = `Payout request created for $${Number(result.payout.amount).toFixed(2)}.`;
+          if (message) message.textContent = `Payout request created for $${Number(result.payout.amount).toFixed(2)}.`;
           form.reset();
           setTimeout(() => goTo("wallet"), 500);
         } catch (error) {
@@ -58,8 +57,7 @@ export function createFormHandlers({ goTo, refreshProfile, refreshEarning }) {
       const button = form.querySelector(".auth-submit");
       const message = form.querySelector(".auth-message");
       if (button) button.disabled = true;
-      if (message)
-        message.textContent = form.id === "signup-form" ? "Creating account..." : "Logging in...";
+      if (message) message.textContent = form.id === "signup-form" ? "Creating account..." : "Logging in...";
 
       try {
         if (form.id === "signup-form") {

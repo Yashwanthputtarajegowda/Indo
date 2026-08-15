@@ -1,25 +1,11 @@
 import { state } from "../state.js";
-import {
-  loadEngagement,
-  toggleLike,
-  toggleSave,
-  addComment,
-  loadComments,
-  shareMedia,
-} from "../features/feed/media-engagement.js";
+import { loadEngagement, toggleLike, toggleSave, addComment, loadComments, shareMedia } from "../features/feed/media-engagement.js";
 import { loadFollowStatus, toggleFollow } from "../features/social/follow.js";
 import { toggleEarning } from "../features/earning/earning.js";
 import { resetPassword } from "../features/auth/password-reset.js";
 import { handleLogout } from "../features/auth/logout-button.js";
 
-export function createClickHandlers({
-  app,
-  getSessionUser,
-  refreshEarning,
-  refreshProfile,
-  goTo,
-  renderEditProfileScreen,
-}) {
+export function createClickHandlers({ app, getSessionUser, refreshEarning, refreshProfile, goTo, renderEditProfileScreen }) {
   async function handleEarning(event) {
     const toggleTarget = event.target.closest("[data-earning-action]");
     const rowTarget = event.target.closest("[data-earning-toggle]");
@@ -38,11 +24,9 @@ export function createClickHandlers({
       const result = await toggleEarning(nextEnabled);
       await refreshEarning();
       const status = document.querySelector("[data-earning-status]");
-      if (status)
-        status.textContent = result.earningEnabled ? "ON" : result.eligible ? "READY" : "OFF";
+      if (status) status.textContent = result.earningEnabled ? "ON" : result.eligible ? "READY" : "OFF";
       toggleTarget.textContent = result.earningEnabled ? "Turn Earning OFF" : "Turn Earning ON";
-      if (message)
-        message.textContent = result.earningEnabled ? "Earning started." : "Earning turned off.";
+      if (message) message.textContent = result.earningEnabled ? "Earning started." : "Earning turned off.";
     } catch (error) {
       if (message) message.textContent = error.message || "Could not update earning setting.";
     } finally {
@@ -69,10 +53,7 @@ export function createClickHandlers({
         const optimisticLiked = !previousLiked;
         target.classList.toggle("active", optimisticLiked);
         if (small) {
-          small.textContent = Math.max(
-            0,
-            previousCount + (optimisticLiked ? 1 : -1),
-          ).toLocaleString();
+          small.textContent = Math.max(0, previousCount + (optimisticLiked ? 1 : -1)).toLocaleString();
         }
         try {
           const current = await loadEngagement(mediaId);
@@ -100,9 +81,7 @@ export function createClickHandlers({
           .slice(-3)
           .map((item) => `${item.username}: ${item.text}`)
           .join("\n");
-        const prompt = latest
-          ? `Recent comments:\n${latest}\n\nWrite a comment:`
-          : "Write a comment:";
+        const prompt = latest ? `Recent comments:\n${latest}\n\nWrite a comment:` : "Write a comment:";
         const text = window.prompt(prompt);
         if (!text?.trim()) return true;
         await addComment(mediaId, text.trim());
@@ -145,11 +124,7 @@ export function createClickHandlers({
       if (!uid || sessionUser?.uid === uid) continue;
       try {
         const result = await loadFollowStatus(uid);
-        button.textContent = result.pending
-          ? "Requested"
-          : result.following
-            ? "Following"
-            : "Follow";
+        button.textContent = result.pending ? "Requested" : result.following ? "Following" : "Follow";
         button.classList.toggle("active", Boolean(result.following));
         button.dataset.pending = result.pending ? "true" : "false";
       } catch {}
@@ -178,8 +153,7 @@ export function createClickHandlers({
           await resetPassword(email);
           if (message) message.textContent = "Password reset email sent. Check your inbox.";
         } catch (error) {
-          if (message)
-            message.textContent = error.message || "Could not send password reset email.";
+          if (message) message.textContent = error.message || "Could not send password reset email.";
         } finally {
           passwordResetTarget.disabled = false;
         }

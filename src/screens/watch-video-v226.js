@@ -70,8 +70,7 @@ function installNotificationLiveRefresh() {
       .slice(0, 8)
       .map((x) => `${x.id}:${x.read}:${x.createdAt}`)
       .join("|");
-    if (lastFingerprint && fp !== lastFingerprint)
-      window.dispatchEvent(new CustomEvent("indo:notification-updated", { detail: { items } }));
+    if (lastFingerprint && fp !== lastFingerprint) window.dispatchEvent(new CustomEvent("indo:notification-updated", { detail: { items } }));
     lastFingerprint = fp;
   };
   setInterval(poll, 4000);
@@ -149,11 +148,7 @@ async function wireActions(app, video) {
       if (error?.name !== "AbortError") showStatus(app, "Share failed.");
     }
   });
-  viewsBtn?.addEventListener("click", () =>
-    app
-      .querySelector(".indo-watch-player")
-      ?.scrollIntoView({ behavior: "smooth", block: "center" }),
-  );
+  viewsBtn?.addEventListener("click", () => app.querySelector(".indo-watch-player")?.scrollIntoView({ behavior: "smooth", block: "center" }));
 }
 async function wireFollow(app, video) {
   const btn = app.querySelector("#watch-follow");
@@ -164,15 +159,12 @@ async function wireFollow(app, video) {
     btn.remove();
     return;
   }
-  const status = await request(`/api/social/follow-status/${encodeURIComponent(ownerUid)}`).catch(
-    () => ({}),
-  );
+  const status = await request(`/api/social/follow-status/${encodeURIComponent(ownerUid)}`).catch(() => ({}));
   let state = status.pending ? "pending" : status.following ? "following" : "idle";
   const paint = () => {
     btn.classList.toggle("following", state === "following");
     btn.classList.toggle("pending", state === "pending");
-    btn.textContent =
-      state === "following" ? "Following" : state === "pending" ? "Requested" : "Follow";
+    btn.textContent = state === "following" ? "Following" : state === "pending" ? "Requested" : "Follow";
   };
   paint();
   const fresh = cloneAndReplace(btn);
@@ -212,9 +204,7 @@ async function wireComments(app, video) {
           ? comments
               .map(
                 (c) =>
-                  `<div class="indo-comment"><span class="indo-comment-name">@${String(
-                    c.username || "user",
-                  )
+                  `<div class="indo-comment"><span class="indo-comment-name">@${String(c.username || "user")
                     .replace(/^@/, "")
                     .replace(
                       /[<>]/g,

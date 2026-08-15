@@ -26,7 +26,6 @@ export function validateSignup({ username, userId, mobile, email, password }) {
   if (!normalized.valid) return normalized;
   if (!String(mobile || "").trim()) return { valid: false, error: "Mobile number is required." };
   if (!String(email || "").trim()) return { valid: false, error: "Email ID is required." };
-  if (String(password || "").length < 8)
-    return { valid: false, error: "Password must be at least 8 characters." };
+  if (String(password || "").length < 8) return { valid: false, error: "Password must be at least 8 characters." };
   return { valid: true, userId: normalized.userId };
 }

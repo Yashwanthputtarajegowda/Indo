@@ -16,9 +16,7 @@ function esc(value = "") {
 }
 function normalizeStory(story) {
   if (!story || typeof story !== "object") return null;
-  const secureUrl = String(
-    story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "",
-  ).trim();
+  const secureUrl = String(story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "").trim();
   if (!secureUrl) return null;
   const createdAt = Number(story.createdAt || story.timestamp || 0);
   const expiresAt = Number(story.expiresAt || 0);
@@ -28,9 +26,7 @@ function normalizeStory(story) {
     ...story,
     secureUrl,
     ownerUid: String(story.ownerUid || story.uid || story.userId || story.creatorUid || "").trim(),
-    username: String(
-      story.username || story.userName || story.handle || story.name || "Indo User",
-    ).replace(/^@/, ""),
+    username: String(story.username || story.userName || story.handle || story.name || "Indo User").replace(/^@/, ""),
   };
 }
 function readCachedOwnStory(uid) {
@@ -138,10 +134,7 @@ function bindStories(app) {
         username: item.dataset.storyName,
       };
       const { auth } = await import("../features/auth/firebase-client.js");
-      await openStoryViewer(
-        story,
-        Boolean(auth.currentUser?.uid && auth.currentUser.uid === story.ownerUid),
-      );
+      await openStoryViewer(story, Boolean(auth.currentUser?.uid && auth.currentUser.uid === story.ownerUid));
     }),
   );
 }
@@ -173,22 +166,12 @@ async function loadStories(app) {
   const row = app?.querySelector("[data-stories]");
   if (!row) return;
   try {
-    const [{ loadStories: fetchStories }, { auth }] = await Promise.all([
-      import("../features/stories/stories.js?v=20260814-128"),
-      import("../features/auth/firebase-client.js"),
-    ]);
+    const [{ loadStories: fetchStories }, { auth }] = await Promise.all([import("../features/stories/stories.js?v=20260814-128"), import("../features/auth/firebase-client.js")]);
     const currentUid = auth.currentUser?.uid || "";
     const stories = (await fetchStories()).map(normalizeStory).filter(Boolean);
-    const own =
-      stories.find((item) => item.ownerUid === currentUid) || readCachedOwnStory(currentUid);
+    const own = stories.find((item) => item.ownerUid === currentUid) || readCachedOwnStory(currentUid);
     const seenOwners = new Set();
-    const others = stories.filter(
-      (item) =>
-        item.ownerUid &&
-        item.ownerUid !== currentUid &&
-        !seenOwners.has(item.ownerUid) &&
-        seenOwners.add(item.ownerUid),
-    );
+    const others = stories.filter((item) => item.ownerUid && item.ownerUid !== currentUid && !seenOwners.has(item.ownerUid) && seenOwners.add(item.ownerUid));
     const cards = [];
     if (own) cards.push(storyCard(own, true));
     else
@@ -209,8 +192,7 @@ async function loadFeed(app) {
   const feed = app.querySelector("[data-home-feed]");
   const status = app.querySelector("[data-feed-status]");
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } =
-      await import("../features/feed/home-feed.js?v=20260814-128");
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import("../features/feed/home-feed.js?v=20260814-128");
     const videos = await loadHomeVideos();
     if (!videos.length) {
       status.textContent = "No videos yet. Upload your first video.";
@@ -228,8 +210,7 @@ async function loadNotifications(app) {
   try {
     const button = app.querySelector(".notification-button");
     if (!button) return;
-    const { loadNotifications: fetchNotifications } =
-      await import("../features/notifications/notifications.js?v=20260814-128");
+    const { loadNotifications: fetchNotifications } = await import("../features/notifications/notifications.js?v=20260814-128");
     const items = await fetchNotifications();
     const unread = items.filter((item) => !item.read).length;
     if (!unread) return;
@@ -244,9 +225,7 @@ async function loadNotifications(app) {
 }
 export function renderHome(app) {
   ensureHomeStoryStyles();
-  const topbar = app.querySelector(".topbar")
-    ? app.querySelector(".topbar").outerHTML
-    : renderTopbarFallback();
+  const topbar = app.querySelector(".topbar") ? app.querySelector(".topbar").outerHTML : renderTopbarFallback();
   app.innerHTML = `<div class="app-shell">${topbar}<div class="indo-story-row" data-stories></div><main class="feed"><div class="feed-status" data-feed-status>Loading videos...</div><div data-home-feed></div></main></div>`;
   loadStories(app);
   loadFeed(app);

@@ -18,9 +18,7 @@ function esc(value = "") {
 }
 
 function getTargetUid() {
-  return String(
-    state.profile?.uid || state.profile?.ownerUid || state.profile?.userId || "",
-  ).trim();
+  return String(state.profile?.uid || state.profile?.ownerUid || state.profile?.userId || "").trim();
 }
 
 async function freshToken() {
@@ -53,8 +51,7 @@ async function openRelation(relation, targetUid) {
   closeRelation();
   const overlay = document.createElement("div");
   overlay.className = "indo-auth-relations-hardener";
-  overlay.style.cssText =
-    "position:fixed;inset:0;z-index:40000;background:rgba(0,0,0,.82);display:grid;place-items:center;padding:14px;";
+  overlay.style.cssText = "position:fixed;inset:0;z-index:40000;background:rgba(0,0,0,.82);display:grid;place-items:center;padding:14px;";
   overlay.innerHTML = `<section style="width:min(100%,520px);height:min(78vh,640px);background:#101015;border:1px solid #282832;border-radius:16px;overflow:hidden;display:flex;flex-direction:column"><header style="height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #24242c;color:#fff"><strong>${relation === "followers" ? "Followers" : "Following"}</strong><button type="button" data-hardener-close style="width:36px;height:36px;border:0;background:transparent;color:#fff;font-size:24px">×</button></header><div data-hardener-list style="flex:1;overflow:auto;padding:8px;color:#8e8e98;text-align:center">Loading...</div></section>`;
   document.body.appendChild(overlay);
   overlay.querySelector("[data-hardener-close]")?.addEventListener("click", closeRelation);
@@ -63,9 +60,7 @@ async function openRelation(relation, targetUid) {
   });
   const list = overlay.querySelector("[data-hardener-list]");
   try {
-    const data = await api(
-      `/api/social/${encodeURIComponent(relation)}/${encodeURIComponent(targetUid)}`,
-    );
+    const data = await api(`/api/social/${encodeURIComponent(relation)}/${encodeURIComponent(targetUid)}`);
     const items = Array.isArray(data.items) ? data.items : [];
     if (!items.length) {
       list.textContent = "No users yet.";
@@ -102,10 +97,7 @@ function install() {
   document.addEventListener(
     "click",
     async (event) => {
-      const target =
-        event.target instanceof Element
-          ? event.target.closest(".profile-direct-stat[data-relation], [data-follow]")
-          : null;
+      const target = event.target instanceof Element ? event.target.closest(".profile-direct-stat[data-relation], [data-follow]") : null;
       if (!target) return;
       const root = document.getElementById("root");
       if (!root?.contains(target)) return;
@@ -134,8 +126,7 @@ function install() {
           target.classList.toggle("following", Boolean(data.following));
           target.textContent = data.pending ? "Requested" : data.following ? "Following" : "Follow";
           const count = root.querySelector("[data-followers-count]");
-          if (count && data.followersCount !== undefined)
-            count.textContent = String(data.followersCount);
+          if (count && data.followersCount !== undefined) count.textContent = String(data.followersCount);
         } catch (error) {
           target.textContent = error?.message || "Try again";
         } finally {

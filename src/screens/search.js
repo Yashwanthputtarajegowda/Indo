@@ -19,11 +19,7 @@ function escapeHtml(value = "") {
 }
 function formatCount(v) {
   const n = Number(v) || 0;
-  return n >= 1e6
-    ? `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M`
-    : n >= 1e3
-      ? `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}K`
-      : String(n);
+  return n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}K` : String(n);
 }
 function initials(name, id) {
   return escapeHtml(
@@ -124,11 +120,7 @@ export async function renderSearch(app) {
   const openFromTarget = (target) => {
     const t = target?.closest?.("[data-open-profile]");
     if (!t) return null;
-    return (
-      t.getAttribute("data-open-profile") ||
-      t.closest(".search-profile-card")?.dataset.profileUser ||
-      ""
-    );
+    return t.getAttribute("data-open-profile") || t.closest(".search-profile-card")?.dataset.profileUser || "";
   };
   results.addEventListener("click", (e) => {
     const target = e.target instanceof Element ? e.target : null;
@@ -140,10 +132,7 @@ export async function renderSearch(app) {
     e.preventDefault();
     e.stopPropagation();
     openUserProfile(username).catch((err) => {
-      results.insertAdjacentHTML(
-        "afterbegin",
-        `<div class="search-v232-empty">${escapeHtml(err.message || "Could not open profile.")}</div>`,
-      );
+      results.insertAdjacentHTML("afterbegin", `<div class="search-v232-empty">${escapeHtml(err.message || "Could not open profile.")}</div>`);
     });
   });
   results.addEventListener("keydown", (e) => {
@@ -159,17 +148,14 @@ export async function renderSearch(app) {
     clear.style.display = value ? "block" : "none";
     const current = ++requestId;
     if (!value) {
-      results.innerHTML =
-        '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>';
+      results.innerHTML = '<div class="search-v232-empty">Search a User ID to see matching profiles.</div>';
       return;
     }
     results.innerHTML = '<div class="search-v232-empty">Searching...</div>';
     try {
       const users = await searchUsers(value);
       if (current !== requestId) return;
-      results.innerHTML = users.length
-        ? users.map(renderCard).join("")
-        : '<div class="search-v232-empty">No matching users found.</div>';
+      results.innerHTML = users.length ? users.map(renderCard).join("") : '<div class="search-v232-empty">No matching users found.</div>';
       bindFollowButtons();
     } catch (err) {
       if (current !== requestId) return;

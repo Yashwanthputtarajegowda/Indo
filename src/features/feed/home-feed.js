@@ -21,8 +21,7 @@ function escapeHtml(value = "") {
 }
 
 function svgIcon(name) {
-  const common =
-    'fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
+  const common = 'fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
 
   const icons = {
     like: `<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -679,11 +678,7 @@ export async function loadHomeVideos(limit = DEFAULT_FEED_LIMIT) {
   const fallback = await fetchVideos(apiBase, headers, `?limit=${fetchLimit}`);
 
   return filterAndTakeOnce(
-    fallback.filter((item) =>
-      ["video", "mp4", "reel"].includes(
-        String(item.mediaType || item.resourceType || "video").toLowerCase(),
-      ),
-    ),
+    fallback.filter((item) => ["video", "mp4", "reel"].includes(String(item.mediaType || item.resourceType || "video").toLowerCase())),
     requested,
   );
 }
@@ -709,15 +704,12 @@ export async function deleteVideo(videoId) {
     throw new Error("Please login first.");
   }
 
-  const response = await fetch(
-    `${window.INDO_API_BASE || ""}/api/media/videos/${encodeURIComponent(videoId)}/delete`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${await user.getIdToken()}`,
-      },
+  const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/videos/${encodeURIComponent(videoId)}/delete`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${await user.getIdToken()}`,
     },
-  );
+  });
 
   const data = await response.json().catch(() => ({}));
 
@@ -876,9 +868,7 @@ function enforceSingleVideoPlayback() {
 }
 
 function getPostTitle(video) {
-  return String(
-    video?.title || video?.postTitle || video?.caption || video?.description || "",
-  ).trim();
+  return String(video?.title || video?.postTitle || video?.caption || video?.description || "").trim();
 }
 
 function isTitleLong(title) {
@@ -896,9 +886,7 @@ export function renderVideoCard(video) {
 
   const ownerUid = escapeHtml(video.ownerUid || "");
 
-  const creatorAvatar = escapeHtml(
-    video.creatorAvatar || video.avatarUrl || video.profilePhoto || video.photoURL || "",
-  );
+  const creatorAvatar = escapeHtml(video.creatorAvatar || video.avatarUrl || video.profilePhoto || video.photoURL || "");
 
   /*
     IMPORTANT:
@@ -1272,9 +1260,7 @@ async function handleFeedDelete(button, card, menu) {
 }
 
 async function shareVideo(card) {
-  const url = `${window.location.origin}${window.location.pathname}#video=${encodeURIComponent(
-    card.dataset.videoId || "",
-  )}`;
+  const url = `${window.location.origin}${window.location.pathname}#video=${encodeURIComponent(card.dataset.videoId || "")}`;
 
   try {
     if (navigator.share) {
@@ -1302,20 +1288,17 @@ async function setSaved(card) {
   const next = button?.dataset.saved !== "1";
 
   try {
-    const response = await fetch(
-      `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/save`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/save`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
 
-          Authorization: `Bearer ${await user.getIdToken()}`,
-        },
-        body: JSON.stringify({
-          save: next,
-        }),
+        Authorization: `Bearer ${await user.getIdToken()}`,
       },
-    );
+      body: JSON.stringify({
+        save: next,
+      }),
+    });
 
     if (!response.ok) {
       throw new Error("Could not update save.");
@@ -1336,9 +1319,7 @@ function openFeedMoreMenu(button, card) {
 
   menu.className = "indo-feed-menu";
 
-  const isOwner = Boolean(
-    auth.currentUser?.uid && String(card.dataset.ownerUid || "") === String(auth.currentUser.uid),
-  );
+  const isOwner = Boolean(auth.currentUser?.uid && String(card.dataset.ownerUid || "") === String(auth.currentUser.uid));
 
   menu.innerHTML = `
     ${isOwner ? '<button type="button" data-feed-action="delete">Delete video</button>' : ""}
@@ -1591,14 +1572,11 @@ async function getEngagement(videoId) {
 
   const token = await user.getIdToken();
 
-  const response = await fetch(
-    `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(videoId)}/engagement`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(videoId)}/engagement`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  );
+  });
 
   if (!response.ok) {
     return null;
@@ -1617,20 +1595,17 @@ async function setLike(card) {
   const next = button?.dataset.liked !== "1";
 
   try {
-    const response = await fetch(
-      `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/like`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/like`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
 
-          Authorization: `Bearer ${await user.getIdToken()}`,
-        },
-        body: JSON.stringify({
-          like: next,
-        }),
+        Authorization: `Bearer ${await user.getIdToken()}`,
       },
-    );
+      body: JSON.stringify({
+        like: next,
+      }),
+    });
 
     const data = await response.json().catch(() => ({}));
 
@@ -1716,9 +1691,7 @@ async function openComments(card) {
 
   document.body.appendChild(backdrop);
 
-  backdrop
-    .querySelector("[data-comment-close]")
-    ?.addEventListener("click", () => backdrop.remove());
+  backdrop.querySelector("[data-comment-close]")?.addEventListener("click", () => backdrop.remove());
 
   backdrop.addEventListener("click", (event) => {
     if (event.target === backdrop) {
@@ -1731,16 +1704,11 @@ async function openComments(card) {
   try {
     const token = await user.getIdToken();
 
-    const response = await fetch(
-      `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(
-        card.dataset.videoId,
-      )}/comments`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/comments`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    );
+    });
 
     const data = await response.json().catch(() => ({}));
 
@@ -1778,22 +1746,17 @@ async function openComments(card) {
 
     if (!text) return;
 
-    const response = await fetch(
-      `${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(
-        card.dataset.videoId,
-      )}/comments`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    const response = await fetch(`${window.INDO_API_BASE || ""}/api/media/${encodeURIComponent(card.dataset.videoId)}/comments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
 
-          Authorization: `Bearer ${await user.getIdToken()}`,
-        },
-        body: JSON.stringify({
-          text,
-        }),
+        Authorization: `Bearer ${await user.getIdToken()}`,
       },
-    );
+      body: JSON.stringify({
+        text,
+      }),
+    });
 
     if (response.ok) {
       input.value = "";
