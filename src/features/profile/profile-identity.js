@@ -3,26 +3,12 @@ import { auth } from "../auth/firebase-client.js";
 const API = () => window.INDO_API_BASE || "";
 const CACHE = new Map();
 const AVATAR_CLASS = "indo-live-avatar-img";
-const STYLE_ID = "indo-profile-identity-v1";
+const STYLE_ID = "indo-profile-identity-v2";
 
 function clean(value = "") {
   return String(value || "")
     .trim()
     .replace(/^@+/, "");
-}
-
-function escapeHtml(value = "") {
-  return String(value).replace(
-    /[&<>\"']/g,
-    (char) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '\"': "&quot;",
-        "'": "&#039;",
-      })[char],
-  );
 }
 
 async function authHeaders() {
@@ -36,6 +22,7 @@ async function authHeaders() {
 async function fetchProfile(identity) {
   const userId = clean(identity?.userId);
   const uid = clean(identity?.uid);
+
   if (!userId && !uid) return null;
 
   const key = uid || `id:${userId}`;
@@ -64,7 +51,9 @@ async function fetchProfile(identity) {
           cache: "no-store",
         });
         const data = await response.json().catch(() => ({}));
+
         if (!response.ok || !data?.profile) continue;
+
         return {
           uid: String(data.profile.uid || uid),
           userId: clean(
@@ -111,10 +100,11 @@ function installStyles() {
 
     [data-profile-avatar].indo-live-avatar-ready,
     .neon-edge-avatar.indo-live-avatar-ready,
-    .indo-msg-avatar.indo-live-avatar-ready,
     .reel-avatar.indo-live-avatar-ready,
+    .indo-msg-avatar.indo-live-avatar-ready,
     .indo-notice-avatar.indo-live-avatar-ready,
-    .indo-relation-avatar.indo-live-avatar-ready {
+    .indo-relation-avatar.indo-live-avatar-ready,
+    .indo-story-avatar.indo-live-avatar-ready {
       overflow:hidden;
     }
   `;
@@ -125,39 +115,62 @@ function getAvatarTargets(root) {
   const selectors = [
     "[data-profile-avatar]",
     ".neon-edge-creator[data-profile-uid] .neon-edge-avatar",
-    ".reel-user[data-profile-uid] .avatar",
+    ".reel-user[data-profile-uid] .reel-avatar",
     ".indo-msg-avatar[data-profile-uid]",
     ".indo-notice-avatar[data-profile-uid]",
     ".indo-relation-avatar[data-profile-uid]",
+    ".indo-story-card[data-story-owner] .indo-story-avatar",
   ];
 
   const targets = new Set();
+
   selectors.forEach((selector) => {
     root.querySelectorAll(selector).forEach((node) => {
       targets.add(node);
     });
   });
+
   return [...targets];
+}
+
+function identityFromAvatar(element) {
+  const ancestor = element.closest(
+    "[data-profile-uid],[data-story-owner]",
+  );
+
+  return {
+    uid: clean(
+      element.dataset.profileUid ||
+        ancestor?.dataset.profileUid ||
+        ancestor?.dataset.storyOwner ||
+        "",
+    ),
+    userId: clean(
+      element.dataset.profileUsername ||
+        element.dataset.profileUser ||
+        element.dataset.userId ||
+        ancestor?.dataset.profileUsername ||
+        ancestor?.dataset.storyName ||
+        "",
+    ),
+  };
 }
 
 async function hydrateAvatar(element) {
   if (!(element instanceof Element)) return;
   if (element.dataset.avatarHydrated === "1") return;
 
-  const uid = clean(element.dataset.profileUid);
-  const userId = clean(
-    element.dataset.profileUsername ||
-      element.dataset.profileUser ||
-      element.dataset.userId,
-  );
-
-  if (!uid && !userId) return;
+  const identity = identityFromAvatar(element);
+  if (!identity.uid && !identity.userId) return;
 
   element.dataset.avatarHydrated = "1";
-  const profile = await fetchProfile({ uid, userId });
+  const profile = await fetchProfile(identity);
   if (!profile?.avatarUrl) return;
 
-  const existing = element.querySelector(`img.${AVATAR_CLASS}`);
+  const existing = element.querySelector(
+    `img.${AVATAR_CLASS}`,
+  );
+
   if (existing) {
     existing.src = profile.avatarUrl;
     existing.alt = profile.name;
@@ -196,7 +209,12 @@ let observer = null;
 
 export function installProfileIdentityEnhancer() {
   installStyles();
-  if (observer || typeof MutationObserver === "undefined") return;
+  if (
+    observer ||
+    typeof MutationObserver === "undefined"
+  ) {
+    return;
+  }
 
   observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
