@@ -16,7 +16,7 @@ const SCREEN_MODULES = {
   profile: ["./screens/profile.js", "renderProfile"],
   notifications: ["./screens/notifications.js", "renderNotifications"],
   create: ["./screens/create.js?v=20260815-create-reel-v1", "renderCreate"],
-  "reel-create": ["./screens/reel-create.js?v=20260815-reel-create-v1", "renderReelCreate"],
+  "reel-create": ["./screens/reel-create.js?v=20260815-reel-create-v2", "renderReelCreate"],
   settings: ["./screens/settings.js", "renderSettings"],
   "profile-relation": ["./screens/profile-relation.js", "renderProfileRelation"],
   "edit-profile": ["./screens/edit-profile.js", "renderEditProfile"],
@@ -33,7 +33,7 @@ const SECONDARY_PRIORITY = ["create", "reel-create", "settings", "profile-relati
 
 function fail(app, error) {
   console.error("Indo route error:", error);
-  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>Indo could not open this screen.</p><small>${String(error?.message || error || "Unable to open this screen.").replace(/[&<>\"']/g, "")}</small><button type="button" data-screen="home">Back to Home</button></main>`;
+  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>Indo could not open this screen.</p><small>${String(error?.message || error || "Unable to open this screen.").replace(/[&<>\\"']/g, "")}</small><button type="button" data-screen="home">Back to Home</button></main>`;
 }
 
 function installNavStyles() {
