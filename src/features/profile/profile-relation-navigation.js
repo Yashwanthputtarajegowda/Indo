@@ -1,12 +1,37 @@
 import { auth } from "../auth/firebase-client.js";
 
-async function openRelation(relation, userId) {
-  const user = auth.currentUser;
-  if (!user || !userId) return;
+function clean(value = "") {
+  return String(value ?? "")
+    .trim()
+    .replace(/^@+/, "");
+}
 
-  const token = await user.getIdToken();
+async function resolveRelationTarget(userId) {
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    throw new Error("Please login first.");
+  }
+
+  const cleanUserId = clean(userId);
+  const currentEmailId = clean(
+    currentUser.email?.split("@")[0] || "",
+  );
+
+  if (
+    cleanUserId &&
+    (cleanUserId === currentEmailId ||
+      cleanUserId === clean(currentUser.displayName))
+  ) {
+    return {
+      uid: currentUser.uid,
+      userId: cleanUserId,
+    };
+  }
+
+  const token = await currentUser.getIdToken();
   const response = await fetch(
-    `${window.INDO_API_BASE || ""}/api/account/profile/${encodeURIComponent(userId)}`,
+    `${window.INDO_API_BASE || ""}/api/account/profile/${encodeURIComponent(cleanUserId)}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -22,25 +47,32 @@ async function openRelation(relation, userId) {
     );
   }
 
-  const targetUid = String(
-    data.profile.uid || "",
-  ).trim();
+  const uid = clean(data.profile.uid);
 
-  if (!targetUid) {
+  if (!uid) {
     throw new Error("Profile UID is missing.");
   }
 
+  return {
+    uid,
+    userId: clean(
+      data.profile.userId ||
+        data.profile.username ||
+        cleanUserId,
+    ),
+  };
+}
+
+async function openRelation(relation, userId) {
+  const target = await resolveRelationTarget(userId);
+
   window.__indoProfileRelationContext = {
-    relation,
-    targetUid,
-    returnProfile: {
-      userId: String(
-        data.profile.userId ||
-          data.profile.username ||
-          userId,
-      ).replace(/^@/, ""),
-      uid: targetUid,
-    },
+    relation:
+      relation === "following"
+        ? "following"
+        : "followers",
+    targetUid: target.uid,
+    returnProfile: target,
   };
 
   window.__indoNavigate?.("profile-relation");
@@ -73,20 +105,18 @@ if (!window.__indoProfileRelationNavigationBound) {
         return;
       }
 
-      const profileId = String(
-        document
-          .querySelector("[data-profile-id]")
+      const profileId = clean(
+        document.querySelector("[data-profile-id]")
           ?.textContent || "",
-      )
-        .trim()
-        .replace(/^@/, "");
-
-      if (!profileId) return;
+      );
 
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      openRelation(label, profileId).catch((error) => {
+      openRelation(
+        label,
+        profileId,
+      ).catch((error) => {
         console.warn(
           "Profile relation navigation failed:",
           error,
