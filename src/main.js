@@ -4,6 +4,10 @@ import {
   bindSignupForm,
   hasLocalSession,
 } from "./features/auth/auth-controller.js";
+import {
+  enhanceProfileIdentity,
+  installProfileIdentityEnhancer,
+} from "./features/profile/profile-identity.js";
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
@@ -31,6 +35,7 @@ async function render() {
   await import("./state.js");
   const { render } = await import("./router.js");
   await render(app);
+  await enhanceProfileIdentity(app);
   await installLiveAvatars();
   bindAuthSwitches();
   bindLoginForm();
@@ -222,4 +227,5 @@ async function start() {
 }
 
 window.__indoNavigate = navigate;
+installProfileIdentityEnhancer();
 start();
