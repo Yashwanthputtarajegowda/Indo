@@ -1,46 +1,132 @@
 import { nav } from '../components/nav.js';
-import { renderIndoBrandTopbar } from '../components/indo-brand-topbar.js';
-import { loadNotifications, markNotificationRead } from '../features/notifications/notifications.js?v=20260815-227';
+import { renderHomeTopbar, installHomeTopbarStyles } from './home-topbar-v230.js?v=230';
+import { loadNotifications, markNotificationRead, markAllNotificationsRead } from '../features/notifications/notifications.js?v=230';
 import { respondToFollowRequest } from '../features/social/follow.js';
+
+const STYLE_ID = 'indo-notifications-screen-v231';
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>\"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;' }[char]));
 }
+
 function timeAgo(timestamp) {
   const diff = Math.max(0, Date.now() - Number(timestamp || Date.now()));
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'now';
-  if (mins < 60) return `${mins}m`;
+  if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }
+
+function notificationKind(item) {
+  if (item?.type === 'follow-request' || item?.type === 'follow') return 'follow';
+  if (item?.type === 'comment') return 'comment';
+  if (item?.type === 'like') return 'like';
+  if (item?.type === 'save') return 'save';
+  return 'default';
+}
+
+function renderKindBadge(kind) {
+  const icons = {
+    follow: '♟',
+    comment: '▢',
+    like: '♥',
+    save: '⌑',
+    default: '•',
+  };
+  return `<span class="indo-notice-kind indo-notice-kind-${kind}" aria-hidden="true">${icons[kind] || icons.default}</span>`;
+}
+
 function renderNotification(item) {
   const actor = escapeHtml(item.actorUserId || '@user');
-  const message = escapeHtml(item.text || 'You have a new notification.');
+  const actorName = escapeHtml(item.actorName || actor.replace(/^@/, '') || 'Indo User');
   const initial = escapeHtml((item.actorName || actor.replace(/^@/, 'I')).charAt(0).toUpperCase() || 'I');
-  const unread = item.read ? '' : ' unread';
-  const requestActions = item.type === 'follow-request' ? `<div class="notice-actions"><button data-follow-response="accept" data-requester-uid="${escapeHtml(item.actorUid || '')}">Accept</button><button data-follow-response="reject" data-requester-uid="${escapeHtml(item.actorUid || '')}">Reject</button></div>` : '';
-  return `<div class="notice-wrap"><button class="notice${unread}" data-notification-id="${escapeHtml(item.id || '')}" type="button"><div class="avatar small">${initial}</div><p><b>${actor}</b> ${message}<small>${timeAgo(item.createdAt)}</small></p></button>${requestActions}</div>`;
+  const message = escapeHtml(item.text || 'sent you a notification.');
+  const kind = notificationKind(item);
+  const unread = item.read !== true;
+  const requesterUid = escapeHtml(item.actorUid || '');
+  const followAction = kind === 'follow' ? `<button class="indo-notice-action" type="button" data-follow-response="accept" data-requester-uid="${requesterUid}">Follow back</button>` : '';
+  return `
+    <article class="indo-notice-card ${unread ? 'is-unread' : 'is-read'}" data-notification-id="${escapeHtml(item.id || '')}">
+      <span class="indo-notice-unread-dot" aria-hidden="true"></span>
+      <div class="indo-notice-avatar" aria-hidden="true"><span>${initial}</span>${renderKindBadge(kind)}</div>
+      <div class="indo-notice-copy">
+        <div class="indo-notice-line"><b>${actor}</b><span>${message}</span></div>
+        <div class="indo-notice-meta"><span>${actorName}</span><span>•</span><time>${timeAgo(item.createdAt)}</time></div>
+      </div>
+      <div class="indo-notice-end">${followAction}</div>
+    </article>`;
+}
+
+function installStyles() {
+  if (document.getElementById(STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    .indo-notifications-shell{min-height:100vh;background:#030307;color:#f7f4fb;display:flex;flex-direction:column;}
+    .indo-notifications-shell .indo-option5-topbar{position:sticky;top:0;z-index:40;}
+    .indo-notifications-main{width:100%;max-width:760px;margin:0 auto;padding:18px 12px 92px;box-sizing:border-box;background:radial-gradient(circle at 50% 0%,rgba(152,59,255,.09),transparent 33%),linear-gradient(180deg,#05050a 0%,#030307 100%);}
+    .indo-notifications-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 4px 14px;border-bottom:1px solid rgba(176,91,255,.22);}
+    .indo-notifications-title{margin:0;font:800 24px/1.05 Arial,sans-serif;letter-spacing:-.4px;color:#fff;}
+    .indo-notifications-readall{border:0;background:transparent;color:#ff35b5;font:800 12px/1 Arial,sans-serif;padding:8px 0;cursor:pointer;}
+    .indo-notifications-list{display:flex;flex-direction:column;gap:9px;padding-top:11px;}
+    .indo-notice-card{position:relative;display:grid;grid-template-columns:10px 48px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:82px;padding:10px 10px 10px 8px;border:1px solid rgba(135,69,222,.42);border-radius:13px;background:linear-gradient(145deg,rgba(18,15,27,.96),rgba(8,8,14,.98));box-shadow:inset 0 0 0 1px rgba(255,255,255,.015),0 8px 22px rgba(0,0,0,.18);box-sizing:border-box;transition:border-color .16s ease,transform .16s ease,background .16s ease;}
+    .indo-notice-card:hover{border-color:rgba(255,47,181,.62);background:linear-gradient(145deg,rgba(24,16,34,.98),rgba(8,8,14,.98));transform:translateY(-1px);}
+    .indo-notice-card.is-read{border-color:rgba(88,78,108,.34);}
+    .indo-notice-unread-dot{width:7px;height:7px;border-radius:999px;background:#3a3743;justify-self:center;box-shadow:none;}
+    .indo-notice-card.is-unread .indo-notice-unread-dot{background:#ff2fad;box-shadow:0 0 10px rgba(255,47,173,.65);}
+    .indo-notice-avatar{position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#324257,#1b2431 66%,#121722);color:#fff;font:900 18px/1 Arial,sans-serif;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset;}
+    .indo-notice-kind{position:absolute;right:-4px;bottom:-3px;width:21px;height:21px;border-radius:50%;display:grid;place-items:center;color:#fff;font:800 10px/1 Arial,sans-serif;border:2px solid #08080d;}
+    .indo-notice-kind-follow{background:linear-gradient(145deg,#8d42ff,#5f30ff);}
+    .indo-notice-kind-comment{background:linear-gradient(145deg,#ff49a7,#ff1f86);}
+    .indo-notice-kind-like{background:linear-gradient(145deg,#ff55b7,#ef1889);}
+    .indo-notice-kind-save{background:linear-gradient(145deg,#9d50ff,#7f36ff);}
+    .indo-notice-copy{min-width:0;display:flex;flex-direction:column;gap:5px;}
+    .indo-notice-line{display:flex;align-items:baseline;gap:6px;min-width:0;color:#f4f1f6;font-size:13px;line-height:1.22;}
+    .indo-notice-line b{font-weight:900;color:#fff;white-space:nowrap;}
+    .indo-notice-line span{color:#d6d0dc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .indo-notice-meta{display:flex;align-items:center;gap:5px;color:#8d8795;font:600 10px/1.2 Arial,sans-serif;}
+    .indo-notice-end{display:flex;align-items:center;justify-content:flex-end;min-width:62px;}
+    .indo-notice-action{border:1px solid #ff34b4;background:rgba(255,45,178,.07);color:#ff43b9;border-radius:9px;padding:8px 10px;font:800 10px/1 Arial,sans-serif;cursor:pointer;white-space:nowrap;}
+    .indo-notice-action:hover{background:rgba(255,45,178,.15);}
+    .indo-notifications-empty{padding:36px 14px;text-align:center;color:#7f7887;font:600 13px/1.45 Arial,sans-serif;border:1px dashed rgba(122,98,152,.3);border-radius:12px;margin-top:12px;}
+    .indo-notifications-status{color:#77707f;font:600 12px/1.4 Arial,sans-serif;padding:12px 2px;}
+    @media(max-width:420px){
+      .indo-notifications-main{padding:12px 7px 92px;}
+      .indo-notifications-title{font-size:20px;}
+      .indo-notice-card{grid-template-columns:8px 42px minmax(0,1fr) auto;gap:8px;min-height:74px;padding:8px 8px 8px 6px;border-radius:11px;}
+      .indo-notice-avatar{width:40px;height:40px;font-size:16px;}
+      .indo-notice-kind{width:19px;height:19px;font-size:9px;}
+      .indo-notice-line{font-size:11px;gap:4px;}
+      .indo-notice-meta{font-size:9px;}
+      .indo-notice-end{min-width:52px;}
+      .indo-notice-action{padding:7px 7px;font-size:8px;}
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 export async function renderNotifications(app, mode = 'all') {
+  installStyles();
+  installHomeTopbarStyles();
   const isActivity = mode === 'activity';
-  app.innerHTML = `<div class="app-shell">${renderIndoBrandTopbar()}<main class="notifications"><div class="feed-status" data-notification-status>Loading ${isActivity ? 'activity' : 'notifications'}...</div><div data-notifications-list></div></main>${nav('home')}</div>`;
+  app.innerHTML = `<div class="indo-notifications-shell">${renderHomeTopbar()}<main class="indo-notifications-main"><section class="indo-notifications-heading"><h1 class="indo-notifications-title">${isActivity ? 'Activity' : 'Notifications'}</h1><button class="indo-notifications-readall" type="button" data-mark-all>✓ Mark all as read</button></section><div class="indo-notifications-list" data-notifications-list><div class="indo-notifications-status">Loading...</div></div></main>${nav('home')}</div>`;
   const list = app.querySelector('[data-notifications-list]');
-  const status = app.querySelector('[data-notification-status]');
-  let stopped = false;
-  let timer = null;
+  const readAllButton = app.querySelector('[data-mark-all]');
 
-  const attachActions = () => {
-    list.querySelectorAll('[data-notification-id]').forEach((item) => {
-      if (item.dataset.bound === '1') return;
-      item.dataset.bound = '1';
-      item.addEventListener('click', async () => {
-        if (!item.classList.contains('unread')) return;
+  const attachEvents = () => {
+    list.querySelectorAll('[data-notification-id]').forEach((card) => {
+      if (card.dataset.bound === '1') return;
+      card.dataset.bound = '1';
+      card.addEventListener('click', async (event) => {
+        if (event.target.closest('[data-follow-response]')) return;
+        if (!card.classList.contains('is-unread')) return;
         try {
-          await markNotificationRead(item.dataset.notificationId);
-          item.classList.remove('unread');
+          await markNotificationRead(card.dataset.notificationId);
+          card.classList.remove('is-unread');
+          card.classList.add('is-read');
+          window.dispatchEvent(new CustomEvent('indo:notifications-read'));
         } catch {}
       });
     });
@@ -50,40 +136,44 @@ export async function renderNotifications(app, mode = 'all') {
       button.addEventListener('click', async (event) => {
         event.stopPropagation();
         const requesterUid = button.dataset.requesterUid;
-        const accept = button.dataset.followResponse === 'accept';
         button.disabled = true;
         try {
-          await respondToFollowRequest(requesterUid, accept);
-          button.closest('.notice-wrap')?.remove();
+          await respondToFollowRequest(requesterUid, true);
+          button.textContent = 'Following';
         } catch (error) {
-          button.title = error.message || 'Could not respond to request.';
           button.disabled = false;
+          button.title = error?.message || 'Could not follow back.';
         }
       });
     });
   };
 
-  const refresh = async (silent = false) => {
+  const refresh = async () => {
     try {
       const items = await loadNotifications();
-      const visibleItems = isActivity ? items.filter((item) => ['like', 'comment'].includes(item.type)) : items;
-      list.innerHTML = visibleItems.length
-        ? visibleItems.map(renderNotification).join('')
-        : `<div class="feed-status">No ${isActivity ? 'activity' : 'notifications'} yet.</div>`;
-      if (!silent) status.remove();
-      attachActions();
+      const visible = isActivity ? items.filter((item) => ['like', 'comment'].includes(item.type)) : items;
+      list.innerHTML = visible.length ? visible.map(renderNotification).join('') : `<div class="indo-notifications-empty">No ${isActivity ? 'activity' : 'notifications'} yet.</div>`;
+      attachEvents();
     } catch (error) {
-      if (!silent) status.textContent = error.message || `Could not load ${isActivity ? 'activity' : 'notifications'}.`;
+      list.innerHTML = `<div class="indo-notifications-empty">${escapeHtml(error?.message || 'Could not load notifications.')}</div>`;
     }
   };
 
-  await refresh(false);
-  timer = window.setInterval(() => {
-    if (!stopped) refresh(true);
-  }, 2500);
+  await refresh();
 
-  window.addEventListener('beforeunload', () => {
-    stopped = true;
-    if (timer) window.clearInterval(timer);
-  }, { once: true });
+  if (!isActivity) {
+    try {
+      await markAllNotificationsRead();
+      app.querySelectorAll('.indo-notice-card.is-unread').forEach((card) => { card.classList.remove('is-unread'); card.classList.add('is-read'); });
+      window.dispatchEvent(new CustomEvent('indo:notifications-read'));
+    } catch {}
+  }
+
+  readAllButton.addEventListener('click', async () => {
+    try {
+      await markAllNotificationsRead();
+      app.querySelectorAll('.indo-notice-card.is-unread').forEach((card) => { card.classList.remove('is-unread'); card.classList.add('is-read'); });
+      window.dispatchEvent(new CustomEvent('indo:notifications-read'));
+    } catch {}
+  });
 }
