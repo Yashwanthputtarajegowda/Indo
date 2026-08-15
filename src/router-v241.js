@@ -29,7 +29,7 @@ function activeNavScreen() {
 }
 
 function installGlobalBottomNav(app) {
-  if (!app || state.screen === 'auth-login' || state.screen === 'auth-signup' || state.screen === 'watch-video') return;
+  if (!app || state.screen === 'auth-login' || state.screen === 'auth-signup' || state.screen === 'watch-video' || state.screen === 'profile') return;
   ensureGlobalNavStyle();
   app.querySelectorAll('.bottom-nav,.indo-global-bottom-nav').forEach((node) => node.remove());
   const active = activeNavScreen();
@@ -47,13 +47,14 @@ async function renderLazy(app, modulePath, exportName, args = []) {
     if (typeof renderer !== 'function') throw new Error(`Missing screen renderer: ${exportName}`);
     await renderer(app, ...args);
   } catch (error) {
+    console.error(`Failed to load ${modulePath}:`, error);
     renderRouteError(app, error);
   }
 }
 
 async function installHomeTopbar(app) {
   if (state.screen !== 'home') return;
-  const { renderHomeTopbar, installHomeTopbarStyles } = await import(`./screens/home-topbar-v230.js?v=230`);
+  const { renderHomeTopbar, installHomeTopbarStyles } = await import('./screens/home-topbar-v230.js?v=230');
   installHomeTopbarStyles();
   const existing = app.querySelector('.topbar');
   if (existing) existing.outerHTML = renderHomeTopbar();
@@ -79,7 +80,7 @@ export async function render(app) {
       case 'create': await renderLazy(app, './screens/create.js', 'renderCreate'); break;
       case 'upload-video': await renderLazy(app, './screens/upload-video.js', 'renderUploadVideo'); break;
       case 'story-create': await renderLazy(app, './screens/story-create.js', 'renderStoryCreate', [window.__indoStoryDraftFile instanceof File ? window.__indoStoryDraftFile : null]); break;
-      case 'profile': await renderLazy(app, './screens/profile-direct-v240.js', 'renderProfile', [state.profile]); break;
+      case 'profile': await renderLazy(app, './screens/profile-direct-v241.js', 'renderProfile', [state.profile]); break;
       case 'settings': await renderLazy(app, './screens/settings.js', 'renderSettings', [state.accountType, state.earning, state.earningSummary]); break;
       case 'search': await renderLazy(app, './screens/search-v232.js', 'renderSearch'); break;
       case 'notifications': await renderLazy(app, './screens/notifications-v231.js', 'renderNotifications'); break;
