@@ -11,6 +11,97 @@ import {
 } from "./screens/home-topbar-v2.js";
 
 const NAV_STYLE_ID = "indo-universal-nav";
+const moduleCache = new Map();
+let preloadStarted = false;
+
+const SCREEN_MODULES = {
+  messages: [
+    "./screens/messages.js",
+    "renderMessages",
+  ],
+  reels: [
+    "./screens/reels.js",
+    "renderReels",
+  ],
+  video: [
+    "./screens/video.js",
+    "renderVideo",
+  ],
+  search: [
+    "./screens/search.js?v=20260815-search-v7",
+    "renderSearch",
+  ],
+  profile: [
+    "./screens/profile.js",
+    "renderProfile",
+  ],
+  notifications: [
+    "./screens/notifications.js",
+    "renderNotifications",
+  ],
+  create: [
+    "./screens/create.js",
+    "renderCreate",
+  ],
+  settings: [
+    "./screens/settings.js",
+    "renderSettings",
+  ],
+  "profile-relation": [
+    "./screens/profile-relation.js",
+    "renderProfileRelation",
+  ],
+  "edit-profile": [
+    "./screens/edit-profile.js",
+    "renderEditProfile",
+  ],
+  "watch-video": [
+    "./screens/watch-video.js",
+    "renderWatchVideo",
+  ],
+  "upload-video": [
+    "./screens/upload-video.js",
+    "renderUploadVideo",
+  ],
+  "story-create": [
+    "./screens/story-create.js",
+    "renderStoryCreate",
+  ],
+  wallet: [
+    "./screens/wallet.js",
+    "renderWallet",
+  ],
+  "blocked-users": [
+    "./screens/blocked-users.js",
+    "renderBlockedUsers",
+  ],
+  report: [
+    "./screens/report.js",
+    "renderReport",
+  ],
+};
+
+const HIGH_PRIORITY = [
+  "messages",
+  "reels",
+  "video",
+  "search",
+  "profile",
+  "notifications",
+];
+
+const SECONDARY_PRIORITY = [
+  "create",
+  "settings",
+  "profile-relation",
+  "edit-profile",
+  "watch-video",
+  "upload-video",
+  "story-create",
+  "wallet",
+  "blocked-users",
+  "report",
+];
 
 function fail(app, error) {
   console.error("Indo route error:", error);
@@ -154,9 +245,84 @@ function ensureHomeTopbar(app) {
   }
 }
 
-async function lazy(app, path, name, args = []) {
+async function loadScreenModule(
+  screen,
+  path,
+) {
+  const key = `${screen}:${path}`;
+
+  if (!moduleCache.has(key)) {
+    moduleCache.set(key, import(path));
+  }
+
+  return moduleCache.get(key);
+}
+
+async function preloadScreen(screen) {
+  const config = SCREEN_MODULES[screen];
+  if (!config) return;
+
   try {
-    const m = await import(path);
+    await loadScreenModule(screen, config[0]);
+  } catch (error) {
+    console.warn(
+      `Background preload failed for ${screen}:`,
+      error,
+    );
+  }
+}
+
+function scheduleIdle(task) {
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(task, { timeout: 1200 });
+    return;
+  }
+
+  window.setTimeout(task, 60);
+}
+
+export function preloadAppSections() {
+  if (preloadStarted) return;
+  preloadStarted = true;
+
+  let highIndex = 0;
+  let secondaryIndex = 0;
+
+  const warmNext = async () => {
+    const batch = HIGH_PRIORITY.slice(
+      highIndex,
+      highIndex + 2,
+    );
+
+    if (batch.length) {
+      highIndex += batch.length;
+      await Promise.allSettled(
+        batch.map(preloadScreen),
+      );
+      scheduleIdle(warmNext);
+      return;
+    }
+
+    const secondary = SECONDARY_PRIORITY.slice(
+      secondaryIndex,
+      secondaryIndex + 2,
+    );
+
+    if (!secondary.length) return;
+
+    secondaryIndex += secondary.length;
+    await Promise.allSettled(
+      secondary.map(preloadScreen),
+    );
+    scheduleIdle(warmNext);
+  };
+
+  scheduleIdle(warmNext);
+}
+
+async function lazy(app, screen, path, name, args = []) {
+  try {
+    const m = await loadScreenModule(screen, path);
 
     if (typeof m[name] !== "function") {
       throw new Error(
@@ -182,65 +348,74 @@ export async function render(app) {
       case "home":
         await lazy(
           app,
+          "home",
           "./screens/home-v2.js",
           "renderHome",
         );
         ensureHomeTopbar(app);
+        preloadAppSections();
         break;
 
       case "messages":
         await lazy(
           app,
-          "./screens/messages.js",
-          "renderMessages",
+          "messages",
+          SCREEN_MODULES.messages[0],
+          SCREEN_MODULES.messages[1],
         );
         break;
 
       case "reels":
         await lazy(
           app,
-          "./screens/reels.js",
-          "renderReels",
+          "reels",
+          SCREEN_MODULES.reels[0],
+          SCREEN_MODULES.reels[1],
         );
         break;
 
       case "video":
         await lazy(
           app,
-          "./screens/video.js",
-          "renderVideo",
+          "video",
+          SCREEN_MODULES.video[0],
+          SCREEN_MODULES.video[1],
         );
         break;
 
       case "watch-video":
         await lazy(
           app,
-          "./screens/watch-video.js",
-          "renderWatchVideo",
+          "watch-video",
+          SCREEN_MODULES["watch-video"][0],
+          SCREEN_MODULES["watch-video"][1],
         );
         break;
 
       case "create":
         await lazy(
           app,
-          "./screens/create.js",
-          "renderCreate",
+          "create",
+          SCREEN_MODULES.create[0],
+          SCREEN_MODULES.create[1],
         );
         break;
 
       case "upload-video":
         await lazy(
           app,
-          "./screens/upload-video.js",
-          "renderUploadVideo",
+          "upload-video",
+          SCREEN_MODULES["upload-video"][0],
+          SCREEN_MODULES["upload-video"][1],
         );
         break;
 
       case "story-create":
         await lazy(
           app,
-          "./screens/story-create.js",
-          "renderStoryCreate",
+          "story-create",
+          SCREEN_MODULES["story-create"][0],
+          SCREEN_MODULES["story-create"][1],
           [
             window.__indoStoryDraftFile instanceof File
               ? window.__indoStoryDraftFile
@@ -252,8 +427,9 @@ export async function render(app) {
       case "profile":
         await lazy(
           app,
-          "./screens/profile.js",
-          "renderProfile",
+          "profile",
+          SCREEN_MODULES.profile[0],
+          SCREEN_MODULES.profile[1],
           [state.profile],
         );
         break;
@@ -261,16 +437,18 @@ export async function render(app) {
       case "profile-relation":
         await lazy(
           app,
-          "./screens/profile-relation.js",
-          "renderProfileRelation",
+          "profile-relation",
+          SCREEN_MODULES["profile-relation"][0],
+          SCREEN_MODULES["profile-relation"][1],
         );
         break;
 
       case "edit-profile":
         await lazy(
           app,
-          "./screens/edit-profile.js",
-          "renderEditProfile",
+          "edit-profile",
+          SCREEN_MODULES["edit-profile"][0],
+          SCREEN_MODULES["edit-profile"][1],
           [state.profile],
         );
         break;
@@ -278,8 +456,9 @@ export async function render(app) {
       case "settings":
         await lazy(
           app,
-          "./screens/settings.js",
-          "renderSettings",
+          "settings",
+          SCREEN_MODULES.settings[0],
+          SCREEN_MODULES.settings[1],
           [
             state.accountType,
             state.earning,
@@ -291,24 +470,27 @@ export async function render(app) {
       case "search":
         await lazy(
           app,
-          "./screens/search.js?v=20260815-search-v7",
-          "renderSearch",
+          "search",
+          SCREEN_MODULES.search[0],
+          SCREEN_MODULES.search[1],
         );
         break;
 
       case "notifications":
         await lazy(
           app,
-          "./screens/notifications.js",
-          "renderNotifications",
+          "notifications",
+          SCREEN_MODULES.notifications[0],
+          SCREEN_MODULES.notifications[1],
         );
         break;
 
       case "activity":
         await lazy(
           app,
-          "./screens/notifications.js",
-          "renderNotifications",
+          "activity",
+          SCREEN_MODULES.notifications[0],
+          SCREEN_MODULES.notifications[1],
           ["activity"],
         );
         break;
@@ -316,24 +498,27 @@ export async function render(app) {
       case "wallet":
         await lazy(
           app,
-          "./screens/wallet.js",
-          "renderWallet",
+          "wallet",
+          SCREEN_MODULES.wallet[0],
+          SCREEN_MODULES.wallet[1],
         );
         break;
 
       case "blocked-users":
         await lazy(
           app,
-          "./screens/blocked-users.js",
-          "renderBlockedUsers",
+          "blocked-users",
+          SCREEN_MODULES["blocked-users"][0],
+          SCREEN_MODULES["blocked-users"][1],
         );
         break;
 
       case "report":
         await lazy(
           app,
-          "./screens/report.js",
-          "renderReport",
+          "report",
+          SCREEN_MODULES.report[0],
+          SCREEN_MODULES.report[1],
         );
         break;
 
@@ -341,10 +526,12 @@ export async function render(app) {
         state.screen = "home";
         await lazy(
           app,
+          "home",
           "./screens/home-v2.js",
           "renderHome",
         );
         ensureHomeTopbar(app);
+        preloadAppSections();
     }
 
     ensureUniversalNav(app);
