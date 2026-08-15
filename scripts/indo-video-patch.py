@@ -126,7 +126,7 @@ css = r'''    style.textContent += `
 '''
 
 if '/* INDO FUTURISTIC VIDEO SECTION' not in s:
-    marker = '    document.head.appendChild(style);\n'
+    marker = '  document.head.appendChild(style);\n'
     if marker not in s:
         raise SystemExit('Feed style insertion marker not found')
     s = s.replace(marker, css + '\n' + marker, 1)
