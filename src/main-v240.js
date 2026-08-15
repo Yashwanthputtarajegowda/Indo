@@ -23,7 +23,6 @@ async function navigate(screen) {
   navigationBusy = true;
   try {
     const { state } = await import('./state.js');
-    if (target === 'profile') state.profile = null;
     if (state.screen === target && target !== 'profile') return;
     state.screen = target;
     window.__indoRecommendationScreen = target;
@@ -45,6 +44,20 @@ function installNavigationClicks() {
     if (!surface) return;
     const screen = button.getAttribute('data-screen');
     if (!screen) return;
+
+    // Bottom Profile navigation always means the signed-in user's own profile.
+    if (screen === 'profile' && button.hasAttribute('data-own-profile')) {
+      event.preventDefault();
+      event.stopPropagation();
+      import('./state.js').then(({ state }) => {
+        state.profile = null;
+        state.screen = 'profile';
+        return render();
+      }).then(() => window.scrollTo({ top:0, behavior:'auto' }))
+        .catch((error) => console.error('Own profile navigation failed:', error));
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
     navigate(screen).catch((error) => console.error('Indo navigation failed:', error));
