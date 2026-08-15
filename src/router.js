@@ -30,10 +30,17 @@ const SCREEN_MODULES = {
 
 const HIGH_PRIORITY = ["messages", "reels", "video", "search", "profile", "notifications"];
 const SECONDARY_PRIORITY = ["create", "reel-create", "settings", "profile-relation", "edit-profile", "watch-video", "upload-video", "story-create", "wallet", "blocked-users", "report"];
+const AUTH_SCREENS = new Set(["auth-login", "auth-signup"]);
 
 function fail(app, error) {
   console.error("Indo route error:", error);
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>Indo could not open this screen.</p><small>${String(error?.message || error || "Unable to open this screen.").replace(/[&<>\\"']/g, "")}</small><button type="button" data-screen="home">Back to Home</button></main>`;
+}
+
+function enforceAuthGuard() {
+  if (state.authenticated || AUTH_SCREENS.has(state.screen)) return false;
+  state.screen = "auth-login";
+  return true;
 }
 
 function installNavStyles() {
@@ -102,12 +109,13 @@ function scheduleIdle(task) {
 }
 
 export function preloadAppSections() {
-  if (preloadStarted) return;
+  if (preloadStarted || !state.authenticated) return;
   preloadStarted = true;
   let highIndex = 0;
   let secondaryIndex = 0;
 
   const warmNext = async () => {
+    if (!state.authenticated) return;
     const batch = HIGH_PRIORITY.slice(highIndex, highIndex + 2);
     if (batch.length) {
       highIndex += batch.length;
@@ -137,7 +145,7 @@ async function lazy(app, screen, path, name, args = []) {
 }
 
 async function installHomeReels(app) {
-  if (state.screen !== "home") return;
+  if (state.screen !== "home" || !state.authenticated) return;
   try {
     const { installHomeReelsBridge } = await import("./features/feed/home-reels-bridge.js?v=20260815-home-reels-v2");
     await installHomeReelsBridge(app);
@@ -148,6 +156,10 @@ async function installHomeReels(app) {
 
 export async function render(app) {
   try {
+    if (enforceAuthGuard()) {
+      return renderLogin(app);
+    }
+
     switch (state.screen) {
       case "auth-login": return renderLogin(app);
       case "auth-signup": return renderSignup(app);
