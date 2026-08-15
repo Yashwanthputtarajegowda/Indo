@@ -143,28 +143,9 @@ export function installHomeFeedDesign() {
         line-height:1!important;
       }
 
+      /* The functional .indo-feed-follow button is the single source of truth. */
       #root .app-shell .feed .video-post.neon-edge-post .neon-edge-follow{
-        flex:0 0 auto!important;
-        height:28px!important;
-        min-width:76px!important;
-        padding:0 12px!important;
-        margin:0!important;
-        display:inline-flex!important;
-        align-items:center!important;
-        justify-content:center!important;
-        border:1px solid rgba(255,255,255,.22)!important;
-        border-radius:999px!important;
-        background:rgba(255,255,255,.07)!important;
-        color:#fff!important;
-        font:800 10px/1 system-ui,sans-serif!important;
-        letter-spacing:.2px!important;
-        cursor:pointer!important;
-        box-shadow:none!important;
-      }
-
-      #root .app-shell .feed .video-post.neon-edge-post .neon-edge-follow:hover{
-        background:rgba(255,255,255,.12)!important;
-        border-color:rgba(255,255,255,.42)!important;
+        display:none!important;
       }
 
       #root .app-shell .feed .video-post.neon-edge-post .neon-edge-more{
