@@ -19,10 +19,20 @@ function validId(value = '') {
 function findIdentity(start) {
   if (!(start instanceof Element)) return null;
   let node = start;
-  for (let i = 0; i < 5 && node; i += 1) {
+  for (let i = 0; i < 7 && node; i += 1) {
+    const userId = clean(
+      node.dataset?.openProfile ||
+      node.dataset?.profileUser ||
+      node.dataset?.profileUsername ||
+      node.dataset?.userId ||
+      node.dataset?.username ||
+      node.dataset?.relUser ||
+      node.dataset?.actorUserId ||
+      node.dataset?.profileLink || ''
+    );
     const uid = clean(node.dataset?.profileUid || node.dataset?.ownerUid || node.dataset?.actorUid || node.dataset?.userUid || node.dataset?.uid || '');
-    const userId = clean(node.dataset?.profileUser || node.dataset?.profileUsername || node.dataset?.userId || node.dataset?.username || node.dataset?.relUser || node.dataset?.actorUserId || node.dataset?.openProfile || node.dataset?.profileLink || '');
-    if (uid || validId(userId)) return { uid, userId };
+    if (validId(userId)) return { uid, userId };
+    if (uid) return { uid, userId: '' };
     node = node.parentElement;
   }
   const exact = String(start.textContent || '').trim();
@@ -30,15 +40,25 @@ function findIdentity(start) {
   return null;
 }
 async function fetchProfile(identity) {
-  const key = clean(identity?.userId || identity?.uid || '');
-  if (!key) throw new Error('User ID is missing.');
-  const path = identity?.uid
-    ? `/api/account/public-profile/${encodeURIComponent(key)}`
-    : `/api/account/profile/${encodeURIComponent(key)}?t=${Date.now()}`;
-  const response = await fetch(`${API()}${path}`, { cache: 'no-store' });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data?.profile) throw new Error(data?.error || 'Could not open profile.');
-  return { ...data.profile, stats: data.stats || {}, social: data.social || {} };
+  const userId = clean(identity?.userId || '');
+  const uid = clean(identity?.uid || '');
+  const candidates = [];
+  if (userId) candidates.push(`/api/account/profile/${encodeURIComponent(userId)}?t=${Date.now()}`);
+  if (uid) candidates.push(`/api/account/public-profile/${encodeURIComponent(uid)}?t=${Date.now()}`);
+  let lastError = null;
+  for (const path of candidates) {
+    try {
+      const response = await fetch(`${API()}${path}`, { cache: 'no-store' });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data?.profile) {
+        return { ...data.profile, stats: data.stats || {}, social: data.social || {} };
+      }
+      lastError = new Error(data?.error || `Could not open profile (${response.status}).`);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('User ID is missing.');
 }
 async function openProfile(identity) {
   const profile = await fetchProfile(identity);
@@ -52,10 +72,7 @@ function shouldHandle(target) {
   if (!(target instanceof Element)) return false;
   if (target.closest('input,textarea,select,[contenteditable="true"]')) return false;
   if (target.closest('.search-follow-button,.profile-follow-button,button[data-follow-user]')) return false;
-  const direct = target.closest(PROFILE_SELECTOR);
-  if (direct) return true;
-  const exact = String(target.textContent || '').trim();
-  return validId(exact) && exact.startsWith('@');
+  return Boolean(target.closest(PROFILE_SELECTOR)) || validId(String(target.textContent || '').trim());
 }
 function install() {
   if (window.__indoProfileIdNavigationInstalled) return;
@@ -68,11 +85,7 @@ function install() {
     if (!identity) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    try {
-      await openProfile(identity);
-    } catch (error) {
-      console.warn('Profile navigation failed:', error);
-    }
+    try { await openProfile(identity); } catch (error) { console.warn('Profile navigation failed:', error); }
   }, true);
   document.addEventListener('keydown', async (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
