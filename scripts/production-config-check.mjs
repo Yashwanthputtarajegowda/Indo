@@ -2,8 +2,10 @@ import fs from "node:fs";
 
 const config = fs.readFileSync("config/runtime-config.js", "utf8");
 
+// Support multiline runtime config expressions such as:
+// window.INDO_API_BASE = window.INDO_API_BASE || "https://...";
 const apiBaseMatch = config.match(
-  /INDO_API_BASE\s*=.*?['\"](https:\/\/[^'\"]+)['\"]/,
+  /INDO_API_BASE\s*=\s*[\s\S]*?['\"](https:\/\/[^'\"]+)['\"]/,
 );
 
 if (!apiBaseMatch) {
