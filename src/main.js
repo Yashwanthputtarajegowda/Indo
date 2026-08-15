@@ -11,7 +11,7 @@ import {
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
-import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v4";
+import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v6";
 
 const app = document.getElementById("root");
 let busy = false;
