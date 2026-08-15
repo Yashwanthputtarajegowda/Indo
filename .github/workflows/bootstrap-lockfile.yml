@@ -1,0 +1,62 @@
+name: Bootstrap Main Repo Lockfile
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "package.json"
+      - ".github/workflows/bootstrap-lockfile.yml"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bootstrap-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Generate package-lock.json
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Create lockfile PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test -s package-lock.json
+
+          if git diff --quiet -- package-lock.json; then
+            echo "package-lock.json already exists and is current."
+            exit 0
+          fi
+
+          branch="security/bootstrap-main-package-lock"
+          git checkout -B "$branch"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: add main repo npm lockfile"
+          git push --force-with-lease origin "$branch"
+
+          existing=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number')
+          if [ -z "$existing" ]; then
+            gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "chore: add main repo npm lockfile" \
+              --body "Pin the main Indo frontend dependency tree so npm ci and security audits are deterministic."
+          else
+            echo "PR #$existing already exists; branch refreshed."
+          fi
