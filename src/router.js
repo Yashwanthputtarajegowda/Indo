@@ -258,6 +258,14 @@ export async function render(app) {
         );
         break;
 
+      case "profile-relation":
+        await lazy(
+          app,
+          "./screens/profile-relation.js",
+          "renderProfileRelation",
+        );
+        break;
+
       case "edit-profile":
         await lazy(
           app,
