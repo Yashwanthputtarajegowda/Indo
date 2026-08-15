@@ -9,40 +9,370 @@ permissions:
 
 jobs:
   fix:
-    if: "!contains(github.event.head_commit.message, '[autoplay-sound-fixed]')"
+    if: "!contains(github.event.head_commit.message, '[video-ui-patched]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Patch home feed video autoplay
+      - name: Apply futuristic home video section
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           p = Path('src/features/feed/home-feed.js')
           s = p.read_text()
-          s = s.replace('`<video class="post-video" autoplay muted playsinline', '`<video class="post-video" autoplay playsinline')
-          s = s.replace(
-              "    video.muted = true;\n    video.setAttribute('muted', '');\n    video.setAttribute('autoplay', '');",
-              "    video.muted = false;\n    video.removeAttribute('muted');\n    video.setAttribute('autoplay', '');"
-          )
-          s = s.replace(
-              "    const autoplay = () => video.play().catch(() => {});",
-              "    const autoplayWithSound = () => {\n      video.muted = false;\n      video.removeAttribute('muted');\n      video.play().catch(() => {});\n    };"
-          )
-          s = s.replace(
-              "video.addEventListener('canplay', autoplay, { once: true });",
-              "video.addEventListener('canplay', autoplayWithSound, { once: true });"
-          )
-          s = s.replace(
-              'if (entry.isIntersecting && entry.intersectionRatio >= 0.5) autoplay();',
-              'if (entry.isIntersecting && entry.intersectionRatio >= 0.5) autoplayWithSound();'
-          )
-          s = s.replace(
-              '      autoplay();\n    }\n\n    video.addEventListener',
-              '      autoplayWithSound();\n    }\n\n    video.addEventListener'
-          )
+
+          css_marker = '    document.head.appendChild(style);\n'
+          css = r'''    style.textContent += `
+    /* INDO FUTURISTIC VIDEO SECTION — header/stories/nav remain untouched */
+    .video-post.neon-edge-post{
+      border-radius:16px;
+      background:
+        linear-gradient(#07070c,#07070c) padding-box,
+        linear-gradient(135deg,#ff37c9 0%,#8e5cff 46%,#2bdbff 100%) border-box;
+      box-shadow:
+        0 0 0 1px rgba(137,92,255,.16),
+        0 0 24px rgba(224,56,216,.22),
+        0 16px 44px rgba(0,0,0,.28);
+    }
+
+    .video-post.neon-edge-post .neon-edge-head{
+      min-height:58px;
+      padding:8px 10px;
+      background:rgba(10,10,16,.96);
+      border-bottom:1px solid rgba(170,102,255,.22);
+      backdrop-filter:blur(10px);
+    }
+
+    .video-post.neon-edge-post .neon-edge-creator{
+      gap:9px;
+    }
+
+    .video-post.neon-edge-post .neon-edge-avatar{
+      width:36px;
+      height:36px;
+      min-width:36px;
+      border:1px solid rgba(204,135,255,.75);
+      box-shadow:0 0 12px rgba(175,89,255,.3);
+    }
+
+    .video-post.neon-edge-post .neon-edge-name{
+      font-size:13px;
+      letter-spacing:.1px;
+    }
+
+    .video-post.neon-edge-post .neon-edge-follow{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      height:32px;
+      padding:0 13px;
+      margin-left:auto;
+      border:1px solid rgba(206,105,255,.85);
+      border-radius:999px;
+      color:#fff;
+      background:linear-gradient(135deg,rgba(122,64,255,.3),rgba(255,55,194,.16));
+      box-shadow:inset 0 0 14px rgba(174,93,255,.12),0 0 10px rgba(191,77,255,.16);
+      font:800 11px/1 system-ui,sans-serif;
+      letter-spacing:.35px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+
+    .video-post.neon-edge-post .neon-edge-follow:hover{
+      border-color:#fff;
+      box-shadow:0 0 14px rgba(222,130,255,.35);
+    }
+
+    .video-post.neon-edge-post .neon-edge-more{
+      width:34px;
+      height:34px;
+      margin-left:8px;
+      background:rgba(18,18,27,.72);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 0 10px rgba(111,77,255,.12);
+    }
+
+    .video-post.neon-edge-post .neon-video-stage{
+      position:relative;
+      overflow:hidden;
+      aspect-ratio:4/5;
+      min-height:340px;
+      max-height:70vh;
+      background:#000;
+      isolation:isolate;
+    }
+
+    .video-post.neon-edge-post .neon-video-stage::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
+      background:
+        linear-gradient(180deg,rgba(0,0,0,.02) 0%,rgba(0,0,0,.04) 46%,rgba(0,0,0,.48) 100%),
+        radial-gradient(circle at 82% 12%,rgba(255,75,205,.16),transparent 28%),
+        radial-gradient(circle at 10% 86%,rgba(69,194,255,.10),transparent 26%);
+      mix-blend-mode:screen;
+    }
+
+    .video-post.neon-edge-post .neon-video-stage::after{
+      content:'';
+      position:absolute;
+      inset:0;
+      z-index:2;
+      pointer-events:none;
+      opacity:.24;
+      background:repeating-linear-gradient(180deg,rgba(255,255,255,.12) 0,rgba(255,255,255,.12) 1px,transparent 1px,transparent 6px);
+      mix-blend-mode:soft-light;
+    }
+
+    .video-post.neon-edge-post .neon-video-stage .post-video{
+      position:relative;
+      z-index:0;
+      width:100%;
+      height:100%;
+      min-height:100%;
+      object-fit:cover;
+      object-position:center;
+      background:#000;
+    }
+
+    .video-post.neon-edge-post .neon-edge-actions{
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      min-height:58px;
+      background:rgba(8,8,13,.98);
+      border-top:1px solid rgba(226,51,207,.22);
+    }
+
+    .video-post.neon-edge-post .neon-edge-actions button{
+      height:58px;
+      gap:6px;
+      color:#e2e2eb;
+      font-size:11px;
+      transition:color .16s ease,transform .16s ease,background .16s ease;
+    }
+
+    .video-post.neon-edge-post .neon-edge-actions button:hover{
+      background:linear-gradient(180deg,rgba(120,67,255,.08),rgba(255,55,201,.03));
+      transform:translateY(-1px);
+    }
+
+    .video-post.neon-edge-post .neon-edge-actions button svg{
+      width:22px;
+      height:22px;
+      filter:drop-shadow(0 0 5px rgba(181,92,255,.18));
+    }
+
+    .video-post.neon-edge-post .neon-edge-actions small{
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.15px;
+    }
+
+    .video-post.neon-edge-post .neon-edge-copy{
+      padding:10px 12px 13px;
+      background:#07070c;
+      border-top:1px solid rgba(255,255,255,.04);
+    }
+
+    @media (max-width:520px){
+      .video-post.neon-edge-post .neon-video-stage{
+        min-height:320px;
+        max-height:none;
+        aspect-ratio:4/5;
+      }
+
+      .video-post.neon-edge-post .neon-edge-follow{
+        padding:0 11px;
+        font-size:10px;
+      }
+    }
+    `;
+
+    document.head.appendChild(style);
+'''
+          if css_marker not in s:
+              raise SystemExit('Feed style insertion marker not found')
+          if '/* INDO FUTURISTIC VIDEO SECTION' not in s:
+              s = s.replace(css_marker, css_marker.replace('    document.head', css + '\n    document.head'), 1)
+
+          new_func = r'''export function renderVideoCard(video) {
+  ensureFeedDesignStyles();
+
+  const creatorRaw = String(video.creator || "@indo");
+  const creator = escapeHtml(creatorRaw);
+  const usernameKey = escapeHtml(creatorRaw.replace(/^@/, ""));
+  const ownerUid = escapeHtml(video.ownerUid || "");
+  const creatorAvatar = escapeHtml(
+    video.creatorAvatar ||
+      video.avatarUrl ||
+      video.profilePhoto ||
+      video.photoURL ||
+      "",
+  );
+
+  const postTitle = getPostTitle(video);
+  const safeTitle = escapeHtml(postTitle);
+  const views = Number(video.views || 0).toLocaleString();
+  const likes = Number(video.likes || 0).toLocaleString();
+  const comments = Number(video.comments || 0).toLocaleString();
+  const shares = Number(video.shares || 0).toLocaleString();
+  const saves = Number(video.saves || 0).toLocaleString();
+
+  const rawMediaUrl =
+    video.secureUrl || video.videoUrl || video.url || "";
+  const mediaUrl = cloudinaryBrowserUrl(rawMediaUrl);
+  const fallbackUrl =
+    rawMediaUrl && mediaUrl !== rawMediaUrl ? rawMediaUrl : "";
+  const poster = video.thumbnailUrl
+    ? ` poster="${escapeHtml(video.thumbnailUrl)}"`
+    : "";
+
+  const initial = escapeHtml(
+    creatorRaw.replace(/^@/, "").charAt(0).toUpperCase() || "I",
+  );
+
+  const avatar = creatorAvatar
+    ? `
+      <span class="neon-edge-avatar">
+        <img src="${creatorAvatar}" alt="${creator}" loading="lazy">
+      </span>
+    `
+    : `
+      <span class="neon-edge-avatar">${initial}</span>
+    `;
+
+  const source = mediaUrl
+    ? `
+      <div class="neon-video-stage">
+        <video
+          class="post-video"
+          playsinline
+          preload="metadata"
+          data-original-video-src="${escapeHtml(rawMediaUrl)}"
+          data-video-src="${escapeHtml(mediaUrl)}"
+          ${poster}
+        >
+          <source src="${escapeHtml(mediaUrl)}" type="video/mp4">
+          ${fallbackUrl ? `<source src="${escapeHtml(fallbackUrl)}">` : ""}
+        </video>
+      </div>
+    `
+    : `
+      <div class="neon-video-stage">
+        <div class="post-video video-unavailable">Video unavailable</div>
+      </div>
+    `;
+
+  return `
+    <article
+      class="post-card video-post neon-edge-post"
+      data-video-id="${escapeHtml(video.id)}"
+      data-owner-uid="${ownerUid}"
+      data-post-title="${safeTitle}"
+      data-post-description="${escapeHtml(video.description || postTitle)}"
+      data-post-likes="${likes}"
+      data-post-views="${views}"
+      data-post-comments="${comments}"
+      data-post-shares="${shares}"
+      data-post-saves="${saves}"
+    >
+
+      <div class="post-head neon-edge-head">
+        <button
+          class="post-creator neon-edge-creator"
+          type="button"
+          data-profile-username="${usernameKey}"
+          data-profile-uid="${ownerUid}"
+          aria-label="Open ${creator} profile"
+        >
+          ${avatar}
+          <span class="neon-edge-name">${creator}</span>
+        </button>
+
+        <button
+          class="neon-edge-follow"
+          type="button"
+          data-follow-target="${ownerUid}"
+          aria-label="Follow ${creator}"
+        >
+          Follow
+        </button>
+
+        <button
+          class="icon-btn post-more neon-edge-more"
+          type="button"
+          data-feed-more
+          aria-label="More options"
+        >
+          ⋯
+        </button>
+      </div>
+
+      ${source}
+
+      <div class="post-actions neon-edge-actions" aria-label="Post actions">
+        <button
+          class="like-action"
+          data-engagement="like"
+          data-liked="0"
+          aria-label="Like"
+        >
+          ${svgIcon("like")}
+          <small>${likes}</small>
+        </button>
+
+        <button data-engagement="comment" aria-label="Comment">
+          ${svgIcon("comment")}
+          <small>${comments}</small>
+        </button>
+
+        <button data-engagement="share" aria-label="Share">
+          ${svgIcon("share")}
+          <small>${shares}</small>
+        </button>
+
+        <button
+          class="save-action"
+          data-engagement="save"
+          data-saved="0"
+          aria-label="Save"
+        >
+          ${svgIcon("save")}
+          <small>${saves}</small>
+        </button>
+      </div>
+
+      ${
+        postTitle
+          ? `
+            <div class="post-copy neon-edge-copy">
+              <div class="neon-edge-title-row">
+                <p class="neon-edge-title" title="${safeTitle}">${safeTitle}</p>
+              </div>
+            </div>
+          `
+          : ""
+      }
+    </article>
+  `;
+}
+'''
+
+          pattern = r'export function renderVideoCard\(video\) \{.*?\n\}\n\nfunction openPostDetails'
+          replacement = new_func + '\nfunction openPostDetails'
+          s2, count = re.subn(pattern, replacement, s, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('renderVideoCard replacement failed')
+          s = s2
+
           p.write_text(s)
+
+          # Restore this workflow file to its previous exact contents so the repo keeps its normal workflow.
+          import subprocess
+          subprocess.run(['git', 'checkout', 'HEAD^', '--', '.github/workflows/fix-home-video-sound.yml'], check=True)
           PY
 
           git config user.name 'github-actions[bot]'
@@ -51,9 +381,9 @@ jobs:
           git add src/features/feed/home-feed.js .github/workflows/fix-home-video-sound.yml
 
           if git diff --cached --quiet; then
-            echo 'No autoplay patch changes needed; workflow completed successfully.'
+            echo 'No UI changes were needed.'
             exit 0
           fi
 
-          git commit -m 'fix: autoplay home videos with sound [autoplay-sound-fixed]'
+          git commit -m 'feat: refresh futuristic home video section [video-ui-patched]'
           git push
