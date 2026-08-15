@@ -14,20 +14,21 @@ function esc(value = "") {
   );
 }
 
-function getContext() {
+function context() {
   const value = window.__indoProfileRelationContext;
   return value && typeof value === "object" ? value : {};
 }
 
 function backToProfile() {
-  const context = getContext();
-  const returnProfile = context.returnProfile;
-
+  const value = context();
+  const profile = value.returnProfile;
   window.__indoProfileRelationContext = null;
 
-  if (window.__indoOpenProfile && returnProfile?.userId) {
-    window.__indoOpenProfile(returnProfile).catch((error) => {
-      console.warn("Could not return to profile:", error);
+  if (
+    profile?.userId &&
+    window.__indoOpenProfile
+  ) {
+    window.__indoOpenProfile(profile).catch(() => {
       window.__indoNavigate?.("profile");
     });
     return;
@@ -36,19 +37,31 @@ function backToProfile() {
   window.__indoNavigate?.("profile");
 }
 
+function renderError(list, message) {
+  list.innerHTML = `
+    <div class="indo-relation-empty">
+      ${esc(message)}
+    </div>
+  `;
+}
+
 export async function renderProfileRelation(app) {
-  const context = getContext();
+  const value = context();
   const relation =
-    context.relation === "following"
+    value.relation === "following"
       ? "following"
       : "followers";
-  const targetUid = String(
-    context.targetUid || "",
-  ).trim();
   const title =
     relation === "followers"
       ? "Followers"
       : "Following";
+  const currentUser = auth.currentUser;
+  const targetUid = String(
+    value.targetUid ||
+      (value.returnProfile?.uid ||
+        currentUser?.uid ||
+        ""),
+  ).trim();
 
   app.innerHTML = `
     <main class="indo-relation-page">
@@ -81,14 +94,12 @@ export async function renderProfileRelation(app) {
       background: #08080d;
       color: #f4f4f7;
     }
-
     .indo-relation-card {
       width: min(520px, 100%);
       min-height: 100vh;
       margin: auto;
       background: #101017;
     }
-
     .indo-relation-header {
       position: sticky;
       top: 0;
@@ -102,13 +113,11 @@ export async function renderProfileRelation(app) {
       background: #101017;
       box-sizing: border-box;
     }
-
     .indo-relation-header h1 {
       margin: 0;
       text-align: center;
       font-size: 17px;
     }
-
     .indo-relation-header button {
       width: 36px;
       height: 36px;
@@ -119,13 +128,11 @@ export async function renderProfileRelation(app) {
       font-size: 20px;
       cursor: pointer;
     }
-
     .indo-relation-list {
       padding: 12px 14px 80px;
       display: grid;
       gap: 8px;
     }
-
     .indo-relation-item {
       display: flex;
       align-items: center;
@@ -140,7 +147,6 @@ export async function renderProfileRelation(app) {
       cursor: pointer;
       box-sizing: border-box;
     }
-
     .indo-relation-avatar {
       width: 42px;
       height: 42px;
@@ -152,28 +158,18 @@ export async function renderProfileRelation(app) {
       background: #242938;
       font-weight: 900;
     }
-
-    .indo-relation-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
     .indo-relation-meta {
       min-width: 0;
     }
-
     .indo-relation-name {
       font-size: 13px;
       font-weight: 800;
     }
-
     .indo-relation-id {
       margin-top: 3px;
       color: #858d9f;
       font-size: 11px;
     }
-
     .indo-relation-empty {
       padding: 44px 16px;
       color: #858d9f;
@@ -182,35 +178,28 @@ export async function renderProfileRelation(app) {
   `;
   app.appendChild(style);
 
+  const list = app.querySelector(
+    "[data-relation-list]",
+  );
   app
     .querySelector("[data-relation-back]")
     ?.addEventListener("click", backToProfile);
 
-  const list = app.querySelector(
-    "[data-relation-list]",
-  );
-  const user = auth.currentUser;
-
-  if (!user) {
-    list.innerHTML = `
-      <div class="indo-relation-empty">
-        Please login first.
-      </div>
-    `;
+  if (!currentUser) {
+    renderError(list, "Please login first.");
     return;
   }
 
   if (!targetUid) {
-    list.innerHTML = `
-      <div class="indo-relation-empty">
-        Profile information is missing.
-      </div>
-    `;
+    renderError(
+      list,
+      "Profile information is missing.",
+    );
     return;
   }
 
   try {
-    const token = await user.getIdToken();
+    const token = await currentUser.getIdToken();
     const response = await fetch(
       `${window.INDO_API_BASE || ""}/api/social/${relation}/${encodeURIComponent(targetUid)}`,
       {
@@ -234,33 +223,31 @@ export async function renderProfileRelation(app) {
       : [];
 
     if (!items.length) {
-      list.innerHTML = `
-        <div class="indo-relation-empty">
-          No ${title.toLowerCase()} yet.
-        </div>
-      `;
+      renderError(
+        list,
+        `No ${title.toLowerCase()} yet.`,
+      );
       return;
     }
 
     list.innerHTML = items
       .map((item) => {
-        const id = String(
+        const userId = String(
           item.userId || "",
         ).replace(/^@/, "");
         const name = String(
           item.name ||
-            id ||
+            userId ||
             "Indo User",
         );
         const initial = esc(
           name.charAt(0).toUpperCase(),
         );
-
         return `
           <button
             type="button"
             class="indo-relation-item"
-            data-profile-user="${esc(id)}"
+            data-profile-user="${esc(userId)}"
             data-profile-uid="${esc(item.uid || "")}" 
           >
             <span class="indo-relation-avatar">
@@ -271,7 +258,7 @@ export async function renderProfileRelation(app) {
                 ${esc(name)}
               </span>
               <span class="indo-relation-id">
-                ${id ? `@${esc(id)}` : ""}
+                ${userId ? `@${esc(userId)}` : ""}
               </span>
             </span>
           </button>
@@ -283,20 +270,22 @@ export async function renderProfileRelation(app) {
       .querySelectorAll("[data-profile-user]")
       .forEach((item) => {
         item.addEventListener("click", () => {
+          const userId =
+            item.dataset.profileUser || "";
+          const uid =
+            item.dataset.profileUid || "";
+
           window.__indoOpenProfile?.({
-            userId: item.dataset.profileUser || "",
-            uid: item.dataset.profileUid || "",
+            userId,
+            uid,
           });
         });
       });
   } catch (error) {
-    list.innerHTML = `
-      <div class="indo-relation-empty">
-        ${esc(
-          error?.message ||
-            `Could not load ${title.toLowerCase()}.`,
-        )}
-      </div>
-    `;
+    renderError(
+      list,
+      error?.message ||
+        `Could not load ${title.toLowerCase()}.`,
+    );
   }
 }
