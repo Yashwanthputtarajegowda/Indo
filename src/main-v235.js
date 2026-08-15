@@ -1,4 +1,5 @@
 import { bindAuthSwitches, bindLoginForm, bindSignupForm } from './features/auth/auth-controller.js?v=235';
+import { installProfileLinkNavigation } from './features/ui/profile-link-navigation-v235.js';
 
 const app = document.getElementById('root');
 const ROUTER_VERSION = '235';
@@ -51,6 +52,7 @@ async function render() {
   bindAuthSwitches();
   bindLoginForm();
   bindSignupForm();
+  installProfileLinkNavigation();
 }
 
 function showBootError(error) {
@@ -60,6 +62,7 @@ function showBootError(error) {
 
 async function start() {
   installNavigationClicks();
+  installProfileLinkNavigation();
   try {
     try {
       const mod = await import(`./features/feed/recommendation.js?v=${ROUTER_VERSION}`);
