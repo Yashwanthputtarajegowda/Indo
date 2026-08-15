@@ -9,7 +9,7 @@ import {
   installProfileIdentityEnhancer,
 } from "./features/profile/profile-identity.js?v=20260815-profile-identity-v5";
 import { applyIndoPinkThunderTheme } from "./features/ui/indo-pink-thunder-theme.js?v=20260815-pink-thunder-v1";
-import { installHomeFeedDesign } from "./features/ui/home-feed-design-v2.js?v=20260815-option1-floating-glass-v1";
+import { installHomeFeedDesign } from "./features/ui/home-feed-design-v2.js?v=20260815-option1-own-follow-v1";
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
@@ -24,10 +24,7 @@ function scheduleProfileEnhancement(root, id) {
   const run = () => {
     if (id !== renderId) return;
     enhanceProfileIdentity(root).catch((error) => {
-      console.warn(
-        "Profile identity enhancement failed:",
-        error,
-      );
+      console.warn("Profile identity enhancement failed:", error);
     });
   };
 
@@ -41,14 +38,9 @@ function scheduleProfileEnhancement(root, id) {
 function scheduleLiveAvatarInstaller() {
   const run = async () => {
     try {
-      await import(
-        "./features/profile/profile-avatar-live.js?v=20260815-avatar-v8"
-      );
+      await import("./features/profile/profile-avatar-live.js?v=20260815-avatar-v8");
     } catch (error) {
-      console.warn(
-        "Live profile avatars unavailable:",
-        error,
-      );
+      console.warn("Live profile avatars unavailable:", error);
     }
   };
 
