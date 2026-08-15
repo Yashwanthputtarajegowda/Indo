@@ -9,6 +9,7 @@ import {
   installProfileIdentityEnhancer,
 } from "./features/profile/profile-identity.js?v=20260815-profile-identity-v4";
 import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
+import "./features/ui/thunder-theme.js?v=20260815-thunder-v1";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
 import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v9";
