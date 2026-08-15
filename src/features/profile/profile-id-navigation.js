@@ -12,7 +12,7 @@ const PROFILE_SELECTOR = [
   "[data-username]",
   ".search-profile-id-link",
   ".search-profile-id",
-  ".indo-notice-line b",
+  ".indo-notification-user-id",
   ".indo-notice-user-id",
   ".indo-comment-name",
   ".indo-watch-creator-name",
@@ -166,7 +166,7 @@ async function openProfile(identity) {
   state.screen = "profile";
 
   const { render } = await import(
-    "../../router.js?v=20260815-profile-id-v5"
+    "../../router.js?v=20260815-profile-id-v6"
   );
 
   await render(document.getElementById("root"));
@@ -175,6 +175,12 @@ async function openProfile(identity) {
 
 function shouldHandle(target) {
   if (!(target instanceof Element)) return false;
+
+  const profileTarget = target.closest(
+    PROFILE_SELECTOR,
+  );
+
+  if (!profileTarget) return false;
 
   if (
     target.closest(
@@ -185,25 +191,25 @@ function shouldHandle(target) {
   }
 
   if (
-    target.closest(
-      ".search-follow-button,.profile-follow-button,button[data-follow-user],button[data-follow-uid],[data-engagement],[data-feed-action],.indo-chat-form,.indo-msg-card",
+    profileTarget.closest(
+      ".search-follow-button,.profile-follow-button,button[data-follow-user],button[data-follow-uid],[data-engagement],[data-feed-action],.indo-chat-form",
     )
   ) {
     return false;
   }
 
-  return Boolean(target.closest(PROFILE_SELECTOR));
+  return true;
 }
 
 function install() {
   if (
     window.__indoProfileIdNavigationInstalled ===
-    "v5"
+    "v6"
   ) {
     return;
   }
 
-  window.__indoProfileIdNavigationInstalled = "v5";
+  window.__indoProfileIdNavigationInstalled = "v6";
   window.__indoOpenProfile = openProfile;
 
   document.addEventListener(
@@ -246,14 +252,7 @@ function install() {
           ? event.target
           : null;
 
-      if (
-        !target ||
-        !target.matches(
-          '[data-open-profile],[data-profile-username],[data-profile-user],.search-profile-id-link',
-        )
-      ) {
-        return;
-      }
+      if (!target?.matches(PROFILE_SELECTOR)) return;
 
       const identity = findIdentity(target);
       if (!identity) return;
