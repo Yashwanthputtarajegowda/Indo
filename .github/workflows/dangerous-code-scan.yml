@@ -1,0 +1,64 @@
+name: Dangerous Code Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "*.js"
+      - "*.ts"
+      - "*.jsx"
+      - "*.tsx"
+      - ".github/workflows/dangerous-code-scan.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "*.js"
+      - "*.ts"
+      - "*.jsx"
+      - "*.tsx"
+      - ".github/workflows/dangerous-code-scan.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  dangerous-code-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Scan for dangerous JavaScript patterns
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          files=$(git ls-files -z -- '*.js' '*.jsx' '*.ts' '*.tsx' | tr '\0' '\n')
+          test -n "$files" || { echo "No JS/TS source files found."; exit 0; }
+
+          echo "Scanning tracked JS/TS source files..."
+
+          # Hard-fail patterns: these are generally unsafe in application source.
+          if grep -RInE --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' \
+              -E '(^|[^[:alnum:]_])(eval[[:space:]]*\(|new[[:space:]]+Function[[:space:]]*\(|document\.write[[:space:]]*\(|setTimeout[[:space:]]*\([[:space:]]*["'"'"'`])' src . 2>/dev/null; then
+            echo "::error::Potentially dangerous dynamic-code or document-writing pattern found."
+            exit 1
+          fi
+
+          # Review-required patterns: surface them without blocking the build.
+          matches=$(grep -RInE --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' \
+              -E '(\.innerHTML[[:space:]]*=|\.outerHTML[[:space:]]*=|insertAdjacentHTML[[:space:]]*\(|dangerouslySetInnerHTML|localStorage\.(setItem|getItem|removeItem)|sessionStorage\.(setItem|getItem|removeItem))' src . 2>/dev/null || true)
+
+          if [ -n "$matches" ]; then
+            echo "::warning::Review-required DOM/storage patterns found:"
+            printf '%s\n' "$matches"
+          else
+            echo "No review-required DOM/storage patterns found."
+          fi
+
+          echo "Dangerous-code scan completed."
