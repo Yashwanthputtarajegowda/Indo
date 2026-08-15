@@ -50,7 +50,7 @@ export async function uploadMedia(file, mediaType = "video", options = {}) {
   form.append("width", String(meta.width));
   form.append("height", String(meta.height));
 
-  onProgress(15, mediaType === "reel" ? "Uploading your reel to Telegram..." : "Uploading your video to Telegram...");
+  onProgress(15, mediaType === "reel" ? "Uploading your reel..." : "Uploading your video...");
 
   const apiBase = window.INDO_API_BASE || "";
   const response = await fetch(`${apiBase}/api/media/videos/upload`, {
