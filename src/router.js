@@ -16,7 +16,7 @@ const SCREEN_MODULES = {
   profile: ["./screens/profile.js", "renderProfile"],
   notifications: ["./screens/notifications.js", "renderNotifications"],
   create: ["./screens/create.js?v=20260815-create-reel-v2", "renderCreate"],
-  "reel-create": ["./screens/reel-create.js?v=20260815-reel-create-v3", "renderReelCreate"],
+  "reel-create": ["./screens/reel-create.js?v=20260815-reel-create-v6", "renderReelCreate"],
   settings: ["./screens/settings.js", "renderSettings"],
   "profile-relation": ["./screens/profile-relation.js", "renderProfileRelation"],
   "edit-profile": ["./screens/edit-profile.js", "renderEditProfile"],
