@@ -3,8 +3,7 @@ const installed = Symbol.for("indo.cloudinaryPlaybackHardener");
 function variants(raw) {
   const url = String(raw || "").trim();
   if (!url) return [];
-  if (!url.includes("res.cloudinary.com") || !url.includes("/video/upload/"))
-    return [url];
+  if (!url.includes("res.cloudinary.com") || !url.includes("/video/upload/")) return [url];
   const marker = "/video/upload/";
   const i = url.indexOf(marker);
   if (i < 0) return [url];
@@ -82,11 +81,7 @@ function isCloudinaryVideo(target) {
   const video = target instanceof HTMLVideoElement ? target : null;
   if (!video) return null;
   const raw =
-    video.dataset.originalVideoSrc ||
-    video.dataset.videoSrc ||
-    video.currentSrc ||
-    video.src ||
-    "";
+    video.dataset.originalVideoSrc || video.dataset.videoSrc || video.currentSrc || video.src || "";
   return raw.includes("res.cloudinary.com/") ? video : null;
 }
 
@@ -151,8 +146,7 @@ function install() {
       video.dataset.indoCloudinaryStallTimer = "1";
       window.setTimeout(() => {
         video.dataset.indoCloudinaryStallTimer = "";
-        if (video.isConnected && video.readyState < 2 && !video.paused)
-          next(video, true);
+        if (video.isConnected && video.readyState < 2 && !video.paused) next(video, true);
       }, 2200);
     },
     true,
@@ -181,12 +175,9 @@ function install() {
 
   const unlockAudio = () => {
     window.__indoAudioUnlocked = true;
-    const videos = Array.from(
-      document.querySelectorAll("#root video.post-video"),
-    );
+    const videos = Array.from(document.querySelectorAll("#root video.post-video"));
     const current =
-      videos.find((video) => !video.paused) ||
-      videos.find((video) => video.readyState >= 2);
+      videos.find((video) => !video.paused) || videos.find((video) => video.readyState >= 2);
     if (!current) return;
     videos.forEach((video) => {
       if (video !== current) video.pause();

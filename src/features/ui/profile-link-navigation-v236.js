@@ -88,20 +88,15 @@ async function openProfile(userId) {
     state.profile = {
       ...data.profile,
       uid: data.profile.uid || data.profile.ownerUid || "",
-      username: normalizeUserId(
-        data.profile.userId || data.profile.username || normalized,
-      ),
-      userId: normalizeUserId(
-        data.profile.userId || data.profile.username || normalized,
-      ),
+      username: normalizeUserId(data.profile.userId || data.profile.username || normalized),
+      userId: normalizeUserId(data.profile.userId || data.profile.username || normalized),
       stats: data.stats || {},
       social: data.social || {},
       __isOwnProfile: false,
     };
     state.screen = "profile";
     window.__indoProfileTargetUserId = normalized;
-    if (typeof window.__indoNavigate === "function")
-      await window.__indoNavigate("profile");
+    if (typeof window.__indoNavigate === "function") await window.__indoNavigate("profile");
   } catch (error) {
     console.error("Profile navigation failed:", error);
   } finally {
@@ -151,11 +146,7 @@ export function installProfileLinkNavigation() {
         "[data-search-follow-uid],[data-follow-response],[data-action],[data-screen],input,textarea,select,a[href]",
       );
       if (actionControl && !identityButton) return;
-      if (
-        element.closest(
-          ".search-follow-button,.follow-btn,button[data-search-follow-uid]",
-        )
-      )
+      if (element.closest(".search-follow-button,.follow-btn,button[data-search-follow-uid]"))
         return;
       event.preventDefault();
       event.stopPropagation();

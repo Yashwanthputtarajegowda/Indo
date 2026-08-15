@@ -86,9 +86,7 @@ async function openConversation(conversation) {
   document.querySelector("[data-indo-chat]")?.remove();
   const overlay = document.createElement("div");
   overlay.dataset.indoChat = "1";
-  const name = String(
-    conversation.name || conversation.username || "Indo User",
-  );
+  const name = String(conversation.name || conversation.username || "Indo User");
   const userId = String(conversation.username || "").replace(/^@/, "");
   overlay.className = "indo-chat-backdrop";
   overlay.innerHTML = `<section class="indo-chat"><header class="indo-chat-head"><div class="indo-chat-head-title"><b>${esc(name)}</b><span>${esc(userId ? `@${userId}` : "")}</span></div><button class="indo-chat-close" type="button" aria-label="Close">×</button></header><div class="indo-chat-list" data-chat-list><div style="color:#7f8798;font-size:11px;text-align:center;padding:24px">Loading...</div></div><form class="indo-chat-form" data-chat-form><input name="text" maxlength="1000" autocomplete="off" placeholder="Write a message..."><button type="submit">➤</button></form></section>`;
@@ -151,15 +149,13 @@ export async function renderMessages(app) {
   try {
     const conversations = await loadConversations();
     if (!conversations.length) {
-      list.innerHTML =
-        '<div class="indo-msg-empty">No conversations yet.</div>';
+      list.innerHTML = '<div class="indo-msg-empty">No conversations yet.</div>';
       return;
     }
     list.innerHTML = conversations
       .map((item) => {
         const displayName = String(item.name || item.username || "Indo User");
-        const initial =
-          displayName.replace(/^@/, "").charAt(0).toUpperCase() || "I";
+        const initial = displayName.replace(/^@/, "").charAt(0).toUpperCase() || "I";
         const unread = Number(item.unreadCount || 0);
         return `<button class="indo-msg-card" type="button" data-conversation-uid="${esc(item.uid || "")}"><span class="indo-msg-avatar">${esc(initial)}</span><span class="indo-msg-copy"><span class="indo-msg-name">${esc(displayName)}${unread ? `<span class="indo-msg-badge">${unread > 99 ? "99+" : unread}</span>` : ""}</span><span class="indo-msg-last">${esc(item.lastMessage || "Start a conversation")}</span></span><span class="indo-msg-time">${esc(formatTime(item.lastMessageAt))}</span></button>`;
       })

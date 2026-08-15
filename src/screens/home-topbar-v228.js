@@ -9,10 +9,10 @@ async function loadUnreadCount() {
   if (!user) return 0;
   try {
     const token = await user.getIdToken();
-    const response = await fetch(
-      `${window.INDO_API_BASE || ""}/api/notifications`,
-      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
-    );
+    const response = await fetch(`${window.INDO_API_BASE || ""}/api/notifications`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
     if (!response.ok) return 0;
     const data = await response.json().catch(() => ({}));
     return Array.isArray(data.notifications)
@@ -24,9 +24,7 @@ async function loadUnreadCount() {
 }
 
 function paintUnreadBadge(count) {
-  const button = document.querySelector(
-    ".indo-option5-topbar .notification-button",
-  );
+  const button = document.querySelector(".indo-option5-topbar .notification-button");
   if (!button) return;
   let badge = button.querySelector(".indo-notification-badge");
   const n = Math.max(0, Number(count) || 0);

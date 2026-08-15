@@ -16,11 +16,7 @@
   inset: 0;
   background:
     radial-gradient(circle at 50% 43%, rgba(117, 0, 255, 0.2), transparent 34%),
-    radial-gradient(
-      circle at 50% 76%,
-      rgba(255, 0, 190, 0.08),
-      transparent 28%
-    ),
+    radial-gradient(circle at 50% 76%, rgba(255, 0, 190, 0.08), transparent 28%),
     linear-gradient(180deg, #03020a 0%, #020208 100%);
   z-index: -3;
 }

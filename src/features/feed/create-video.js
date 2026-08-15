@@ -11,12 +11,10 @@ async function getUploadSignature() {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok)
-      throw new Error("Video upload is temporarily unavailable.");
+    if (!response.ok) throw new Error("Video upload is temporarily unavailable.");
     return { ...data, token };
   } catch (error) {
-    if (error?.message === "Video upload is temporarily unavailable.")
-      throw error;
+    if (error?.message === "Video upload is temporarily unavailable.") throw error;
     throw new Error("Video upload is temporarily unavailable.");
   }
 }
@@ -34,8 +32,7 @@ async function uploadToStorage(file, config) {
       { method: "POST", body: form },
     );
     const data = await response.json().catch(() => ({}));
-    if (!response.ok)
-      throw new Error("Video upload is temporarily unavailable.");
+    if (!response.ok) throw new Error("Video upload is temporarily unavailable.");
     return data;
   } catch {
     throw new Error("Video upload is temporarily unavailable.");
@@ -88,8 +85,7 @@ async function saveVideo(uploaded, formValues, token) {
     if (!response.ok) throw new Error("Could not finish publishing the video.");
     return data.video;
   } catch (error) {
-    if (error?.message === "Could not finish publishing the video.")
-      throw error;
+    if (error?.message === "Could not finish publishing the video.") throw error;
     throw new Error("Could not finish publishing the video.");
   }
 }
@@ -110,8 +106,7 @@ export async function uploadVideo(
   } = {},
 ) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
-  if (!file.type.startsWith("video/"))
-    throw new Error("Please select a valid video file.");
+  if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
   onProgress(5, "Preparing your upload...");
   const config = await getUploadSignature();
   onProgress(15, "Uploading your video...");

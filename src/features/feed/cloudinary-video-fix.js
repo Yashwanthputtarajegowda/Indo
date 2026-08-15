@@ -3,12 +3,7 @@ const RETRY_ATTR = "data-indo-cloudinary-retried";
 
 function makeBrowserVideoUrl(rawUrl) {
   const url = String(rawUrl || "").trim();
-  if (
-    !url ||
-    !url.includes("res.cloudinary.com") ||
-    !url.includes("/video/upload/")
-  )
-    return "";
+  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/video/upload/")) return "";
   const marker = "/video/upload/";
   const index = url.indexOf(marker);
   if (index < 0) return "";
@@ -22,18 +17,13 @@ function makeBrowserVideoUrl(rawUrl) {
 }
 
 function rememberOriginal(video, url) {
-  if (url && !video.dataset.indoOriginalSrc)
-    video.dataset.indoOriginalSrc = url;
+  if (url && !video.dataset.indoOriginalSrc) video.dataset.indoOriginalSrc = url;
 }
 
 function fixVideo(video, restart = false) {
   if (!(video instanceof HTMLVideoElement)) return false;
   const original =
-    video.dataset.indoOriginalSrc ||
-    video.currentSrc ||
-    video.src ||
-    video.dataset.videoSrc ||
-    "";
+    video.dataset.indoOriginalSrc || video.currentSrc || video.src || video.dataset.videoSrc || "";
   rememberOriginal(video, original);
   const fixed = makeBrowserVideoUrl(original);
   if (!fixed || video.dataset[FIXED_ATTR] === "1") return false;
@@ -50,8 +40,7 @@ function fixVideo(video, restart = false) {
 }
 
 function retryOriginal(video) {
-  if (!(video instanceof HTMLVideoElement) || video.dataset[RETRY_ATTR] === "1")
-    return false;
+  if (!(video instanceof HTMLVideoElement) || video.dataset[RETRY_ATTR] === "1") return false;
   const original = String(
     video.dataset.indoOriginalSrc || video.dataset.videoSrcOriginal || "",
   ).trim();
@@ -71,8 +60,7 @@ export function installCloudinaryVideoCompatibility() {
   document.addEventListener(
     "loadstart",
     (event) => {
-      const video =
-        event.target instanceof HTMLVideoElement ? event.target : null;
+      const video = event.target instanceof HTMLVideoElement ? event.target : null;
       if (!video) return;
       const source =
         video.dataset.indoOriginalSrc ||
@@ -89,8 +77,7 @@ export function installCloudinaryVideoCompatibility() {
   document.addEventListener(
     "error",
     (event) => {
-      const video =
-        event.target instanceof HTMLVideoElement ? event.target : null;
+      const video = event.target instanceof HTMLVideoElement ? event.target : null;
       if (!video) return;
       const original =
         video.dataset.indoOriginalSrc ||
@@ -116,8 +103,7 @@ export function installCloudinaryVideoCompatibility() {
   document.addEventListener(
     "canplay",
     (event) => {
-      const video =
-        event.target instanceof HTMLVideoElement ? event.target : null;
+      const video = event.target instanceof HTMLVideoElement ? event.target : null;
       if (!video) return;
       const source =
         video.dataset.indoOriginalSrc ||

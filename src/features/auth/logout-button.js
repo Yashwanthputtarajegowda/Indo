@@ -7,8 +7,7 @@ export async function handleLogout(messageElement) {
     if (messageElement) messageElement.textContent = "Logged out.";
     return true;
   } catch (error) {
-    if (messageElement)
-      messageElement.textContent = error.message || "Could not log out.";
+    if (messageElement) messageElement.textContent = error.message || "Could not log out.";
     return false;
   }
 }

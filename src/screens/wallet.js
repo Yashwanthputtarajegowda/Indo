@@ -16,8 +16,7 @@ function escapeHtml(value = "") {
   );
 }
 function renderPayouts(payouts) {
-  if (!payouts.length)
-    return '<div class="profile-empty">No payout requests yet.</div>';
+  if (!payouts.length) return '<div class="profile-empty">No payout requests yet.</div>';
   return payouts
     .map(
       (payout) =>
@@ -39,7 +38,6 @@ export async function renderWallet(app) {
     list.innerHTML = renderPayouts(wallet.payouts || []);
   } catch (error) {
     status.textContent = error.message || "Could not load wallet.";
-    list.innerHTML =
-      '<div class="profile-empty">Could not load payout history.</div>';
+    list.innerHTML = '<div class="profile-empty">Could not load payout history.</div>';
   }
 }

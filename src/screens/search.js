@@ -42,10 +42,9 @@ async function searchUsers(q) {
     .toLowerCase();
   if (!value) return [];
   const api = window.INDO_API_BASE || "";
-  const r = await fetch(
-    `${api}/api/account/search-users?q=${encodeURIComponent(value)}`,
-    { cache: "no-store" },
-  );
+  const r = await fetch(`${api}/api/account/search-users?q=${encodeURIComponent(value)}`, {
+    cache: "no-store",
+  });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.error || "Could not search users.");
   return Array.isArray(d.users) ? d.users : [];
@@ -103,11 +102,7 @@ export async function renderSearch(app) {
       try {
         const s = await loadFollowStatus(uid);
         b.dataset.following = s?.following ? "1" : "0";
-        b.textContent = s?.requested
-          ? "Requested"
-          : s?.following
-            ? "Following"
-            : "Follow";
+        b.textContent = s?.requested ? "Requested" : s?.following ? "Following" : "Follow";
       } catch {}
       b.addEventListener("click", async (e) => {
         e.preventDefault();
@@ -117,11 +112,7 @@ export async function renderSearch(app) {
         try {
           const d = await toggleFollow(uid, !following);
           b.dataset.following = d?.following ? "1" : "0";
-          b.textContent = d?.requested
-            ? "Requested"
-            : d?.following
-              ? "Following"
-              : "Follow";
+          b.textContent = d?.requested ? "Requested" : d?.following ? "Following" : "Follow";
         } catch (err) {
           b.title = err.message || "Could not update follow status.";
         } finally {
@@ -157,16 +148,11 @@ export async function renderSearch(app) {
   });
   results.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" && e.key !== " ") return;
-    const target =
-      e.target instanceof Element
-        ? e.target.closest(".search-profile-id-link")
-        : null;
+    const target = e.target instanceof Element ? e.target.closest(".search-profile-id-link") : null;
     if (!target) return;
     e.preventDefault();
     e.stopPropagation();
-    openUserProfile(target.getAttribute("data-open-profile") || "").catch(
-      () => {},
-    );
+    openUserProfile(target.getAttribute("data-open-profile") || "").catch(() => {});
   });
   const runSearch = async () => {
     const value = input.value.trim();

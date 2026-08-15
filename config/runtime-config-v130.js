@@ -24,8 +24,7 @@ window.INDO_API_BASE =
     const preview = document.getElementById("story-preview");
     const publish = document.getElementById("story-publish-button");
     const add = document.getElementById("story-add-button");
-    if (!preview || !publish || !add || preview.dataset.runtimeControls === "1")
-      return;
+    if (!preview || !publish || !add || preview.dataset.runtimeControls === "1") return;
     preview.dataset.runtimeControls = "1";
     publish.style.setProperty("display", "none", "important");
     publish.style.setProperty("visibility", "hidden", "important");

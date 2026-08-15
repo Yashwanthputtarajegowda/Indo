@@ -63,9 +63,7 @@ if (!window.__indoUniversalNavigation) {
     true,
   );
 }
-function showBootFailure(
-  message = "Could not start Indo. Please reload the app.",
-) {
+function showBootFailure(message = "Could not start Indo. Please reload the app.") {
   if (!app) return;
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>${message}</p><button type="button" id="indo-retry-boot" style="margin-top:14px;padding:10px 16px;border-radius:10px;background:#743cff;color:#fff;font-weight:800;cursor:pointer">Retry</button></main>`;
   document
@@ -94,13 +92,9 @@ async function start() {
         state.screen = "auth-login";
       } else {
         state.authenticated = Boolean(user);
-        if (
-          user &&
-          (state.screen === "auth-login" || state.screen === "auth-signup")
-        )
+        if (user && (state.screen === "auth-login" || state.screen === "auth-signup"))
           state.screen = "home";
-        if (!user && !String(state.screen || "").startsWith("auth-"))
-          state.screen = "auth-login";
+        if (!user && !String(state.screen || "").startsWith("auth-")) state.screen = "auth-login";
       }
       try {
         await Promise.race([
@@ -124,9 +118,7 @@ async function start() {
     });
     const user = await Promise.race([
       firstAuth,
-      new Promise((resolve) =>
-        setTimeout(() => resolve(auth.currentUser || null), 8000),
-      ),
+      new Promise((resolve) => setTimeout(() => resolve(auth.currentUser || null), 8000)),
     ]);
     try {
       unsubscribe?.();

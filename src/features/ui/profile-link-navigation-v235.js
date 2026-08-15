@@ -75,11 +75,7 @@ function findIdentityTarget(element) {
 
   // Last-resort support for plain @User ID text rendered without a dedicated class.
   let cursor = element;
-  for (
-    let depth = 0;
-    cursor && depth < 5;
-    depth += 1, cursor = cursor.parentElement
-  ) {
+  for (let depth = 0; cursor && depth < 5; depth += 1, cursor = cursor.parentElement) {
     const userId = extractUserId(cursor);
     if (userId) return { element: cursor, userId };
   }
@@ -103,12 +99,8 @@ async function openProfile(userId) {
     state.profile = {
       ...data.profile,
       uid: data.profile.uid || data.profile.ownerUid || "",
-      username: normalizeUserId(
-        data.profile.userId || data.profile.username || normalized,
-      ),
-      userId: normalizeUserId(
-        data.profile.userId || data.profile.username || normalized,
-      ),
+      username: normalizeUserId(data.profile.userId || data.profile.username || normalized),
+      userId: normalizeUserId(data.profile.userId || data.profile.username || normalized),
       stats: data.stats || {},
       social: data.social || {},
     };
@@ -174,11 +166,7 @@ export function installProfileLinkNavigation() {
         );
 
       if (actionControl && !identityButton) return;
-      if (
-        element.closest(
-          ".search-follow-button,.follow-btn,button[data-search-follow-uid]",
-        )
-      )
+      if (element.closest(".search-follow-button,.follow-btn,button[data-search-follow-uid]"))
         return;
 
       event.preventDefault();

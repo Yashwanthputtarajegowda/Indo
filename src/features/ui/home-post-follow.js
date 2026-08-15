@@ -53,9 +53,7 @@ async function setFollow(targetUid, shouldFollow) {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(
-      data.error || data.detail || "Could not update follow status.",
-    );
+    throw new Error(data.error || data.detail || "Could not update follow status.");
   }
 }
 
@@ -102,9 +100,7 @@ function install() {
     "click",
     async (event) => {
       const button =
-        event.target instanceof Element
-          ? event.target.closest("[data-post-follow]")
-          : null;
+        event.target instanceof Element ? event.target.closest("[data-post-follow]") : null;
       if (!button) return;
       event.preventDefault();
       event.stopPropagation();

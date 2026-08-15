@@ -11,10 +11,9 @@ export async function loadHomeVideos(limit = 20) {
 export async function recordVideoView(videoId) {
   if (!videoId) return null;
   const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(
-    `${apiBase}/api/media/videos/${encodeURIComponent(videoId)}/view`,
-    { method: "POST" },
-  );
+  const response = await fetch(`${apiBase}/api/media/videos/${encodeURIComponent(videoId)}/view`, {
+    method: "POST",
+  });
   if (!response.ok) return null;
   return response.json().catch(() => null);
 }

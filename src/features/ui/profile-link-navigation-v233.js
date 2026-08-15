@@ -63,8 +63,7 @@ async function openProfile(userId) {
   try {
     state.profile = { username: normalized, userId: normalized };
     window.__indoProfileTargetUserId = normalized;
-    if (typeof window.__indoNavigate === "function")
-      await window.__indoNavigate("profile");
+    if (typeof window.__indoNavigate === "function") await window.__indoNavigate("profile");
     else state.screen = "profile";
   } finally {
     busy = false;
@@ -110,9 +109,7 @@ export function bindProfileIdentity(container = document) {
   installProfileLinkNavigation();
   if (!(container instanceof Element || container instanceof Document)) return;
   container
-    .querySelectorAll(
-      "[data-profile-user-id],[data-user-id],[data-username],[data-userid]",
-    )
+    .querySelectorAll("[data-profile-user-id],[data-user-id],[data-username],[data-userid]")
     .forEach((el) => {
       const id = extractFromElement(el);
       if (id) el.setAttribute("data-profile-user-id", id);

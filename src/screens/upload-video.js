@@ -53,30 +53,23 @@ export function renderUploadVideo(app) {
         : values.privacy === "private"
           ? "Private"
           : "Public";
-    app
-      .querySelector("#comments-toggle")
-      .classList.toggle("on", values.allowComments);
+    app.querySelector("#comments-toggle").classList.toggle("on", values.allowComments);
     app.querySelector("#duet-toggle").classList.toggle("on", values.allowDuet);
-    app.querySelector("#category-value").textContent =
-      values.category || "Select Category";
+    app.querySelector("#category-value").textContent = values.category || "Select Category";
     app.querySelector("#tags-value").textContent = values.tags.length
       ? values.tags.map((t) => `#${t}`).join(" ")
       : "Add tags";
-    app.querySelector("#location-value").textContent =
-      values.location || "Add location";
+    app.querySelector("#location-value").textContent = values.location || "Add location";
   }
   app.querySelectorAll("[data-option]").forEach((row) =>
     row.addEventListener("click", () => {
       const option = row.dataset.option;
       if (option === "privacy") {
         const answer =
-          window.prompt(
-            "Privacy: enter public, followers, or private.",
-            values.privacy,
-          ) || values.privacy;
+          window.prompt("Privacy: enter public, followers, or private.", values.privacy) ||
+          values.privacy;
         const normalized = answer.trim().toLowerCase();
-        if (["public", "followers", "private"].includes(normalized))
-          values.privacy = normalized;
+        if (["public", "followers", "private"].includes(normalized)) values.privacy = normalized;
       } else if (option === "comments") {
         values.allowComments = !values.allowComments;
       } else if (option === "duet") {
@@ -86,10 +79,8 @@ export function renderUploadVideo(app) {
         values.category = answer.trim().slice(0, 60);
       } else if (option === "tags") {
         const answer =
-          window.prompt(
-            "Tags: separate with commas.",
-            values.tags.join(", "),
-          ) ?? values.tags.join(", ");
+          window.prompt("Tags: separate with commas.", values.tags.join(", ")) ??
+          values.tags.join(", ");
         values.tags = answer
           .split(",")
           .map((t) => t.trim().replace(/^#/, ""))
@@ -138,8 +129,7 @@ export function renderUploadVideo(app) {
       message.textContent = "Your video is published!";
       setTimeout(() => window.__indoNavigate?.("video"), 700);
     } catch (error) {
-      message.textContent =
-        error?.message || "Upload failed. Please try again.";
+      message.textContent = error?.message || "Upload failed. Please try again.";
       submit.disabled = false;
     }
   });

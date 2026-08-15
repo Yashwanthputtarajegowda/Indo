@@ -3,10 +3,7 @@ import { auth } from "../auth/firebase-client.js";
 export async function loadProfileMedia(targetProfile = null) {
   const apiBase = window.INDO_API_BASE || "";
   const requestedUid = String(
-    targetProfile?.uid ||
-      targetProfile?.userId ||
-      targetProfile?.ownerUid ||
-      "",
+    targetProfile?.uid || targetProfile?.userId || targetProfile?.ownerUid || "",
   ).trim();
   const currentUid = auth.currentUser?.uid || "";
   const targetUid = requestedUid || currentUid;

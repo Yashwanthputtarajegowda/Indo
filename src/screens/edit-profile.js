@@ -33,8 +33,7 @@ async function api(path, options = {}) {
     cache: "no-store",
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new Error(data.error || `Request failed (${response.status}).`);
+  if (!response.ok) throw new Error(data.error || `Request failed (${response.status}).`);
   return data;
 }
 
@@ -58,8 +57,7 @@ async function loadProfile() {
 }
 
 async function uploadAvatar(file) {
-  if (file.size > 5 * 1024 * 1024)
-    throw new Error("Profile photo must be 5MB or smaller.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("Profile photo must be 5MB or smaller.");
   if (!/^image\/(png|jpeg|webp)$/.test(file.type))
     throw new Error("Use PNG, JPG or WebP for profile photo.");
   const signature = await api("/api/account/profile/avatar-signature", {
@@ -95,16 +93,10 @@ export async function renderEditProfile(app) {
   try {
     profile = await loadProfile();
   } catch {}
-  const name = String(
-    user.displayName || profile.name || profile.displayName || "",
-  ).trim();
+  const name = String(user.displayName || profile.name || profile.displayName || "").trim();
   const id = String(profile.userId || profile.username || "").replace(/^@/, "");
   const avatar = String(
-    profile.avatarUrl ||
-      profile.photoURL ||
-      profile.photoUrl ||
-      user.photoURL ||
-      "",
+    profile.avatarUrl || profile.photoURL || profile.photoUrl || user.photoURL || "",
   ).trim();
   const initial = (name || id || "I").charAt(0).toUpperCase();
   const bio = String(profile.bio || "");
@@ -114,9 +106,7 @@ export async function renderEditProfile(app) {
   const interests = String(profile.interests || "");
   const language = String(profile.language || "English");
   const visibility =
-    String(
-      profile.accountType || profile.visibility || "public",
-    ).toLowerCase() === "private"
+    String(profile.accountType || profile.visibility || "public").toLowerCase() === "private"
       ? "private"
       : "public";
 
@@ -128,8 +118,7 @@ export async function renderEditProfile(app) {
     const file = event.target.files?.[0];
     if (!file) return;
     const localUrl = URL.createObjectURL(file);
-    app.querySelector("[data-avatar]").innerHTML =
-      `<img src="${esc(localUrl)}" alt="Profile">`;
+    app.querySelector("[data-avatar]").innerHTML = `<img src="${esc(localUrl)}" alt="Profile">`;
     message.textContent = "Photo selected. Save to publish it everywhere.";
     message.className = "indo-edit-msg";
   });

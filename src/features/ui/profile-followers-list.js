@@ -45,8 +45,7 @@ function mapEntries(value) {
 async function readFirebaseRelation(targetUid, relation, idToken) {
   const url = `${FIREBASE_DB}/users/${encodeURIComponent(targetUid)}/${relation}.json?auth=${encodeURIComponent(idToken)}`;
   const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok)
-    throw new Error(`Firebase relation read failed (${response.status}).`);
+  if (!response.ok) throw new Error(`Firebase relation read failed (${response.status}).`);
   return mapEntries(await response.json().catch(() => ({})));
 }
 
@@ -56,8 +55,7 @@ async function readBackendRelation(apiBase, targetUid, relation, idToken) {
     { headers: { Authorization: `Bearer ${idToken}` }, cache: "no-store" },
   );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new Error(data.error || `Could not load ${relation}.`);
+  if (!response.ok) throw new Error(data.error || `Could not load ${relation}.`);
   return Array.isArray(data.items) ? data.items : [];
 }
 
@@ -65,13 +63,9 @@ async function loadRelation(root, relation) {
   const apiBase = window.INDO_API_BASE || "";
   const idToken = await getToken();
   const profileState = state.profile || {};
-  let targetUid = String(
-    profileState.uid || profileState.ownerUid || "",
-  ).trim();
+  let targetUid = String(profileState.uid || profileState.ownerUid || "").trim();
   let username = String(
-    profileState.username ||
-      root.querySelector(".profile-direct-head h2")?.textContent ||
-      "",
+    profileState.username || root.querySelector(".profile-direct-head h2")?.textContent || "",
   )
     .trim()
     .replace(/^@/, "");
@@ -106,12 +100,7 @@ async function loadRelation(root, relation) {
   } catch {}
 
   try {
-    const backend = await readBackendRelation(
-      apiBase,
-      targetUid,
-      relation,
-      idToken,
-    );
+    const backend = await readBackendRelation(apiBase, targetUid, relation, idToken);
     if (backend.length) return backend;
   } catch {}
 
@@ -159,11 +148,7 @@ function openList(root, relation) {
         .map((item) => {
           const id = String(item.userId || "").replace(/^@/, "");
           const name = String(item.name || "Indo User");
-          const initial = (
-            name.trim().charAt(0) ||
-            id.charAt(0) ||
-            "U"
-          ).toUpperCase();
+          const initial = (name.trim().charAt(0) || id.charAt(0) || "U").toUpperCase();
           return `<button class="indo-rel-row" type="button" data-rel-uid="${esc(item.uid)}" data-rel-user="${esc(id)}"><div class="indo-rel-avatar">${esc(initial)}</div><div><div class="indo-rel-name">${esc(name)}</div><div class="indo-rel-id">@${esc(id || "user")}</div></div></button>`;
         })
         .join("");
@@ -197,11 +182,7 @@ function install() {
       if (!stat) return;
       const stats = stat.parentElement;
       const root = document.getElementById("root");
-      if (
-        !root?.contains(stat) ||
-        !stats?.classList.contains("profile-direct-stats")
-      )
-        return;
+      if (!root?.contains(stat) || !stats?.classList.contains("profile-direct-stats")) return;
       const index = Array.prototype.indexOf.call(stats.children, stat);
       if (index !== 1 && index !== 2) return;
       event.preventDefault();

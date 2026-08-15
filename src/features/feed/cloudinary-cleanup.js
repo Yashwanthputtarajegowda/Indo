@@ -2,9 +2,7 @@ const CHECKED_KEY = "indoCloudinaryChecked";
 const CHECKING_KEY = "indoCloudinaryChecking";
 
 function removeCard(video) {
-  const card = video.closest(
-    ".post-card[data-video-id], .video-post[data-video-id]",
-  );
+  const card = video.closest(".post-card[data-video-id], .video-post[data-video-id]");
   if (!card) return;
   video.pause?.();
   card.remove();
@@ -12,8 +10,7 @@ function removeCard(video) {
 
 async function validateVideo(video) {
   if (!(video instanceof HTMLVideoElement)) return;
-  if (video.dataset[CHECKED_KEY] === "1" || video.dataset[CHECKING_KEY] === "1")
-    return;
+  if (video.dataset[CHECKED_KEY] === "1" || video.dataset[CHECKING_KEY] === "1") return;
   const source = String(
     video.dataset.originalVideoSrc ||
       video.dataset.indoOriginalSrc ||
@@ -58,11 +55,7 @@ async function validateVideo(video) {
 }
 
 function bind(video) {
-  if (
-    !(video instanceof HTMLVideoElement) ||
-    video.dataset.indoCleanupBound === "1"
-  )
-    return;
+  if (!(video instanceof HTMLVideoElement) || video.dataset.indoCleanupBound === "1") return;
   video.dataset.indoCleanupBound = "1";
   // Playback code owns recovery/fallback. Do not remove the card on the first
   // transient error because a Cloudinary transformed rendition may still be readying.
@@ -77,9 +70,7 @@ function bind(video) {
 }
 
 function scan() {
-  document
-    .querySelectorAll("#root video[data-video-src], #root video.post-video")
-    .forEach(bind);
+  document.querySelectorAll("#root video[data-video-src], #root video.post-video").forEach(bind);
 }
 
 export function startCloudinaryCleanup() {

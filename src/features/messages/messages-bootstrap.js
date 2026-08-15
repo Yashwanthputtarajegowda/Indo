@@ -74,9 +74,7 @@ function openMessageComposer(uid, userId, name) {
   const list = overlay.querySelector("[data-message-list]");
   const form = overlay.querySelector("[data-message-form]");
   const close = () => overlay.remove();
-  overlay
-    .querySelector("[data-message-close]")
-    .addEventListener("click", close);
+  overlay.querySelector("[data-message-close]").addEventListener("click", close);
   overlay.firstElementChild.addEventListener("click", (event) => {
     if (event.target === overlay.firstElementChild) close();
   });
@@ -145,11 +143,8 @@ function addMessageButtons() {
       messageButton.dataset.messageUid = uid;
       messageButton.addEventListener("click", () => {
         const result = followButton.closest(".search-user-result");
-        const name =
-          result?.querySelector(".search-user-copy small")?.textContent ||
-          "Indo User";
-        const userId =
-          result?.querySelector(".search-user-copy b")?.textContent || "";
+        const name = result?.querySelector(".search-user-copy small")?.textContent || "Indo User";
+        const userId = result?.querySelector(".search-user-copy b")?.textContent || "";
         openMessageComposer(uid, userId, name);
       });
       followButton.insertAdjacentElement("afterend", messageButton);

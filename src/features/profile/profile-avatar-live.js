@@ -50,9 +50,7 @@ async function loadProfile(key, { uid = false, force = false } = {}) {
 }
 
 function avatarUrl(profile) {
-  return String(
-    profile?.avatarUrl || profile?.photoURL || profile?.photoUrl || "",
-  ).trim();
+  return String(profile?.avatarUrl || profile?.photoURL || profile?.photoUrl || "").trim();
 }
 
 function datasetIdentity(el) {
@@ -116,9 +114,7 @@ function textIdentity(el) {
     "[data-username]",
   ];
   for (const selector of selectors) {
-    const nodes = el.matches?.(selector)
-      ? [el]
-      : [...(el.querySelectorAll?.(selector) || [])];
+    const nodes = el.matches?.(selector) ? [el] : [...(el.querySelectorAll?.(selector) || [])];
     for (const node of nodes) {
       const raw =
         node.getAttribute?.("data-user-id") ||
@@ -127,11 +123,7 @@ function textIdentity(el) {
         "";
       const match = String(raw).match(/@?([A-Za-z0-9._-]{2,80})/);
       const id = norm(match?.[1] || "");
-      if (
-        valid(id) &&
-        !["user", "profile", "users", "indo"].includes(id.toLowerCase())
-      )
-        return id;
+      if (valid(id) && !["user", "profile", "users", "indo"].includes(id.toLowerCase())) return id;
     }
   }
   return "";
@@ -252,11 +244,8 @@ async function hydrateContainer(container, force = false) {
 
 function scan(root = document, force = false) {
   if (!root) return;
-  avatarHosts(root).forEach((host) =>
-    hydrateAvatar(host, force).catch(() => {}),
-  );
-  if (root.matches?.(USER_CONTAINERS))
-    hydrateContainer(root, force).catch(() => {});
+  avatarHosts(root).forEach((host) => hydrateAvatar(host, force).catch(() => {}));
+  if (root.matches?.(USER_CONTAINERS)) hydrateContainer(root, force).catch(() => {});
   root
     .querySelectorAll?.(USER_CONTAINERS)
     .forEach((container) => hydrateContainer(container, force).catch(() => {}));

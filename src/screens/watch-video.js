@@ -14,10 +14,7 @@ async function token() {
   if (!user) throw new Error("Please login first.");
   return user.getIdToken(true);
 }
-async function request(
-  path,
-  { method = "GET", body, authRequired = true } = {},
-) {
+async function request(path, { method = "GET", body, authRequired = true } = {}) {
   const headers = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (authRequired) headers.Authorization = `Bearer ${await token()}`;
@@ -74,9 +71,7 @@ function installNotificationLiveRefresh() {
       .map((x) => `${x.id}:${x.read}:${x.createdAt}`)
       .join("|");
     if (lastFingerprint && fp !== lastFingerprint)
-      window.dispatchEvent(
-        new CustomEvent("indo:notification-updated", { detail: { items } }),
-      );
+      window.dispatchEvent(new CustomEvent("indo:notification-updated", { detail: { items } }));
     lastFingerprint = fp;
   };
   setInterval(poll, 4000);
@@ -85,21 +80,13 @@ function valueSpan(button) {
   return button?.querySelector("span");
 }
 function setButtonState(button, active, countValue) {
-  button.classList.toggle(
-    "active-like",
-    active && button.dataset.action === "like",
-  );
-  button.classList.toggle(
-    "active-save",
-    active && button.dataset.action === "save",
-  );
+  button.classList.toggle("active-like", active && button.dataset.action === "like");
+  button.classList.toggle("active-save", active && button.dataset.action === "save");
   const v = valueSpan(button);
   if (v && countValue !== undefined) v.textContent = String(countValue);
 }
 async function wireActions(app, video) {
-  const original = [
-    ...app.querySelectorAll(".indo-watch-actions button[data-action]"),
-  ];
+  const original = [...app.querySelectorAll(".indo-watch-actions button[data-action]")];
   const buttons = {};
   for (const b of original) {
     const clone = cloneAndReplace(b);
@@ -111,9 +98,7 @@ async function wireActions(app, video) {
     saveBtn = buttons.save,
     viewsBtn = buttons.views;
   try {
-    const e = await request(
-      `/api/media/${encodeURIComponent(video.id)}/engagement`,
-    );
+    const e = await request(`/api/media/${encodeURIComponent(video.id)}/engagement`);
     setButtonState(likeBtn, !!e.liked, e.likes);
     setButtonState(saveBtn, !!e.saved, 0);
   } catch {}
@@ -122,10 +107,10 @@ async function wireActions(app, video) {
     likeBtn.disabled = true;
     try {
       const next = !likeBtn.classList.contains("active-like");
-      const d = await request(
-        `/api/media/${encodeURIComponent(video.id)}/like`,
-        { method: "POST", body: { like: next } },
-      );
+      const d = await request(`/api/media/${encodeURIComponent(video.id)}/like`, {
+        method: "POST",
+        body: { like: next },
+      });
       setButtonState(likeBtn, next, d.likes);
       showStatus(app, next ? "Liked" : "Unliked");
     } catch (error) {
@@ -153,14 +138,11 @@ async function wireActions(app, video) {
       saveBtn.classList.remove("is-working");
     }
   });
-  commentBtn?.addEventListener("click", () =>
-    app.querySelector("#comment-input")?.focus(),
-  );
+  commentBtn?.addEventListener("click", () => app.querySelector("#comment-input")?.focus());
   shareBtn?.addEventListener("click", async () => {
     try {
       const url = location.href;
-      if (navigator.share)
-        await navigator.share({ title: video.title || "Indo video", url });
+      if (navigator.share) await navigator.share({ title: video.title || "Indo video", url });
       else if (navigator.clipboard) await navigator.clipboard.writeText(url);
       showStatus(app, "Link shared");
     } catch (error) {
@@ -176,31 +158,21 @@ async function wireActions(app, video) {
 async function wireFollow(app, video) {
   const btn = app.querySelector("#watch-follow");
   if (!btn) return;
-  const ownerUid = String(
-    video.ownerUid || video.creatorUid || video.uid || "",
-  ).trim();
+  const ownerUid = String(video.ownerUid || video.creatorUid || video.uid || "").trim();
   const me = String(auth.currentUser?.uid || "");
   if (!ownerUid || ownerUid === me) {
     btn.remove();
     return;
   }
-  const status = await request(
-    `/api/social/follow-status/${encodeURIComponent(ownerUid)}`,
-  ).catch(() => ({}));
-  let state = status.pending
-    ? "pending"
-    : status.following
-      ? "following"
-      : "idle";
+  const status = await request(`/api/social/follow-status/${encodeURIComponent(ownerUid)}`).catch(
+    () => ({}),
+  );
+  let state = status.pending ? "pending" : status.following ? "following" : "idle";
   const paint = () => {
     btn.classList.toggle("following", state === "following");
     btn.classList.toggle("pending", state === "pending");
     btn.textContent =
-      state === "following"
-        ? "Following"
-        : state === "pending"
-          ? "Requested"
-          : "Follow";
+      state === "following" ? "Following" : state === "pending" ? "Requested" : "Follow";
   };
   paint();
   const fresh = cloneAndReplace(btn);
@@ -214,10 +186,7 @@ async function wireFollow(app, video) {
       });
       state = d.pending ? "pending" : next ? "following" : "idle";
       paint();
-      showStatus(
-        app,
-        next ? (d.pending ? "Follow request sent" : "Following") : "Unfollowed",
-      );
+      showStatus(app, next ? (d.pending ? "Follow request sent" : "Following") : "Unfollowed");
     } catch (error) {
       showStatus(app, error.message || "Follow failed.");
     } finally {
@@ -235,9 +204,7 @@ async function wireComments(app, video) {
   const countEl = app.querySelector("#comment-count");
   const refresh = async () => {
     try {
-      const d = await request(
-        `/api/media/${encodeURIComponent(video.id)}/comments`,
-      );
+      const d = await request(`/api/media/${encodeURIComponent(video.id)}/comments`);
       const comments = Array.isArray(d.comments) ? d.comments : [];
       if (countEl) countEl.textContent = String(comments.length);
       if (list)
@@ -286,9 +253,7 @@ export async function renderWatchVideo(app) {
   await renderStyledWatchVideo(app);
   const raw = (() => {
     try {
-      return JSON.parse(
-        sessionStorage.getItem("indo:watch-video-current") || "null",
-      );
+      return JSON.parse(sessionStorage.getItem("indo:watch-video-current") || "null");
     } catch {
       return null;
     }

@@ -68,16 +68,10 @@ async function setupButton(button, ownerUid) {
     return;
   }
   try {
-    const response = await request(
-      `/api/social/follow-status/${encodeURIComponent(uid)}`,
-    );
+    const response = await request(`/api/social/follow-status/${encodeURIComponent(uid)}`);
     const data = await response.json().catch(() => ({}));
     if (data.pending) paintButton(button, "pending");
-    else
-      paintButton(
-        button,
-        data.following || data.isFollowing ? "following" : "idle",
-      );
+    else paintButton(button, data.following || data.isFollowing ? "following" : "idle");
   } catch {
     paintButton(button, "idle");
   }
@@ -94,8 +88,7 @@ async function setupButton(button, ownerUid) {
         body: JSON.stringify({ targetUid: uid, follow: nextFollow }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(data.error || "Could not update follow status.");
+      if (!response.ok) throw new Error(data.error || "Could not update follow status.");
       if (data.pending) paintButton(button, "pending");
       else paintButton(button, nextFollow ? "following" : "idle");
     } catch (error) {
@@ -107,23 +100,21 @@ async function setupButton(button, ownerUid) {
 }
 
 function process(root = document) {
-  root
-    .querySelectorAll?.(".post-card.video-post .post-head")
-    .forEach((head) => {
-      if (head.querySelector(".indo-feed-follow")) return;
-      const card = head.closest(".post-card.video-post");
-      const ownerUid = card?.dataset.ownerUid || "";
-      if (!ownerUid) return;
-      const more = head.querySelector(".post-more");
-      if (!more) return;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "indo-feed-follow";
-      button.setAttribute("aria-label", "Follow creator");
-      paintButton(button, "idle");
-      head.insertBefore(button, more);
-      setupButton(button, ownerUid);
-    });
+  root.querySelectorAll?.(".post-card.video-post .post-head").forEach((head) => {
+    if (head.querySelector(".indo-feed-follow")) return;
+    const card = head.closest(".post-card.video-post");
+    const ownerUid = card?.dataset.ownerUid || "";
+    if (!ownerUid) return;
+    const more = head.querySelector(".post-more");
+    if (!more) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "indo-feed-follow";
+    button.setAttribute("aria-label", "Follow creator");
+    paintButton(button, "idle");
+    head.insertBefore(button, more);
+    setupButton(button, ownerUid);
+  });
 }
 
 function install() {
@@ -133,8 +124,7 @@ function install() {
   process(document);
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations)
-      for (const node of mutation.addedNodes)
-        if (node.nodeType === 1) process(node);
+      for (const node of mutation.addedNodes) if (node.nodeType === 1) process(node);
   });
   observer.observe(document.getElementById("root") || document.body, {
     childList: true,
@@ -174,9 +164,7 @@ async function openProfileRelation(root, relation) {
   }
   modal.innerHTML = `<section class="indo-rel-card"><header class="indo-rel-head"><strong>${relation === "followers" ? "Followers" : "Following"}</strong><button type="button" data-rclose>×</button></header><div class="indo-rel-list"><div class="indo-rel-empty">Loading...</div></div></section>`;
   document.body.appendChild(modal);
-  modal
-    .querySelector("[data-rclose]")
-    ?.addEventListener("click", () => modal.remove());
+  modal.querySelector("[data-rclose]")?.addEventListener("click", () => modal.remove());
   modal.addEventListener("click", (e) => {
     if (e.target === modal) modal.remove();
   });
@@ -186,9 +174,7 @@ async function openProfileRelation(root, relation) {
     const p = state.profile || {};
     let uid = String(p.uid || p.ownerUid || "").trim();
     let username = String(
-      p.username ||
-        root.querySelector(".profile-direct-head h2")?.textContent ||
-        "",
+      p.username || root.querySelector(".profile-direct-head h2")?.textContent || "",
     )
       .replace(/^@/, "")
       .trim();
@@ -263,11 +249,7 @@ function installRelationOverride() {
       if (!stat) return;
       const root = document.getElementById("root");
       const stats = stat.parentElement;
-      if (
-        !root?.contains(stat) ||
-        !stats?.classList.contains("profile-direct-stats")
-      )
-        return;
+      if (!root?.contains(stat) || !stats?.classList.contains("profile-direct-stats")) return;
       const index = Array.prototype.indexOf.call(stats.children, stat);
       if (index !== 1 && index !== 2) return;
       event.preventDefault();

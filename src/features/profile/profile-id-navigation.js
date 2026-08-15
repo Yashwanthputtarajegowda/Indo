@@ -29,10 +29,7 @@ function clean(value = "") {
 }
 function validId(value = "") {
   const id = clean(value);
-  return (
-    ID_RE.test(id) &&
-    !["user", "profile", "users", "indo"].includes(id.toLowerCase())
-  );
+  return ID_RE.test(id) && !["user", "profile", "users", "indo"].includes(id.toLowerCase());
 }
 function findIdentity(start) {
   if (!(start instanceof Element)) return null;
@@ -77,14 +74,9 @@ async function fetchProfile(identity) {
   if (!userId && !uid) throw new Error("User ID is missing.");
   const headers = await authHeaders();
   const candidates = [];
-  if (userId)
-    candidates.push(
-      `/api/account/profile/${encodeURIComponent(userId)}?t=${Date.now()}`,
-    );
+  if (userId) candidates.push(`/api/account/profile/${encodeURIComponent(userId)}?t=${Date.now()}`);
   if (uid)
-    candidates.push(
-      `/api/account/public-profile/${encodeURIComponent(uid)}?t=${Date.now()}`,
-    );
+    candidates.push(`/api/account/public-profile/${encodeURIComponent(uid)}?t=${Date.now()}`);
   let lastError = null;
   for (const path of candidates) {
     try {
@@ -99,9 +91,7 @@ async function fetchProfile(identity) {
           stats: data.stats || {},
           social: data.social || {},
         };
-      lastError = new Error(
-        data?.error || `Could not open profile (${response.status}).`,
-      );
+      lastError = new Error(data?.error || `Could not open profile (${response.status}).`);
     } catch (error) {
       lastError = error;
     }
@@ -118,17 +108,11 @@ async function openProfile(identity) {
 }
 function shouldHandle(target) {
   if (!(target instanceof Element)) return false;
-  if (target.closest('input,textarea,select,[contenteditable="true"]'))
-    return false;
-  if (
-    target.closest(
-      ".search-follow-button,.profile-follow-button,button[data-follow-user]",
-    )
-  )
+  if (target.closest('input,textarea,select,[contenteditable="true"]')) return false;
+  if (target.closest(".search-follow-button,.profile-follow-button,button[data-follow-user]"))
     return false;
   return (
-    Boolean(target.closest(PROFILE_SELECTOR)) ||
-    validId(String(target.textContent || "").trim())
+    Boolean(target.closest(PROFILE_SELECTOR)) || validId(String(target.textContent || "").trim())
   );
 }
 function install() {
@@ -157,11 +141,7 @@ function install() {
     async (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
       const target = event.target instanceof Element ? event.target : null;
-      if (
-        !target ||
-        !target.matches(".search-profile-id-link,[data-profile-link]")
-      )
-        return;
+      if (!target || !target.matches(".search-profile-id-link,[data-profile-link]")) return;
       const identity = findIdentity(target);
       if (!identity) return;
       event.preventDefault();

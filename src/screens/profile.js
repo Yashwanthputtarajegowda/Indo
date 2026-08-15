@@ -55,31 +55,24 @@ function styles() {
 
 async function ownProfile() {
   const d = await api("/api/account/me");
-  return d?.profile
-    ? { ...d.profile, stats: d.stats || {}, social: d.social || {} }
-    : null;
+  return d?.profile ? { ...d.profile, stats: d.stats || {}, social: d.social || {} } : null;
 }
 async function profileById(id) {
   const d = await api(
     `/api/account/profile/${encodeURIComponent(String(id || "").replace(/^@/, ""))}`,
   );
-  return d?.profile
-    ? { ...d.profile, stats: d.stats || {}, social: d.social || {} }
-    : null;
+  return d?.profile ? { ...d.profile, stats: d.stats || {}, social: d.social || {} } : null;
 }
 async function loadVideos(uid) {
   try {
     const d = await api("/api/media/videos?limit=50", { auth: false });
-    return (d.videos || []).filter(
-      (v) => String(v.ownerUid || "") === String(uid),
-    );
+    return (d.videos || []).filter((v) => String(v.ownerUid || "") === String(uid));
   } catch {
     return [];
   }
 }
 function videoGrid(items) {
-  if (!items.length)
-    return '<div class="prof-empty">No videos uploaded yet.</div>';
+  if (!items.length) return '<div class="prof-empty">No videos uploaded yet.</div>';
   return items
     .slice(0, 9)
     .map(
@@ -101,9 +94,7 @@ function go(screen) {
 function applyLiveProfile(app, profile, own, id) {
   const me = auth.currentUser;
   const firebaseName = String(me?.displayName || "").trim();
-  const backendName = String(
-    profile?.name || profile?.displayName || "",
-  ).trim();
+  const backendName = String(profile?.name || profile?.displayName || "").trim();
   const emailName = String(me?.email || "")
     .split("@")[0]
     .trim();
@@ -112,12 +103,8 @@ function applyLiveProfile(app, profile, own, id) {
       ? firebaseName || backendName || emailName || id
       : backendName || firebaseName || id || emailName || "Profile"
     ).trim() || "Profile";
-  const nextId = String(
-    profile?.userId || profile?.username || id || "",
-  ).replace(/^@/, "");
-  const avatar = String(
-    profile?.avatarUrl || profile?.photoURL || profile?.photoUrl || "",
-  ).trim();
+  const nextId = String(profile?.userId || profile?.username || id || "").replace(/^@/, "");
+  const avatar = String(profile?.avatarUrl || profile?.photoURL || profile?.photoUrl || "").trim();
   const bio = String(profile?.bio || "").trim();
   const location = String(profile?.location || "").trim();
   const nameEl = app.querySelector("[data-profile-name]");
@@ -136,20 +123,14 @@ function applyLiveProfile(app, profile, own, id) {
   }
   const avatarEl = app.querySelector("[data-profile-avatar]");
   if (avatarEl) {
-    const initial = (nextName || nextId || "I")
-      .replace(/^@/, "")
-      .charAt(0)
-      .toUpperCase();
-    avatarEl.innerHTML = avatar
-      ? `<img src="${esc(avatar)}" alt="Profile">`
-      : esc(initial);
+    const initial = (nextName || nextId || "I").replace(/^@/, "").charAt(0).toUpperCase();
+    avatarEl.innerHTML = avatar ? `<img src="${esc(avatar)}" alt="Profile">` : esc(initial);
   }
 }
 
 export async function renderProfile(app, profileArg = null) {
   styles();
-  if (window.__indoProfileLiveTimer)
-    clearInterval(window.__indoProfileLiveTimer);
+  if (window.__indoProfileLiveTimer) clearInterval(window.__indoProfileLiveTimer);
   const me = auth.currentUser;
   let profile = null,
     own = false;
@@ -174,9 +155,10 @@ export async function renderProfile(app, profileArg = null) {
   }
 
   const uid = String(profile.uid || me?.uid || "");
-  const id = String(
-    profile.userId || profile.username || me?.email?.split("@")[0] || "",
-  ).replace(/^@/, "");
+  const id = String(profile.userId || profile.username || me?.email?.split("@")[0] || "").replace(
+    /^@/,
+    "",
+  );
   const firebaseName = String(me?.displayName || "").trim();
   const backendName = String(profile.name || profile.displayName || "").trim();
   const emailName = String(me?.email || "")
@@ -198,9 +180,7 @@ export async function renderProfile(app, profileArg = null) {
     following: Number(st.followingCount ?? soc.followingCount ?? 0),
     likes: Number(st.likesCount ?? profile.likesCount ?? 0),
   };
-  const avatar = String(
-    profile.avatarUrl || profile.photoURL || profile.photoUrl || "",
-  ).trim();
+  const avatar = String(profile.avatarUrl || profile.photoURL || profile.photoUrl || "").trim();
   const initial = (name || id || "I").replace(/^@/, "").charAt(0).toUpperCase();
   app.innerHTML = `<div class="prof">${renderIndoBrandTopbar({ rightLabel: "Profile" })}<main class="prof-main"><section class="prof-hero"><div class="prof-pic"><div class="prof-ring"></div><div class="prof-avatar" data-profile-avatar>${avatar ? `<img src="${esc(avatar)}" alt="Profile">` : esc(initial)}</div><span class="prof-online"></span></div><div class="prof-name" data-profile-name>${esc(name)}</div><div class="prof-id" data-profile-id>@${esc(id)}</div><div class="prof-bio" data-profile-bio ${bio ? "" : "hidden"}>${esc(bio)}</div><div class="prof-location" data-profile-location ${location ? "" : "hidden"}>⌖ ${esc(location)}</div></section><div class="prof-line"></div><section class="prof-stats"><div class="prof-stat"><b data-stat="videos">${count(stats.videos)}</b><span>Videos</span></div><div class="prof-stat"><b data-stat="followers">${count(stats.followers)}</b><span>Followers</span></div><div class="prof-stat"><b data-stat="following">${count(stats.following)}</b><span>Following</span></div><div class="prof-stat"><b data-stat="likes">${count(stats.likes)}</b><span>Likes</span></div></section>${own ? `<div class="prof-actions"><button class="prof-btn primary" type="button" id="indo-edit-profile">✎ Edit Profile</button><button class="prof-btn" type="button" id="indo-share-profile">Share</button><button class="prof-btn" type="button" id="indo-settings">⚙</button></div>` : ""}<section><div class="prof-section-title"><strong>Recent Videos</strong><button type="button" id="indo-view-videos">View all</button></div><div class="prof-videos">${videoGrid(items)}</div></section></main>${nav("profile")}</div>`;
 
@@ -216,16 +196,13 @@ export async function renderProfile(app, profileArg = null) {
     e.preventDefault();
     go("video");
   });
-  app
-    .querySelector("#indo-share-profile")
-    ?.addEventListener("click", async () => {
-      const url = `${location.origin}${location.pathname}?profile=${encodeURIComponent(id)}`;
-      try {
-        if (navigator.share)
-          await navigator.share({ title: `${name} on Indo`, url });
-        else await navigator.clipboard?.writeText(url);
-      } catch {}
-    });
+  app.querySelector("#indo-share-profile")?.addEventListener("click", async () => {
+    const url = `${location.origin}${location.pathname}?profile=${encodeURIComponent(id)}`;
+    try {
+      if (navigator.share) await navigator.share({ title: `${name} on Indo`, url });
+      else await navigator.clipboard?.writeText(url);
+    } catch {}
+  });
 
   let busy = false;
   const refresh = async () => {

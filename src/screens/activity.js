@@ -44,9 +44,7 @@ export function renderActivity(app) {
 
   loadNotifications()
     .then((items) => {
-      const activity = items.filter((item) =>
-        ["like", "comment"].includes(item.type),
-      );
+      const activity = items.filter((item) => ["like", "comment"].includes(item.type));
       status.remove();
       if (!activity.length) {
         list.innerHTML = '<div class="feed-status">No activity yet.</div>';

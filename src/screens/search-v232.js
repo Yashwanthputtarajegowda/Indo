@@ -1,8 +1,5 @@
 import { nav } from "../components/nav.js";
-import {
-  renderHomeTopbar,
-  installHomeTopbarStyles,
-} from "./home-topbar-v230.js";
+import { renderHomeTopbar, installHomeTopbarStyles } from "./home-topbar-v230.js";
 import { loadFollowStatus, toggleFollow } from "../features/social/follow.js";
 import { state } from "../state.js";
 
@@ -59,17 +56,14 @@ async function searchUsers(query) {
 async function openUserProfile(username) {
   const apiBase = window.INDO_API_BASE || "";
   const clean = String(username || "").replace(/^@/, "");
-  const response = await fetch(
-    `${apiBase}/api/account/profile/${encodeURIComponent(clean)}`,
-    { cache: "no-store" },
-  );
+  const response = await fetch(`${apiBase}/api/account/profile/${encodeURIComponent(clean)}`, {
+    cache: "no-store",
+  });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data?.ok)
-    throw new Error(data.error || "Could not open profile.");
+  if (!response.ok || !data?.ok) throw new Error(data.error || "Could not open profile.");
   state.profile = { ...data.profile, stats: data.stats, social: data.social };
   state.screen = "profile";
-  if (typeof window.__indoNavigate === "function")
-    await window.__indoNavigate("profile");
+  if (typeof window.__indoNavigate === "function") await window.__indoNavigate("profile");
 }
 
 function renderCard(user) {
@@ -141,11 +135,7 @@ export async function renderSearch(app) {
         const status = await loadFollowStatus(targetUid);
         const following = Boolean(status?.following);
         button.dataset.following = following ? "1" : "0";
-        button.textContent = status?.requested
-          ? "Requested"
-          : following
-            ? "Following"
-            : "Follow";
+        button.textContent = status?.requested ? "Requested" : following ? "Following" : "Follow";
       } catch {}
       button.addEventListener("click", async (event) => {
         event.stopPropagation();

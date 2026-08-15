@@ -26,9 +26,7 @@ function saveLocalSession(user) {
 }
 export function hasLocalSession() {
   try {
-    return Boolean(
-      JSON.parse(localStorage.getItem(LOCAL_SESSION_KEY) || "null")?.uid,
-    );
+    return Boolean(JSON.parse(localStorage.getItem(LOCAL_SESSION_KEY) || "null")?.uid);
   } catch {
     return false;
   }
@@ -50,8 +48,7 @@ function loginErrorText(error) {
     return "Email ID or password is incorrect.";
   if (code === "auth/invalid-email") return "Enter a valid email ID.";
   if (code === "auth/user-disabled") return "This account has been disabled.";
-  if (code === "auth/too-many-requests")
-    return "Too many login attempts. Please try again later.";
+  if (code === "auth/too-many-requests") return "Too many login attempts. Please try again later.";
   if (code === "auth/network-request-failed")
     return "Network error. Check your internet connection and try again.";
   return error?.message || "Could not login. Please try again.";
@@ -87,11 +84,7 @@ function bindLoginForm() {
     if (message) message.textContent = "Logging in...";
     try {
       await authPersistenceReady;
-      const credential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password,
-      );
+      const credential = await signInWithEmailAndPassword(auth, email, password);
       saveLocalSession(credential.user);
       state.authenticated = true;
       state.profile = null;
@@ -118,8 +111,7 @@ function bindLoginForm() {
     if (message) message.textContent = "Sending password reset email...";
     try {
       await sendPasswordResetEmail(auth, email);
-      if (message)
-        message.textContent = "Password reset email sent. Check your inbox.";
+      if (message) message.textContent = "Password reset email sent. Check your inbox.";
     } catch (error) {
       console.error("Password reset failed:", error);
       if (message) message.textContent = loginErrorText(error);
@@ -172,8 +164,7 @@ function bindAuthSwitches() {
     button.addEventListener("click", async (event) => {
       event.preventDefault();
       event.stopPropagation();
-      const screen =
-        button.dataset.auth === "signup" ? "auth-signup" : "auth-login";
+      const screen = button.dataset.auth === "signup" ? "auth-signup" : "auth-login";
       await goTo(screen);
       bindAuthSwitches();
     });

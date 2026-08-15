@@ -16,7 +16,6 @@ export async function saveAccountContact({ mobile, email }) {
   });
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new Error(data.error || "Could not save contact details.");
+  if (!response.ok) throw new Error(data.error || "Could not save contact details.");
   return data;
 }

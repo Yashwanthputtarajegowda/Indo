@@ -31,8 +31,7 @@ async function bindReelActions(root) {
           button.classList.toggle("active", button.dataset.active === "1");
           if (kind === "like") {
             const small = button.querySelector("small");
-            if (small)
-              small.textContent = Number(data.likes || 0).toLocaleString();
+            if (small) small.textContent = Number(data.likes || 0).toLocaleString();
           }
         })
         .catch(() => {});
@@ -46,8 +45,7 @@ async function bindReelActions(root) {
           button.dataset.active = data.liked ? "1" : "0";
           button.classList.toggle("active", button.dataset.active === "1");
           const small = button.querySelector("small");
-          if (small)
-            small.textContent = Number(data.likes || 0).toLocaleString();
+          if (small) small.textContent = Number(data.likes || 0).toLocaleString();
         } else if (kind === "save") {
           const next = button.dataset.active !== "1";
           const data = await toggleSave(mediaId, next);
@@ -75,11 +73,7 @@ async function bindReelActions(root) {
     loadFollowStatus(uid)
       .then((data) => {
         button.dataset.following = data.following ? "1" : "0";
-        button.textContent = data.requested
-          ? "Requested"
-          : data.following
-            ? "Following"
-            : "Follow";
+        button.textContent = data.requested ? "Requested" : data.following ? "Following" : "Follow";
       })
       .catch(() => {});
     button.addEventListener("click", async (event) => {
@@ -90,11 +84,7 @@ async function bindReelActions(root) {
         const next = button.dataset.following !== "1";
         const data = await toggleFollow(uid, next);
         button.dataset.following = data.following ? "1" : "0";
-        button.textContent = data.requested
-          ? "Requested"
-          : data.following
-            ? "Following"
-            : "Follow";
+        button.textContent = data.requested ? "Requested" : data.following ? "Following" : "Follow";
       } catch (error) {
         button.title = error?.message || "Could not update follow status.";
       } finally {
@@ -128,11 +118,9 @@ export function renderReels(app) {
           recordReelView(card.dataset.videoId).catch(() => {});
         };
         videoElement.addEventListener("play", recordOnce, { once: true });
-        videoElement.addEventListener(
-          "loadeddata",
-          () => videoElement.play().catch(() => {}),
-          { once: true },
-        );
+        videoElement.addEventListener("loadeddata", () => videoElement.play().catch(() => {}), {
+          once: true,
+        });
       });
     })
     .catch((error) => {

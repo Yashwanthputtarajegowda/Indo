@@ -13,9 +13,7 @@ export function createFormHandlers({ goTo, refreshProfile, refreshEarning }) {
         event.preventDefault();
         const button = form.querySelector(".primary-btn");
         const message = form.querySelector("[data-wallet-message]");
-        const amount = Number(
-          form.querySelector('[name="amount"]')?.value || 0,
-        );
+        const amount = Number(form.querySelector('[name="amount"]')?.value || 0);
         const method = form.querySelector('[name="method"]')?.value || "manual";
         if (button) button.disabled = true;
         if (message) message.textContent = "Creating payout request...";
@@ -27,9 +25,7 @@ export function createFormHandlers({ goTo, refreshProfile, refreshEarning }) {
           form.reset();
           setTimeout(() => goTo("wallet"), 500);
         } catch (error) {
-          if (message)
-            message.textContent =
-              error.message || "Could not create payout request.";
+          if (message) message.textContent = error.message || "Could not create payout request.";
         } finally {
           if (button) button.disabled = false;
         }
@@ -51,8 +47,7 @@ export function createFormHandlers({ goTo, refreshProfile, refreshEarning }) {
           if (message) message.textContent = "Profile updated.";
           setTimeout(() => goTo("profile"), 400);
         } catch (error) {
-          if (message)
-            message.textContent = error.message || "Could not update profile.";
+          if (message) message.textContent = error.message || "Could not update profile.";
           if (button) button.disabled = false;
         }
         return;
@@ -64,8 +59,7 @@ export function createFormHandlers({ goTo, refreshProfile, refreshEarning }) {
       const message = form.querySelector(".auth-message");
       if (button) button.disabled = true;
       if (message)
-        message.textContent =
-          form.id === "signup-form" ? "Creating account..." : "Logging in...";
+        message.textContent = form.id === "signup-form" ? "Creating account..." : "Logging in...";
 
       try {
         if (form.id === "signup-form") {
@@ -73,8 +67,7 @@ export function createFormHandlers({ goTo, refreshProfile, refreshEarning }) {
           state.accountType = result.accountType || "public";
           await refreshProfile().catch(() => {});
           await refreshEarning().catch(() => {});
-          if (message)
-            message.textContent = `Account created. Your User ID is ${result.username}.`;
+          if (message) message.textContent = `Account created. Your User ID is ${result.username}.`;
         } else {
           const result = await submitLogin(form);
           state.accountType = result?.accountType || state.accountType;
@@ -84,8 +77,7 @@ export function createFormHandlers({ goTo, refreshProfile, refreshEarning }) {
         }
         setTimeout(() => goTo("home"), 500);
       } catch (error) {
-        if (message)
-          message.textContent = error.message || "Something went wrong.";
+        if (message) message.textContent = error.message || "Something went wrong.";
         if (button) button.disabled = false;
       }
     });

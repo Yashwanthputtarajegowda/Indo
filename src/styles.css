@@ -854,12 +854,7 @@ button:disabled {
   margin: auto;
   padding: 70px 22px 40px;
   background:
-    radial-gradient(
-      circle at 50% 20%,
-      rgba(116, 60, 255, 0.16),
-      transparent 35%
-    ),
-    #050507;
+    radial-gradient(circle at 50% 20%, rgba(116, 60, 255, 0.16), transparent 35%), #050507;
   text-align: center;
 }
 .auth-brand {

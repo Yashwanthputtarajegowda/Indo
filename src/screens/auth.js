@@ -11,8 +11,7 @@ const svg = {
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>',
   shield:
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 19 6v5c0 4.5-2.8 7.8-7 10-4.2-2.2-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg>',
-  check:
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>',
 };
 function authIcon(icon) {
   return `<span class="auth-icon" aria-hidden="true">${svg[icon] || ""}</span>`;
@@ -37,10 +36,7 @@ function bindPasswordToggle(app, inputId, toggleId) {
     const showing = password.type === "text";
     password.type = showing ? "password" : "text";
     toggle.innerHTML = showing ? svg.eye : svg.eyeOff;
-    toggle.setAttribute(
-      "aria-label",
-      showing ? "Show password" : "Hide password",
-    );
+    toggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
   });
 }
 function bindSocialButtons(app, messageSelector) {
@@ -92,23 +88,19 @@ function installUserIdBehavior(app) {
         body: JSON.stringify({ userId: raw }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(data.error || "Could not check User ID.");
+      if (!response.ok) throw new Error(data.error || "Could not check User ID.");
       if (data.available) {
         input.setCustomValidity("");
         if (message) message.textContent = `@${raw} is available.`;
         setAvailable(true);
       } else {
         input.setCustomValidity("This User ID is already taken.");
-        if (message)
-          message.textContent = `@${raw} is already taken. Choose another User ID.`;
+        if (message) message.textContent = `@${raw} is already taken. Choose another User ID.`;
         setAvailable(false);
       }
     } catch (error) {
       input.setCustomValidity("");
-      if (message)
-        message.textContent =
-          "User ID will be checked when you create the account.";
+      if (message) message.textContent = "User ID will be checked when you create the account.";
       setAvailable(false);
     }
   };

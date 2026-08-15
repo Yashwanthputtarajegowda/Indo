@@ -2,8 +2,7 @@ import { renderSplash } from "../../screens/splash.js";
 import { renderLogin } from "../../screens/auth.js";
 
 function renderTransitionError(app, error) {
-  const message =
-    error?.message || String(error || "Unknown navigation error.");
+  const message = error?.message || String(error || "Unknown navigation error.");
   app.innerHTML = `
     <main class="splash-screen splash-error">
       <div class="splash-logo">I</div>

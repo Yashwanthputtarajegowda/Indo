@@ -123,15 +123,12 @@ export function recordInterestText(text, weight = 1, meta = {}) {
   addWeightedTokens(profile, tokenise(text), weight);
   if (meta.creator) {
     const creator = String(meta.creator).replace(/^@/, "").toLowerCase();
-    if (creator)
-      profile.creators[creator] =
-        decay(profile.creators[creator], Date.now()) + weight;
+    if (creator) profile.creators[creator] = decay(profile.creators[creator], Date.now()) + weight;
   }
   if (meta.mediaId)
     profile.media[String(meta.mediaId)] = {
       last: Date.now(),
-      weight:
-        (Number(profile.media[String(meta.mediaId)]?.weight) || 0) + weight,
+      weight: (Number(profile.media[String(meta.mediaId)]?.weight) || 0) + weight,
     };
   saveProfile(profile);
 }
@@ -158,8 +155,7 @@ export function recordSearchQuery(query) {
   if (!tokens.length) return;
   const profile = loadProfile();
   addWeightedTokens(profile, tokens, 4);
-  for (const token of tokens)
-    profile.searches[token] = (Number(profile.searches[token]) || 0) + 1;
+  for (const token of tokens) profile.searches[token] = (Number(profile.searches[token]) || 0) + 1;
   saveProfile(profile);
 }
 export function setPreferenceLanguage(language) {
@@ -169,8 +165,7 @@ export function setPreferenceLanguage(language) {
     .trim();
   if (!lang) return;
   profile.language[lang] = {
-    weight:
-      decay(profile.language[lang]?.weight, profile.language[lang]?.last) + 3,
+    weight: decay(profile.language[lang]?.weight, profile.language[lang]?.last) + 3,
     last: Date.now(),
   };
   saveProfile(profile);
@@ -200,9 +195,7 @@ function languageScore(media, language) {
   if (lang === "pa") return /[\u0A00-\u0A7F]/.test(text) ? 1 : 0;
   if (lang === "mr") return /[\u0900-\u097F]/.test(text) ? 1 : 0.15;
   if (lang === "en")
-    return /\b(the|is|are|and|with|travel|food|news|music|how|why|best|life|tech)\b/i.test(
-      text,
-    )
+    return /\b(the|is|are|and|with|travel|food|news|music|how|why|best|life|tech)\b/i.test(text)
       ? 1
       : 0.15;
   return 0.05;
@@ -212,10 +205,7 @@ function interestScore(media, profile) {
   if (!tokens.length) return 0;
   let score = 0;
   for (const token of tokens)
-    score += decay(
-      profile.tokens?.[token]?.weight,
-      profile.tokens?.[token]?.last,
-    );
+    score += decay(profile.tokens?.[token]?.weight, profile.tokens?.[token]?.last);
   const creator = String(media.creator || media.userId || media.username || "")
     .replace(/^@/, "")
     .toLowerCase();
@@ -232,19 +222,11 @@ function engagementScore(media) {
   );
 }
 function recencyScore(createdAt) {
-  return Math.max(
-    0,
-    1 - Math.max(0, Date.now() - Number(createdAt || 0)) / (7 * DAY_MS),
-  );
+  return Math.max(0, 1 - Math.max(0, Date.now() - Number(createdAt || 0)) / (7 * DAY_MS));
 }
 export function rankMedia(
   items,
-  {
-    type = "",
-    limit = 50,
-    query = "",
-    language = getLanguagePreference(),
-  } = {},
+  { type = "", limit = 50, query = "", language = getLanguagePreference() } = {},
 ) {
   const profile = loadProfile();
   const q = String(query || "")
@@ -273,9 +255,7 @@ export function rankMedia(
     .slice(0, Math.max(0, Number(limit) || 50));
 }
 function cloneInit(init) {
-  return init
-    ? { ...init, headers: init.headers ? { ...init.headers } : init.headers }
-    : undefined;
+  return init ? { ...init, headers: init.headers ? { ...init.headers } : init.headers } : undefined;
 }
 export function installRecommendationFetch() {
   if (window.__indoRecommendationFetchInstalled) return;
@@ -284,8 +264,7 @@ export function installRecommendationFetch() {
   window.__indoOriginalFetch = original;
   window.fetch = async (input, init = {}) => {
     const rawUrl = input instanceof Request ? input.url : String(input || "");
-    if (!/\/api\/media\/videos(?:\?|$)/.test(rawUrl))
-      return original(input, init);
+    if (!/\/api\/media\/videos(?:\?|$)/.test(rawUrl)) return original(input, init);
     let parsed;
     try {
       parsed = new URL(rawUrl, window.location.origin);
@@ -294,10 +273,7 @@ export function installRecommendationFetch() {
     }
     const type = String(parsed.searchParams.get("type") || "").toLowerCase();
     const q = String(parsed.searchParams.get("q") || "");
-    const limit = Math.min(
-      100,
-      Math.max(1, Number(parsed.searchParams.get("limit") || 50)),
-    );
+    const limit = Math.min(100, Math.max(1, Number(parsed.searchParams.get("limit") || 50)));
     const screen = String(window.__indoRecommendationScreen || "");
     if (screen === "home") {
       const videoUrl = new URL(parsed);
@@ -350,10 +326,7 @@ export function initRecommendationEngine() {
   if (window.__indoRecommendationInitialized) return;
   window.__indoRecommendationInitialized = true;
   setPreferenceLanguage(
-    String(
-      localStorage.getItem(`${STORAGE_PREFIX}${currentUserId()}:language`) ||
-        "",
-    ).trim() ||
+    String(localStorage.getItem(`${STORAGE_PREFIX}${currentUserId()}:language`) || "").trim() ||
       String(navigator.language || "en")
         .split("-")[0]
         .toLowerCase(),
@@ -367,10 +340,7 @@ export function initRecommendationEngine() {
       const placeholder = String(input.placeholder || "").toLowerCase();
       if (!placeholder.includes("search")) return;
       clearTimeout(input.__indoSearchTimer);
-      input.__indoSearchTimer = setTimeout(
-        () => recordSearchQuery(input.value || ""),
-        400,
-      );
+      input.__indoSearchTimer = setTimeout(() => recordSearchQuery(input.value || ""), 400);
     },
     true,
   );
@@ -390,9 +360,8 @@ export function initRecommendationEngine() {
               id: root.dataset.videoId || root.dataset.videoOpen,
               title: root.textContent || "",
               creator:
-                root.querySelector?.(
-                  ".indo-video-user-id,.indo-video-mini-name,.reel-user b",
-                )?.textContent || "",
+                root.querySelector?.(".indo-video-user-id,.indo-video-mini-name,.reel-user b")
+                  ?.textContent || "",
             },
             action.dataset.engagement,
           );
@@ -400,18 +369,15 @@ export function initRecommendationEngine() {
       }
       const open = element.closest("[data-video-open]");
       if (open) {
-        const root = open.closest(
-          "[data-video-id],.indo-video-card,.indo-video-mini",
-        );
+        const root = open.closest("[data-video-id],.indo-video-card,.indo-video-mini");
         if (root)
           recordMediaInteraction(
             {
               id: open.dataset.videoOpen,
               title: root.textContent || "",
               creator:
-                root.querySelector?.(
-                  ".indo-video-user-id,.indo-video-mini-name",
-                )?.textContent || "",
+                root.querySelector?.(".indo-video-user-id,.indo-video-mini-name")?.textContent ||
+                "",
             },
             "view",
           );

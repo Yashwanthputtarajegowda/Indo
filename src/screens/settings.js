@@ -15,12 +15,7 @@ function escapeHtml(value = "") {
   );
 }
 
-export function renderSettings(
-  app,
-  accountType = "public",
-  earning = null,
-  summary = null,
-) {
+export function renderSettings(app, accountType = "public", earning = null, summary = null) {
   const isPrivate = accountType === "private";
   const eligible = Boolean(earning?.eligible);
   const enabled = Boolean(earning?.earningEnabled);
@@ -32,9 +27,7 @@ export function renderSettings(
       : "View Earning Requirements";
   const videoHours = Number(earning?.videoWatchHours || 0).toFixed(2);
   const reelHours = Number(earning?.reelWatchHours || 0).toFixed(2);
-  const videoRequirement = Number(
-    earning?.requirements?.videoWatchHours || 5000,
-  );
+  const videoRequirement = Number(earning?.requirements?.videoWatchHours || 5000);
   const reelRequirement = Number(earning?.requirements?.reelWatchHours || 1000);
   const payable = Number(summary?.payableRevenue || 0).toFixed(2);
   const gross = Number(summary?.grossRevenue || 0).toFixed(2);

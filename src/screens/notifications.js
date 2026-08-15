@@ -1,8 +1,5 @@
 import { nav } from "../components/nav.js";
-import {
-  renderHomeTopbar,
-  installHomeTopbarStyles,
-} from "./home-topbar-v230.js";
+import { renderHomeTopbar, installHomeTopbarStyles } from "./home-topbar-v230.js";
 import {
   loadNotifications,
   markNotificationRead,
@@ -34,8 +31,7 @@ function timeAgo(timestamp) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 function notificationKind(item) {
-  if (item?.type === "follow-request" || item?.type === "follow")
-    return "follow";
+  if (item?.type === "follow-request" || item?.type === "follow") return "follow";
   if (item?.type === "comment") return "comment";
   if (item?.type === "like") return "like";
   if (item?.type === "save") return "save";
@@ -53,9 +49,7 @@ function renderKindBadge(kind) {
 }
 function renderNotification(item) {
   const actor = escapeHtml(item.actorUserId || "@user");
-  const actorName = escapeHtml(
-    item.actorName || actor.replace(/^@/, "") || "Indo User",
-  );
+  const actorName = escapeHtml(item.actorName || actor.replace(/^@/, "") || "Indo User");
   const initial = escapeHtml(
     (item.actorName || actor.replace(/^@/, "I")).charAt(0).toUpperCase() || "I",
   );

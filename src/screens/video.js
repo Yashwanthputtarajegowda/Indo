@@ -31,9 +31,7 @@ function count(v) {
   return String(Math.max(0, n));
 }
 function age(t) {
-  const m = Math.floor(
-    Math.max(0, Date.now() - Number(t || Date.now())) / 60000,
-  );
+  const m = Math.floor(Math.max(0, Date.now() - Number(t || Date.now())) / 60000);
   if (m < 1) return "Just now";
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
@@ -42,22 +40,17 @@ function age(t) {
 }
 function duration(s) {
   const n = Number(s || 0);
-  return n
-    ? `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, "0")}`
-    : "";
+  return n ? `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, "0")}` : "";
 }
 function src(raw) {
   const u = String(raw || "");
-  if (!u.includes("res.cloudinary.com") || !u.includes("/video/upload/"))
-    return u;
+  if (!u.includes("res.cloudinary.com") || !u.includes("/video/upload/")) return u;
   const m = "/video/upload/",
     i = u.indexOf(m);
   if (i < 0) return u;
   const p = u.slice(0, i + m.length),
     r = u.slice(i + m.length);
-  return r.startsWith("f_mp4,vc_h264,ac_aac/")
-    ? u
-    : `${p}f_mp4,vc_h264,ac_aac/${r}`;
+  return r.startsWith("f_mp4,vc_h264,ac_aac/") ? u : `${p}f_mp4,vc_h264,ac_aac/${r}`;
 }
 function seen() {
   try {
@@ -95,10 +88,9 @@ async function loadFollowing() {
     const uid = String(auth.currentUser?.uid || "");
     if (!uid) return [];
     const token = await auth.currentUser.getIdToken();
-    const r = await fetch(
-      `${API_BASE()}/api/social/following/${encodeURIComponent(uid)}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
+    const r = await fetch(`${API_BASE()}/api/social/following/${encodeURIComponent(uid)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const d = await r.json().catch(() => ({}));
     return r.ok && Array.isArray(d.items) ? d.items : [];
   } catch {
@@ -202,8 +194,7 @@ async function openWatch(v) {
 export async function renderVideo(app) {
   installStyles();
   const top = renderIndoBrandTopbar({
-    rightHtml:
-      '<button type="button" data-screen="create" aria-label="Create">＋</button>',
+    rightHtml: '<button type="button" data-screen="create" aria-label="Create">＋</button>',
     rightLabel: "Create",
   });
   app.innerHTML = `<div class="app-shell indo-video-shell">${top}<main class="indo-video-main"><label class="indo-video-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="video-search" type="search" placeholder="Search videos, users, topics..." autocomplete="off"></label><section><div class="indo-video-head"><div><h2>From people you follow</h2><small>Latest videos · 24 hours</small></div></div><div class="indo-video-follow-row" id="followed-row"><div class="indo-video-empty">Loading...</div></div></section><section><div class="indo-video-head"><div><h2>Recent uploads</h2><small>Personalized for you · videos only</small></div></div><div id="recent-list"><div class="indo-video-no-results">Loading videos...</div></div></section></main></div>`;
@@ -211,18 +202,13 @@ export async function renderVideo(app) {
     followed = app.querySelector("#followed-row"),
     recent = app.querySelector("#recent-list");
   try {
-    const [videos, following] = await Promise.all([
-      loadVideos(),
-      loadFollowing(),
-    ]);
+    const [videos, following] = await Promise.all([loadVideos(), loadFollowing()]);
     const open = (event) => {
       const button = event.target.closest("[data-open]");
       if (!button || !app.contains(button)) return;
       event.preventDefault();
       event.stopPropagation();
-      const v = videos.find(
-        (x) => String(x.id) === String(button.dataset.open),
-      );
+      const v = videos.find((x) => String(x.id) === String(button.dataset.open));
       if (v) openWatch(v);
     };
     app.addEventListener("click", open);
@@ -251,8 +237,7 @@ export async function renderVideo(app) {
       t = setTimeout(() => draw(input.value.trim()), 250);
     });
   } catch (e) {
-    followed.innerHTML =
-      '<div class="indo-video-empty">Could not load followed videos.</div>';
+    followed.innerHTML = '<div class="indo-video-empty">Could not load followed videos.</div>';
     recent.innerHTML = `<div class="indo-video-no-results">${esc(e?.message || "Could not load videos.")}</div>`;
   }
 }
