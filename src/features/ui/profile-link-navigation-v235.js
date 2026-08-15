@@ -47,6 +47,12 @@ function findIdentityTarget(element) {
     if (userId) return { element: target, userId };
   }
 
+  // Last-resort support for plain @User ID text rendered without a dedicated class.
+  let cursor = element;
+  for (let depth = 0; cursor && depth < 5; depth += 1, cursor = cursor.parentElement) {
+    const userId = extractUserId(cursor);
+    if (userId) return { element: cursor, userId };
+  }
   return null;
 }
 
@@ -68,11 +74,13 @@ async function openProfile(userId) {
       stats: data.stats || {},
       social: data.social || {},
     };
-    state.screen = 'profile';
     window.__indoProfileTargetUserId = normalized;
 
+    // Do not set state.screen before navigation: navigate() intentionally no-ops when already on the target.
     if (typeof window.__indoNavigate === 'function') {
       await window.__indoNavigate('profile');
+    } else {
+      state.screen = 'profile';
     }
   } catch (error) {
     console.error('Profile navigation failed:', error);
