@@ -3,7 +3,8 @@ import { auth } from "../auth/firebase-client.js";
 const API = () => window.INDO_API_BASE || "";
 const CACHE = new Map();
 const AVATAR_CLASS = "indo-live-avatar-img";
-const STYLE_ID = "indo-profile-identity-v2";
+const INLINE_CLASS = "indo-inline-profile-avatar";
+const STYLE_ID = "indo-profile-identity-v3";
 
 function clean(value = "") {
   return String(value || "")
@@ -96,6 +97,19 @@ function installStyles() {
       display:block;
       object-fit:cover;
       border-radius:inherit;
+    }
+
+    .${INLINE_CLASS} {
+      width:24px;
+      height:24px;
+      flex:0 0 24px;
+      display:inline-grid;
+      place-items:center;
+      overflow:hidden;
+      margin-right:6px;
+      border-radius:50%;
+      vertical-align:middle;
+      background:#202635;
     }
 
     [data-profile-avatar].indo-live-avatar-ready,
@@ -195,14 +209,54 @@ async function hydrateAvatar(element) {
   element.classList.add("indo-live-avatar-ready");
 }
 
+function commentIdentityTargets(root) {
+  const nodes = root.querySelectorAll(
+    ".indo-comment-name",
+  );
+  return [...nodes].filter(
+    (node) => !node.closest(`.${INLINE_CLASS}`),
+  );
+}
+
+async function hydrateCommentIdentity(nameNode) {
+  if (!(nameNode instanceof Element)) return;
+  if (nameNode.dataset.avatarHydrated === "1") return;
+
+  const text = clean(nameNode.textContent);
+  if (!text) return;
+
+  nameNode.dataset.avatarHydrated = "1";
+  const profile = await fetchProfile({
+    userId: text,
+  });
+
+  if (!profile?.avatarUrl) return;
+
+  const avatar = document.createElement("span");
+  avatar.className = INLINE_CLASS;
+
+  const image = document.createElement("img");
+  image.className = AVATAR_CLASS;
+  image.src = profile.avatarUrl;
+  image.alt = `${profile.name} profile picture`;
+  image.loading = "lazy";
+  image.decoding = "async";
+
+  avatar.appendChild(image);
+  nameNode.before(avatar);
+}
+
 export async function enhanceProfileIdentity(root = document) {
   installStyles();
   if (!root?.querySelectorAll) return;
 
   const targets = getAvatarTargets(root);
-  await Promise.allSettled(
-    targets.map((target) => hydrateAvatar(target)),
-  );
+  const comments = commentIdentityTargets(root);
+
+  await Promise.allSettled([
+    ...targets.map((target) => hydrateAvatar(target)),
+    ...comments.map((node) => hydrateCommentIdentity(node)),
+  ]);
 }
 
 let observer = null;
