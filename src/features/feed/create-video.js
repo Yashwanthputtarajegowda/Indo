@@ -26,9 +26,9 @@ export async function uploadMedia(file, mediaType = "video", options = {}) {
   const user = auth.currentUser;
   if (!user) throw new Error("Please login first.");
 
-  const maxBytes = 50 * 1024 * 1024;
+  const maxBytes = 500 * 1024 * 1024;
   if (file.size > maxBytes) {
-    throw new Error("This video is larger than the current Telegram upload limit of 50 MB.");
+    throw new Error("This video is larger than the current 500 MB upload limit.");
   }
 
   const onProgress = options.onProgress || (() => {});
@@ -50,7 +50,7 @@ export async function uploadMedia(file, mediaType = "video", options = {}) {
   form.append("width", String(meta.width));
   form.append("height", String(meta.height));
 
-  onProgress(15, mediaType === "reel" ? "Uploading your reel..." : "Uploading your video...");
+  onProgress(10, mediaType === "reel" ? "Uploading reel to secure storage..." : "Uploading video to secure storage...");
 
   const apiBase = window.INDO_API_BASE || "";
   const response = await fetch(`${apiBase}/api/media/videos/upload`, {
