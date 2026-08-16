@@ -40,7 +40,7 @@ export async function uploadVideoToTelegram(file, options = {}) {
       size: file.size,
       totalChunks,
       mediaType: options.mediaType === "reel" ? "reel" : "video",
-      title: String(options.title || "").trim(),
+      title: String(options.title || file.name || (options.mediaType === "reel" ? "Untitled reel" : "Untitled video")).trim(),
       caption: String(options.caption || options.description || "").trim(),
       privacy: String(options.privacy || "public"),
       allowComments: options.allowComments !== false,
