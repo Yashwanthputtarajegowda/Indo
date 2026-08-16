@@ -1,8 +1,8 @@
 import { state } from "./state.js";
 import { renderLogin, renderSignup } from "./screens/auth.js";
 import { nav } from "./components/nav.js";
-import "./features/ui/feed-follow-button.js";
 import { renderHomeTopbar, installHomeTopbarStyles } from "./screens/home-topbar-v2.js";
+import { prefetchVideoSection } from "./features/feed/video-prefetch.js";
 
 const NAV_STYLE_ID = "indo-universal-nav";
 const moduleCache = new Map();
@@ -111,6 +111,7 @@ function scheduleIdle(task) {
 export function preloadAppSections() {
   if (preloadStarted || !state.authenticated) return;
   preloadStarted = true;
+  prefetchVideoSection();
   let highIndex = 0;
   let secondaryIndex = 0;
 
