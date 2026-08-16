@@ -1,5 +1,5 @@
 window.INDO_API_BASE =
-  window.INDO_API_BASE || "https://indo-backend-production-41b1.up.railway.app";
+  window.INDO_API_BASE || "https://indo-backend-456919073297.asia-south1.run.app";
 (function () {
   if (window.__indoRuntimeV131) return;
   window.__indoRuntimeV131 = true;
