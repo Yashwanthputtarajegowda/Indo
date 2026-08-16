@@ -19,6 +19,28 @@ let busy = false;
 let started = false;
 let renderId = 0;
 
+// Start downloading the router immediately so the first screen does not wait
+// for a click or another dynamic import after authentication settles.
+const routerWarmup = import("./router.js?v=20260815-router-reel-flow-v2").catch((error) => {
+  console.warn("Router warmup failed; normal startup import will retry:", error);
+  return null;
+});
+
+// Warm the Cloud Run connection while the splash/auth screen is visible.
+const backendWarmup = (() => {
+  const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
+  if (!base) return Promise.resolve(null);
+  return fetch(`${base}/api/health`, {
+    method: "GET",
+    cache: "no-store",
+    credentials: "omit",
+    keepalive: true,
+  }).catch((error) => {
+    console.warn("Backend warmup failed; request will retry when needed:", error);
+    return null;
+  });
+})();
+
 function scheduleProfileEnhancement(root, id) {
   const run = () => {
     if (id !== renderId) return;
@@ -40,7 +62,8 @@ function scheduleLiveAvatarInstaller() {
 async function render() {
   const currentRender = ++renderId;
   installCloudinaryVideoCompatibility();
-  const { render } = await import("./router.js?v=20260815-router-reel-flow-v2");
+  const warmedRouter = await routerWarmup;
+  const { render } = warmedRouter || await import("./router.js?v=20260815-router-reel-flow-v2");
   await render(app);
   applyIndoPinkThunderTheme();
   installHomeFeedDesign();
@@ -106,6 +129,10 @@ async function start() {
       if (user && (state.screen === "auth-login" || state.screen === "auth-signup")) state.screen = "home";
       if (!user && !String(state.screen || "").startsWith("auth-")) state.screen = "auth-login";
       try {
+        const { preloadAppSections } = (await routerWarmup) || {};
+        if (state.authenticated && typeof preloadAppSections === "function") preloadAppSections();
+        // Let the backend and route modules warm in parallel with first paint.
+        void backendWarmup;
         await Promise.race([render(), new Promise((_, reject) => setTimeout(() => reject(new Error("Startup timed out.")), 10000))]);
       } catch (error) {
         console.error("Indo startup failed:", error);
