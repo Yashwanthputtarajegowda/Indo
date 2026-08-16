@@ -1,4 +1,5 @@
 import { auth } from "../auth/firebase-client.js";
+import { uploadVideoToTelegram } from "../upload/telegram-upload.js";
 
 async function readVideoMetadata(file) {
   const video = document.createElement("video");
@@ -26,46 +27,27 @@ export async function uploadMedia(file, mediaType = "video", options = {}) {
   const user = auth.currentUser;
   if (!user) throw new Error("Please login first.");
 
-  const maxBytes = 500 * 1024 * 1024;
-  if (file.size > maxBytes) {
-    throw new Error("This video is larger than the current 500 MB upload limit.");
-  }
+  const maxBytes = 20 * 1024 * 1024 * 1024;
+  if (file.size > maxBytes) throw new Error("This video is larger than the current 20 GB upload limit.");
 
   const onProgress = options.onProgress || (() => {});
-  const token = await user.getIdToken();
   const meta = await readVideoMetadata(file);
-  const form = new FormData();
+  onProgress(2, mediaType === "reel" ? "Preparing reel…" : "Preparing video…");
 
-  form.append("file", file, file.name || `${mediaType}.mp4`);
-  form.append("mediaType", mediaType === "reel" ? "reel" : "video");
-  form.append("title", String(options.title || "").trim().slice(0, 120));
-  form.append("caption", String(options.description ?? options.caption ?? "").trim().slice(0, 500));
-  form.append("privacy", String(options.privacy || "public"));
-  form.append("allowComments", String(options.allowComments !== false));
-  form.append("allowDuet", String(options.allowDuet !== false));
-  form.append("category", String(options.category || "").trim().slice(0, 60));
-  form.append("tags", JSON.stringify(Array.isArray(options.tags) ? options.tags.slice(0, 20) : []));
-  form.append("location", String(options.location || "").trim().slice(0, 120));
-  form.append("duration", String(meta.duration));
-  form.append("width", String(meta.width));
-  form.append("height", String(meta.height));
-
-  onProgress(10, mediaType === "reel" ? "Uploading reel to secure storage..." : "Uploading video to secure storage...");
-
-  const apiBase = window.INDO_API_BASE || "";
-  const response = await fetch(`${apiBase}/api/media/videos/upload`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
+  return uploadVideoToTelegram(file, {
+    mediaType,
+    title: options.title,
+    caption: options.description ?? options.caption ?? "",
+    description: options.description,
+    privacy: options.privacy,
+    allowComments: options.allowComments,
+    allowDuet: options.allowDuet,
+    category: options.category,
+    tags: options.tags,
+    location: options.location,
+    metadata: meta,
+    onProgress,
   });
-
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || "Video upload is temporarily unavailable.");
-  }
-
-  onProgress(100, "Published successfully.");
-  return data.video;
 }
 
 export async function uploadVideo(file, options = {}) {
