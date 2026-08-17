@@ -48,7 +48,7 @@ export async function recordReelView(reelId) {
 
 function escapeHtml(value = "") {
   return String(value).replace(
-    /[&<>\"']/g,
+    /[&<>\\"']/g,
     (char) =>
       ({
         "&": "&amp;",
@@ -114,6 +114,12 @@ export function renderReel(video) {
   );
   const id = escapeHtml(video.id);
   const likes = Number(video.likes || 0).toLocaleString();
+  const mediaUrl = String(
+    video.secureUrl || video.videoUrl || video.url || "",
+  ).trim();
+  const fallbackMediaUrl = String(
+    video.videoUrl || video.secureUrl || video.url || "",
+  ).trim();
 
   return `<article
     class="reel-view"
@@ -121,7 +127,8 @@ export function renderReel(video) {
   >
     <video
       class="reel-video"
-      src="${escapeHtml(video.secureUrl)}"
+      src="${escapeHtml(mediaUrl)}"
+      data-fallback-src="${escapeHtml(fallbackMediaUrl)}"
       autoplay
       muted
       loop
@@ -216,5 +223,15 @@ export function bindReelWatchProgress(root) {
           card.dataset.videoId,
         );
       }
+      if (video.dataset.fallbackBound === "1") return;
+      video.dataset.fallbackBound = "1";
+      video.addEventListener("error", () => {
+        const fallback = String(video.dataset.fallbackSrc || "").trim();
+        if (!fallback || fallback === video.currentSrc || video.dataset.fallbackUsed === "1") return;
+        video.dataset.fallbackUsed = "1";
+        video.src = fallback;
+        video.load();
+        video.play().catch(() => {});
+      });
     });
 }
