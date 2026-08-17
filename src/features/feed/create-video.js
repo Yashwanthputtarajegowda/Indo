@@ -25,7 +25,7 @@ async function readVideoMetadata(file) {
 export async function uploadMedia(file, mediaType = "video", options = {}) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
-  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 20 MB or smaller because each video is stored as one Telegram file.");
+  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 20 MB or smaller.");
 
   const user = auth.currentUser;
   if (!user) throw new Error("Please login first.");
