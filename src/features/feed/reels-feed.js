@@ -38,8 +38,10 @@ export function renderReel(video) {
   const id = escapeHtml(video.id);
   const likes = Number(video.likes || 0).toLocaleString();
   const mediaUrl = String(video.secureUrl || video.videoUrl || video.url || "").trim();
+  const candidates = Array.isArray(video.sourceCandidates) ? video.sourceCandidates.map((url) => String(url || "").trim()).filter(Boolean) : [];
   const provider = escapeHtml(video.provider || (video.source === "wikimedia-commons" ? "Wikimedia Commons" : video.source === "internet-archive" ? "Internet Archive" : "Open-source"));
-  return `<article class="reel-view" data-video-id="${id}" data-source="${escapeHtml(video.source || "")}">
+  const candidateData = escapeHtml(JSON.stringify([mediaUrl, ...candidates].filter(Boolean)));
+  return `<article class="reel-view" data-video-id="${id}" data-source="${escapeHtml(video.source || "")}" data-video-candidates="${candidateData}">
     <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted loop playsinline preload="none"></video>
     <div class="reel-gradient"></div>
     <div class="reel-info"><div class="reel-user" data-profile-uid="${targetUid}" data-profile-username="${userId}">
@@ -51,13 +53,31 @@ export function renderReel(video) {
   </article>`;
 }
 
+function getCandidates(video) {
+  const card = video.closest("[data-video-candidates]");
+  try {
+    const parsed = JSON.parse(card?.getAttribute("data-video-candidates") || "[]");
+    return Array.isArray(parsed) ? parsed.map((url) => String(url || "").trim()).filter(Boolean) : [];
+  } catch { return []; }
+}
+
 export function bindReelWatchProgress(root) {
   root.querySelectorAll(".reel-view .reel-video").forEach((video) => {
     const card = video.closest("[data-video-id]");
     if (card) bindWatchProgress(video, card.dataset.videoId);
     if (video.dataset.bound === "1") return;
     video.dataset.bound = "1";
-    video.addEventListener("error", () => { video.dataset.videoFailed = "1"; });
+    video.addEventListener("error", () => {
+      video.dataset.videoFailed = "1";
+      if (video.dataset.fallbackTried === "1") return;
+      const candidates = getCandidates(video);
+      const current = String(video.currentSrc || video.src || "");
+      const next = candidates.find((url) => url && url !== current);
+      if (!next) return;
+      video.dataset.fallbackTried = "1";
+      video.src = next;
+      video.load();
+    });
   });
 }
 
