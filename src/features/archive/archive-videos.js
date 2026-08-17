@@ -1,12 +1,11 @@
 import { preferredLanguage, rankVideos } from "../feed/interest-engine.js";
 
-const OPENVERSE_URL = "https://api.openverse.org/v1/videos/";
 const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
+const ARCHIVE_API = "https://archive.org/advancedsearch.php";
 const SOURCE_PAGE_SIZE = 20;
-const FIRST_BATCH = 1;
 const MAX_FILE_SIZE = 700 * 1024 * 1024;
-const CACHE_TTL_MS = 5 * 60 * 1000;
-const MAX_PAGES_PER_SOURCE = 100;
+const CACHE_TTL_MS = 90 * 1000;
+const MAX_PAGES_PER_SOURCE = 20;
 
 const LANGUAGE_NAMES = {
   kn: "Kannada", en: "English", hi: "Hindi", te: "Telugu", ta: "Tamil",
@@ -38,8 +37,7 @@ function normaliseLanguage(language) {
 }
 function detectPreferredLanguage() {
   try {
-    const keys = ["indo:language", "indo-language", "preferredLanguage", "language", "userLanguage"];
-    for (const key of keys) {
+    for (const key of ["indo:language", "indo-language", "preferredLanguage", "language", "userLanguage"]) {
       const value = localStorage.getItem(key);
       if (value) return normaliseLanguage(value);
     }
@@ -52,23 +50,24 @@ function getTopics(topic = "") {
 }
 function queryFor(language, topic, search = "") {
   const languageName = LANGUAGE_NAMES[normaliseLanguage(language)] || LANGUAGE_NAMES.kn;
-  const cleanSearch = text(search);
-  return `${languageName} ${cleanSearch} ${text(topic)}`.trim();
+  return `${languageName} ${text(search)} ${text(topic)}`.trim();
 }
-async function fetchJson(url, timeoutMs = 6000) {
+async function fetchJson(url, timeoutMs = 8000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store", signal: controller.signal });
-    if (!response.ok) throw new Error(`Video source request failed (${response.status}).`);
-    return response.json();
+    if (!response.ok) throw new Error(`Source request failed (${response.status}).`);
+    return await response.json();
   } finally { clearTimeout(timer); }
 }
 function makeItem({ id, source, provider, title, description, url, thumbnailUrl, mimeType, size, duration, creator, createdAt, license, language, topic }) {
   const playable = safeUrl(url);
   if (!playable || Number(size || 0) > MAX_FILE_SIZE) return null;
+  if (!/^(video\/(mp4|webm|ogg)|application\/ogg)$/i.test(text(mimeType)) && !/\.(mp4|webm|ogv|ogg)(?:$|[?#])/i.test(playable)) return null;
   return {
-    id: `${source}:${id}`, source, provider, language: normaliseLanguage(language), topic: text(topic) || "general",
+    id: `${source}:${text(id || playable)}`,
+    source, provider, language: normaliseLanguage(language), topic: text(topic) || "general",
     creator: text(creator) || provider, creatorName: text(creator) || provider,
     title: text(title) || `${LANGUAGE_NAMES[normaliseLanguage(language)] || "Language"} video`,
     description: text(description), caption: text(description) || text(title),
@@ -78,35 +77,53 @@ function makeItem({ id, source, provider, title, description, url, thumbnailUrl,
     shares: 0, saves: 0, mediaType: "video",
   };
 }
-async function loadOpenversePage(language, topic, search, page) {
-  const params = new URLSearchParams({ q: queryFor(language, topic, search), page: String(page), page_size: String(SOURCE_PAGE_SIZE), unstable__sort_by: "indexed_on", unstable__sort_dir: "desc" });
-  const data = await fetchJson(`${OPENVERSE_URL}?${params.toString()}`);
-  return (Array.isArray(data?.results) ? data.results : []).map((item) => makeItem({
-    id: text(item.id || item.identifier || item.detail_url), source: "openverse", provider: text(item.provider || item.source || "Openverse"),
-    title: item.title, description: item.description || item.tags?.join?.(", "), url: item.url,
-    thumbnailUrl: item.thumbnail || item.thumbnail_url || item.thumb, mimeType: item.filetype || item.mimetype,
-    size: item.filesize, duration: item.duration, creator: item.creator, createdAt: item.created_on || item.indexed_on,
-    license: item.license, language, topic,
-  })).filter(Boolean);
-}
 async function loadCommonsPage(language, topic, search, offset) {
+  const query = `${queryFor(language, topic, search)} filetype:video`;
   const params = new URLSearchParams({
-    action: "query", generator: "search", gsrsearch: `${queryFor(language, topic, search)} filetype:video`, gsrnamespace: "6",
-    gsrlimit: String(SOURCE_PAGE_SIZE), gsroffset: String(offset), gsrqiprofile: "classic_noboostlinks", prop: "imageinfo",
-    iiprop: "url|mime|size|extmetadata", iiurlwidth: "720", format: "json", origin: "*",
+    action: "query", generator: "search", gsrsearch: query, gsrnamespace: "6",
+    gsrlimit: String(SOURCE_PAGE_SIZE), gsroffset: String(offset), prop: "imageinfo",
+    iiprop: "url|mime|size|extmetadata", iiurlwidth: "720", format: "json", formatversion: "2", origin: "*",
   });
   const data = await fetchJson(`${COMMONS_API}?${params.toString()}`);
-  const pages = Object.values(data?.query?.pages || {});
+  const pages = Array.isArray(data?.query?.pages) ? data.query.pages : Object.values(data?.query?.pages || {});
   return pages.map((page) => {
     const info = page?.imageinfo?.[0] || {}, meta = info.extmetadata || {};
     return makeItem({
-      id: text(page.pageid || page.title), source: "wikimedia-commons", provider: "Wikimedia Commons",
-      title: text(page.title).replace(/^File:/i, ""), description: text(meta.ImageDescription?.value || meta.ObjectName?.value),
-      url: info.url, thumbnailUrl: info.thumburl || info.url, mimeType: info.mime, size: info.size, duration: info.duration,
+      id: page?.pageid || page?.title, source: "wikimedia-commons", provider: "Wikimedia Commons",
+      title: text(page?.title).replace(/^File:/i, ""), description: text(meta.ImageDescription?.value || meta.ObjectName?.value),
+      url: info.url, thumbnailUrl: info.thumburl || info.url, mimeType: info.mime, size: info.size,
       creator: text(meta.Artist?.value || meta.Creator?.value), createdAt: meta.DateTimeOriginal?.value || meta.DateTime?.value,
       license: meta.LicenseShortName?.value, language, topic,
     });
-  }).filter((item) => item && /video\/(webm|mp4|ogg)|\.(webm|mp4|ogv)$/i.test(`${item.mimeType} ${item.url}`));
+  }).filter(Boolean);
+}
+async function loadArchivePage(language, topic, search, page) {
+  const query = encodeURIComponent(`mediatype:movies AND (${queryFor(language, topic, search).split(/\s+/).filter(Boolean).map((word) => `title:"${word}" OR subject:"${word}"`).join(" OR ")})`);
+  const data = await fetchJson(`${ARCHIVE_API}?q=${query}&fl[]=identifier&fl[]=title&fl[]=description&fl[]=creator&rows=${SOURCE_PAGE_SIZE}&page=${page}&output=json`);
+  const docs = Array.isArray(data?.response?.docs) ? data.response.docs : [];
+  const results = await Promise.all(docs.map(async (doc) => {
+    const identifier = text(doc?.identifier);
+    if (!identifier) return null;
+    try {
+      const meta = await fetchJson(`https://archive.org/metadata/${encodeURIComponent(identifier)}`);
+      const files = Array.isArray(meta?.files) ? meta.files : [];
+      const candidates = files.filter((file) => {
+        const name = text(file?.name);
+        const format = text(file?.format).toLowerCase();
+        const size = Number(file?.size || 0);
+        return size > 0 && size <= MAX_FILE_SIZE && (format.includes("mpeg4") || format.includes("h.264") || /\.(mp4|webm|ogv)$/i.test(name)) && !/(thumb|sample|preview|_files\.xml)/i.test(name);
+      }).sort((a, b) => Number(a?.size || 0) - Number(b?.size || 0));
+      const file = candidates[0];
+      if (!file) return null;
+      const path = text(file.name).split("/").map(encodeURIComponent).join("/");
+      return makeItem({
+        id: identifier, source: "internet-archive", provider: "Internet Archive", title: doc?.title,
+        description: doc?.description, creator: doc?.creator, url: `https://archive.org/download/${encodeURIComponent(identifier)}/${path}`,
+        mimeType: "video/mp4", size: file?.size, license: meta?.metadata?.licenseurl || meta?.metadata?.license, language, topic,
+      });
+    } catch { return null; }
+  }));
+  return results.filter(Boolean);
 }
 function unique(items) {
   const seen = new Set();
@@ -121,7 +138,7 @@ function getSession(options, force = false) {
   const key = sessionKey(options);
   if (force || !sessions.has(key)) sessions.set(key, {
     language: normaliseLanguage(options.language), search: text(options.search), topics: getTopics(options.topic), topicIndex: 0,
-    nextPage: 1, nextOffset: 0, items: [], doneOpenverse: false, doneCommons: false, loading: false,
+    commonsOffset: 0, archivePage: 1, items: [], loading: false,
   });
   return sessions.get(key);
 }
@@ -136,58 +153,38 @@ export async function loadArchiveKannadaVideosProgressive({ limit = 12, search =
   if (!force) {
     const cached = cache.get(key);
     if (cached && Date.now() - cached.at < CACHE_TTL_MS && cached.items.length >= wanted) {
-      const ranked = rankVideos(cached.items.slice(0, wanted));
+      const ranked = rankVideos(unique(cached.items).slice(0, wanted));
       onBatch?.(ranked, false);
       return ranked;
     }
   }
   const session = getSession(options, force);
   if (force) cache.delete(key);
-  let firstSent = session.items.length > 0;
   let roundsWithoutNewItems = 0;
-
-  while (session.items.length < wanted && roundsWithoutNewItems < session.topics.length * 2) {
+  while (session.items.length < wanted && roundsWithoutNewItems < Math.max(6, session.topics.length)) {
     if (session.loading) break;
     session.loading = true;
     const query = sessionQuery(session);
-    const page = session.nextPage;
-    const offset = session.nextOffset;
-    const results = await Promise.allSettled([
-      !session.doneOpenverse && page <= MAX_PAGES_PER_SOURCE ? loadOpenversePage(query.language, query.topic, query.search, page) : Promise.resolve([]),
-      !session.doneCommons && offset / SOURCE_PAGE_SIZE < MAX_PAGES_PER_SOURCE ? loadCommonsPage(query.language, query.topic, query.search, offset) : Promise.resolve([]),
+    const [commonsResult, archiveResult] = await Promise.allSettled([
+      loadCommonsPage(query.language, query.topic, query.search, session.commonsOffset),
+      loadArchivePage(query.language, query.topic, query.search, session.archivePage),
     ]);
     session.loading = false;
     const newItems = [];
-    if (results[0].status === "fulfilled") {
-      const items = results[0].value || [];
-      newItems.push(...items);
-      if (items.length === 0 || (items.length < SOURCE_PAGE_SIZE && page >= 2)) session.doneOpenverse = true;
-    }
-    if (results[1].status === "fulfilled") {
-      const items = results[1].value || [];
-      newItems.push(...items);
-      if (items.length === 0 || (items.length < SOURCE_PAGE_SIZE && offset > 0)) session.doneCommons = true;
-    }
+    if (commonsResult.status === "fulfilled") newItems.push(...commonsResult.value);
+    if (archiveResult.status === "fulfilled") newItems.push(...archiveResult.value);
     const before = session.items.length;
     session.items = unique([...session.items, ...newItems]);
-    session.nextPage += 1;
-    session.nextOffset += SOURCE_PAGE_SIZE;
+    session.commonsOffset += SOURCE_PAGE_SIZE;
+    session.archivePage += 1;
     if (session.items.length === before) roundsWithoutNewItems += 1; else roundsWithoutNewItems = 0;
     const ranked = rankVideos(session.items.slice(0, wanted));
-    if (!firstSent && session.items.length) { firstSent = true; onBatch?.(ranked.slice(0, FIRST_BATCH), true); }
     onBatch?.(ranked, false);
-
     session.topicIndex += 1;
-    if (session.topicIndex % session.topics.length === 0) {
-      session.doneOpenverse = false;
-      session.doneCommons = false;
-      session.nextPage = 1;
-      session.nextOffset = 0;
-    }
-    if (!newItems.length && session.topicIndex >= session.topics.length * 2) break;
   }
+  const result = rankVideos(unique(session.items).slice(0, wanted));
   cache.set(key, { at: Date.now(), items: session.items.slice() });
-  return rankVideos(session.items.slice(0, wanted));
+  return result;
 }
 export async function loadArchiveKannadaVideos(options = {}) {
   let latest = [];
