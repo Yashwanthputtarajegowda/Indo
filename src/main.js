@@ -87,8 +87,19 @@ if (!window.__indoUniversalNavigation) {
   window.__indoUniversalNavigation = true;
   document.addEventListener("click", (event) => {
     const el = event.target instanceof Element ? event.target : null;
-    const button = el?.closest("[data-screen]");
+    const button = el?.closest("[data-screen],[data-watch-video-id]");
     if (!button) return;
+    const watchId = button.getAttribute("data-watch-video-id");
+    if (watchId) {
+      const item = window.__indoWatchVideoItems?.get(String(watchId));
+      if (item) {
+        try { sessionStorage.setItem("indo:watch-video-current", JSON.stringify(item)); } catch {}
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      navigate("watch-video").catch(console.error);
+      return;
+    }
     const screen = button.getAttribute("data-screen");
     if (!screen) return;
     event.preventDefault();
