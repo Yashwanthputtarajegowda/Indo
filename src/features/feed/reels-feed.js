@@ -4,9 +4,7 @@ import { loadArchiveKannadaVideosProgressive } from "../archive/archive-videos.j
 
 const OPEN_VIDEO_SOURCE_RE = /^(archive|openverse|wikimedia-commons|internet-archive):/i;
 
-export async function loadReels(options = {}) {
-  return loadArchiveKannadaVideosProgressive({ limit: 100, ...options });
-}
+export async function loadReels(options = {}) { return loadArchiveKannadaVideosProgressive({ limit: 100, ...options }); }
 
 export async function recordReelView(reelId) {
   if (OPEN_VIDEO_SOURCE_RE.test(String(reelId || ""))) return { ok: true, source: "open-video-provider" };
@@ -40,7 +38,7 @@ export function renderReel(video) {
   const mediaUrl = String(video.secureUrl || video.videoUrl || video.url || "").trim();
   const candidates = Array.isArray(video.sourceCandidates) ? video.sourceCandidates.map((url) => String(url || "").trim()).filter(Boolean) : [];
   const provider = escapeHtml(video.provider || (video.source === "wikimedia-commons" ? "Wikimedia Commons" : video.source === "internet-archive" ? "Internet Archive" : "Open-source"));
-  const candidateData = escapeHtml(JSON.stringify([mediaUrl, ...candidates].filter(Boolean)));
+  const candidateData = escapeHtml(JSON.stringify([...new Set([mediaUrl, ...candidates].filter(Boolean))]));
   return `<article class="reel-view" data-video-id="${id}" data-source="${escapeHtml(video.source || "")}" data-video-candidates="${candidateData}">
     <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted loop playsinline preload="none"></video>
     <div class="reel-gradient"></div>
@@ -55,10 +53,7 @@ export function renderReel(video) {
 
 function getCandidates(video) {
   const card = video.closest("[data-video-candidates]");
-  try {
-    const parsed = JSON.parse(card?.getAttribute("data-video-candidates") || "[]");
-    return Array.isArray(parsed) ? parsed.map((url) => String(url || "").trim()).filter(Boolean) : [];
-  } catch { return []; }
+  try { const parsed = JSON.parse(card?.getAttribute("data-video-candidates") || "[]"); return Array.isArray(parsed) ? parsed.map((url) => String(url || "").trim()).filter(Boolean) : []; } catch { return []; }
 }
 
 export function bindReelWatchProgress(root) {
@@ -69,12 +64,11 @@ export function bindReelWatchProgress(root) {
     video.dataset.bound = "1";
     video.addEventListener("error", () => {
       video.dataset.videoFailed = "1";
-      if (video.dataset.fallbackTried === "1") return;
       const candidates = getCandidates(video);
       const current = String(video.currentSrc || video.src || "");
-      const next = candidates.find((url) => url && url !== current);
+      const index = candidates.findIndex((url) => url === current);
+      const next = candidates.slice(index + 1).find(Boolean);
       if (!next) return;
-      video.dataset.fallbackTried = "1";
       video.src = next;
       video.load();
     });
@@ -87,8 +81,7 @@ export function installReelVideoObserver(root) {
   if (!("IntersectionObserver" in window)) { videos.slice(0, 2).forEach(activate); return; }
   const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
     const video = entry.target;
-    if (entry.isIntersecting) { activate(video); video.play().catch(() => {}); }
-    else video.pause();
+    if (entry.isIntersecting) { activate(video); video.play().catch(() => {}); } else video.pause();
   }), { root, rootMargin: "600px 0px", threshold: 0.2 });
   videos.forEach((video) => observer.observe(video));
 }
