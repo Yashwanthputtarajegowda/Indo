@@ -1,7 +1,5 @@
 import { auth } from "../auth/firebase-client.js";
 
-const MAX_VIDEO_BYTES = 20 * 1024 * 1024;
-
 function makeUploadId() {
   const random = globalThis.crypto?.randomUUID?.();
   return String(random || `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 120);
@@ -57,6 +55,5 @@ async function uploadSingleFile(file, options = {}) {
 export async function uploadVideoToTelegram(file, options = {}) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
-  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 20 MB or smaller.");
   return uploadSingleFile(file, options);
 }
