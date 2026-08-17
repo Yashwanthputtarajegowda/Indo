@@ -1,8 +1,9 @@
 const IA_SEARCH_URL = "https://archive.org/advancedsearch.php";
 const IA_METADATA_BASE = "https://archive.org/metadata/";
 const DEFAULT_LIMIT = 100;
-const METADATA_CONCURRENCY = 16;
 const CACHE_TTL_MS = 55 * 1000;
+const FIRST_BATCH = 8;
+const METADATA_CONCURRENCY = 12;
 
 let cache = new Map();
 
@@ -18,7 +19,7 @@ function escapeFileName(value) {
 }
 
 function pickVideoFile(files = []) {
-  const candidates = files
+  return files
     .filter((file) => file && file.name && !file.private)
     .map((file) => {
       const name = String(file.name);
@@ -33,14 +34,11 @@ function pickVideoFile(files = []) {
       return { file, score };
     })
     .filter(({ file }) => /\.(mp4|m4v|webm|mov)$/i.test(String(file.name || "")))
-    .sort((a, b) => b.score - a.score);
-
-  return candidates[0]?.file || null;
+    .sort((a, b) => b.score - a.score)[0]?.file || null;
 }
 
 async function fetchJson(url) {
   const response = await fetch(url, {
-    method: "GET",
     headers: { Accept: "application/json" },
     cache: "no-store",
   });
@@ -64,9 +62,7 @@ async function searchIdentifiers(search, limit) {
   params.append("fl[]", "description");
   params.append("fl[]", "subject");
   params.append("fl[]", "date");
-  // Ask for enough candidates to find playable files without requiring every
-  // item to finish metadata resolution before the first cards are rendered.
-  params.set("rows", String(Math.min(160, Math.max(limit + 40, 80))));
+  params.set("rows", String(Math.min(200, Math.max(limit * 2, FIRST_BATCH * 3))));
   params.set("page", "1");
   params.set("output", "json");
   params.append("sort[]", "date desc");
@@ -76,15 +72,11 @@ async function searchIdentifiers(search, limit) {
 async function resolveItem(item) {
   const identifier = String(item?.identifier || "").trim();
   if (!identifier) return null;
-
   try {
     const data = await fetchJson(`${IA_METADATA_BASE}${encode(identifier)}`);
-    const files = Array.isArray(data?.files) ? data.files : [];
-    const file = pickVideoFile(files);
+    const file = pickVideoFile(Array.isArray(data?.files) ? data.files : []);
     if (!file) return null;
-
     const url = `https://archive.org/download/${encode(identifier)}/${escapeFileName(file.name)}`;
-
     return {
       id: `archive:${identifier}:${file.name}`,
       source: "internet-archive",
@@ -108,88 +100,87 @@ async function resolveItem(item) {
       saves: 0,
       mediaType: "video",
     };
-  } catch (error) {
-    console.warn("Internet Archive item unavailable:", identifier, error?.message || error);
+  } catch {
     return null;
   }
 }
 
-function sortUnique(items, limit) {
-  const seen = new Set();
-  return items
-    .filter(Boolean)
-    .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
-    .filter((item) => {
-      const key = `${item.archiveIdentifier}:${item.videoUrl}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, limit);
+function addUnique(items, value, seen) {
+  if (!value) return false;
+  const key = `${value.archiveIdentifier}:${value.videoUrl}`;
+  if (seen.has(key)) return false;
+  seen.add(key);
+  items.push(value);
+  return true;
 }
 
-export async function loadArchiveKannadaVideos({
+export async function loadArchiveKannadaVideosProgressive({
   limit = DEFAULT_LIMIT,
   search = "",
   force = false,
-  onProgress,
+  onBatch,
 } = {}) {
   const wanted = Math.min(100, Math.max(1, Number(limit) || DEFAULT_LIMIT));
   const key = `${String(search || "").trim().toLowerCase()}:${wanted}`;
-  const cached = cache.get(key);
-
-  if (!force && cached && Date.now() - cached.at < CACHE_TTL_MS) {
-    if (typeof onProgress === "function") onProgress(cached.items, true);
-    return cached.items;
+  if (!force) {
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+      onBatch?.(cached.items.slice(0, FIRST_BATCH), true);
+      onBatch?.(cached.items, false);
+      return cached.items;
+    }
   }
 
   const searchData = await searchIdentifiers(search, wanted);
   const docs = Array.isArray(searchData?.response?.docs) ? searchData.response.docs : [];
-  const results = [];
-  let lastPublishedCount = 0;
+  const items = [];
+  const seen = new Set();
+  let batchSent = false;
+  let cursor = 0;
 
-  // Resolve items concurrently and publish usable results as soon as they
-  // arrive. This prevents the UI from waiting for all metadata requests.
-  let index = 0;
-  async function worker() {
+  const worker = async () => {
     while (true) {
-      const current = index++;
-      if (current >= docs.length) return;
-      const value = await resolveItem(docs[current]);
-      if (!value) continue;
-      results.push(value);
-      const items = sortUnique(results, wanted);
-      if (items.length !== lastPublishedCount) {
-        lastPublishedCount = items.length;
-        if (typeof onProgress === "function") onProgress(items, false);
+      const index = cursor++;
+      if (index >= docs.length || items.length >= wanted) return;
+      const resolved = await resolveItem(docs[index]);
+      if (!resolved) continue;
+      const isNew = addUnique(items, resolved, seen);
+      if (!isNew) continue;
+      items.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+      if (!batchSent && items.length >= FIRST_BATCH) {
+        batchSent = true;
+        onBatch?.(items.slice(0, FIRST_BATCH), true);
       }
-      if (items.length >= wanted) return;
+      if (batchSent) onBatch?.(items.slice(), false);
     }
-  }
+  };
 
-  await Promise.all(
-    Array.from(
-      { length: Math.min(METADATA_CONCURRENCY, docs.length || 1) },
-      worker,
-    ),
-  );
+  await Promise.all(Array.from({ length: Math.min(METADATA_CONCURRENCY, docs.length) }, worker));
+  items.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+  const finalItems = items.slice(0, wanted);
+  cache.set(key, { at: Date.now(), items: finalItems });
+  if (!batchSent && finalItems.length) onBatch?.(finalItems, true);
+  onBatch?.(finalItems, false);
+  return finalItems;
+}
 
-  const items = sortUnique(results, wanted);
-  cache.set(key, { at: Date.now(), items });
-  if (typeof onProgress === "function") onProgress(items, true);
-  return items;
+export async function loadArchiveKannadaVideos(options = {}) {
+  let latest = [];
+  return loadArchiveKannadaVideosProgressive({
+    ...options,
+    onBatch: (items) => { latest = items; },
+  }).then(() => latest);
 }
 
 export function startArchiveRefresh({ intervalMs = 60000, onUpdate, getSearch } = {}) {
   const timer = window.setInterval(async () => {
     try {
-      const search = typeof getSearch === "function" ? getSearch() : "";
-      const items = await loadArchiveKannadaVideos({
+      const items = await loadArchiveKannadaVideosProgressive({
         limit: 100,
-        search,
+        search: typeof getSearch === "function" ? getSearch() : "",
         force: true,
       });
-      if (typeof onUpdate === "function") onUpdate(items);
+      onUpdate?.(items);
     } catch (error) {
       console.warn("Internet Archive refresh failed:", error);
     }
