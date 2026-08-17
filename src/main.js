@@ -91,10 +91,13 @@ if (!window.__indoUniversalNavigation) {
     if (!button) return;
     const watchId = button.getAttribute("data-watch-video-id");
     if (watchId) {
+      // Only handle watch cards when this global bridge actually owns the
+      // item. The Video screen has its own local click handler which stores
+      // the exact selected video. Previously this capture-phase handler
+      // navigated first, leaving the previous sessionStorage video selected.
       const item = window.__indoWatchVideoItems?.get(String(watchId));
-      if (item) {
-        try { sessionStorage.setItem("indo:watch-video-current", JSON.stringify(item)); } catch {}
-      }
+      if (!item) return;
+      try { sessionStorage.setItem("indo:watch-video-current", JSON.stringify(item)); } catch {}
       event.preventDefault();
       event.stopImmediatePropagation();
       navigate("watch-video").catch(console.error);
@@ -110,7 +113,7 @@ if (!window.__indoUniversalNavigation) {
   }, true);
 }
 
-function showBootFailure(message = "Could not start Indo. Please reload the app.") {
+function showBootFailure(message = "Could not start Indo. Please reload the app.\") {
   if (!app) return;
   app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>${message}</p><button type="button" id="indo-retry-boot" style="margin-top:14px;padding:10px 16px;border-radius:10px;background:#743cff;color:#fff;font-weight:800;cursor:pointer">Retry</button></main>`;
   document.getElementById("indo-retry-boot")?.addEventListener("click", () => window.location.reload());
