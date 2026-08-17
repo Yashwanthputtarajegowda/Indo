@@ -15,6 +15,9 @@ function installReferenceActionStyle() {
     .indo-watch-actions span{font-size:7px!important;line-height:1!important;color:#d9d5de!important;min-height:7px!important}
     .indo-watch-actions button.active-like{color:#ff4abf!important}.indo-watch-actions button.active-save{color:#b071ff!important}
     .indo-watch-fast-quality{font-size:10px!important;color:#caa5ff!important;text-align:right;padding-right:4px;border:0;background:transparent;cursor:pointer}
+    .indo-watch-embed{width:100%;height:100%;min-height:405px;border:0;display:block;background:#000}
+    .indo-watch-player.is-embed{aspect-ratio:16/9;min-height:0}
+    .indo-watch-player.is-embed iframe{width:100%;height:100%;border:0;display:block;background:#000}
   `;
   document.head.appendChild(style);
 }
@@ -23,7 +26,7 @@ function setReferenceIcons(actions) {
   const icons = {
     like: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.7c0 5.6-8.8 10.2-8.8 10.2S3.2 14.3 3.2 8.7A4.7 4.7 0 0 1 12 6.1a4.7 4.7 0 0 1 8.8 2.6Z"/></svg>',
     comment: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.8 8.8 0 0 1-4.1-1l-4.2 1.5 1.4-4A7.2 7.2 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z"/></svg>',
-    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.8 10.2l6.1 2.2 2.2 6.1L20.5 3.5Z"/><path d="m9.9 12.4 5.2-4.2"/></svg>',
+    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.8 10.2l6.1 2.2 6.1 2.2L20.5 3.5Z"/><path d="m9.9 12.4 5.2-4.2"/></svg>',
     save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.8L6 21V4.5Z"/></svg>',
     views: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.3-6 9.5-6 9.5 6 9.5 6-3.3 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>',
   };
@@ -39,58 +42,89 @@ function setReferenceIcons(actions) {
   });
 }
 
-function fastVideoUrl(raw) {
-  const u = String(raw || "").trim();
-  if (!u) return "";
-  try {
-    const parsed = new URL(u);
-    if (parsed.hostname.includes("res.cloudinary.com") && parsed.pathname.includes("/video/upload/")) {
-      const marker = "/video/upload/";
-      const i = parsed.pathname.indexOf(marker);
-      const prefix = parsed.pathname.slice(0, i + marker.length);
-      const rest = parsed.pathname.slice(i + marker.length).replace(/^f_[^/]+,vc_[^/]+,ac_[^/]+\//, "");
-      parsed.pathname = `${prefix}f_mp4,vc_h264,ac_aac,q_auto:eco,w_720/${rest}`;
-      return parsed.toString();
-    }
-  } catch {}
-  return u;
+function getSource(video) {
+  return String(video?.sourceUrl || video?.external?.resolvedUrl || video?.external?.sourceUrl || video?.secureUrl || video?.videoUrl || video?.url || "").trim();
 }
 
-function installFastPlayback(app, video) {
-  const player = app.querySelector("#watch-video");
-  if (!player) return;
-  const original = String(video.secureUrl || video.videoUrl || video.url || "").trim();
-  const fast = fastVideoUrl(original);
-
-  // Never autoplay. Load only metadata until the user presses play.
-  player.autoplay = false;
-  player.removeAttribute("autoplay");
-  player.preload = "metadata";
-
-  if (fast && fast !== original) {
-    player.src = fast;
-    player.dataset.fastSrc = fast;
-    player.dataset.fullSrc = original;
-    const quality = app.querySelector(".indo-watch-quality");
-    if (quality) {
-      quality.textContent = "Fast 720p";
-      quality.setAttribute("title", "Fast playback");
-      quality.classList.add("indo-watch-fast-quality");
-      quality.addEventListener("click", () => {
-        if (player.dataset.quality === "full") return;
-        const wasPlaying = !player.paused;
-        const time = player.currentTime || 0;
-        player.src = original;
-        player.dataset.quality = "full";
-        player.preload = "metadata";
-        player.addEventListener("loadedmetadata", () => {
-          try { player.currentTime = Math.min(time, player.duration || time); } catch {}
-          if (wasPlaying) player.play().catch(() => {});
-        }, { once: true });
-        quality.textContent = "Original";
-      });
+function youtubeId(raw) {
+  try {
+    const u = new URL(raw);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") return u.pathname.slice(1).split("/")[0] || "";
+    if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+      if (u.pathname === "/watch") return u.searchParams.get("v") || "";
+      const parts = u.pathname.split("/").filter(Boolean);
+      if (parts[0] === "shorts" || parts[0] === "embed" || parts[0] === "live") return parts[1] || "";
     }
+  } catch {}
+  return "";
+}
+
+function telegramEmbedUrl(raw) {
+  try {
+    const u = new URL(raw);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host !== "t.me" && host !== "telegram.me") return "";
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length >= 2 && !/^joinchat$/i.test(parts[0]) && !/^\+/.test(parts[0])) return `${u.origin}/${parts[0]}/${parts[1]}?embed=1`;
+  } catch {}
+  return "";
+}
+
+function isDirectVideoUrl(raw) {
+  try {
+    const u = new URL(raw);
+    return /\.(mp4|webm|ogg|ogv|m4v)(?:$|[?#])/i.test(u.pathname) || /^(video|application)\/(mp4|webm|ogg)/i.test(String(u.searchParams.get("mime") || ""));
+  } catch { return false; }
+}
+
+function installPlayback(app, video) {
+  const playerWrap = app.querySelector(".indo-watch-player");
+  if (!playerWrap) return;
+  const source = getSource(video);
+  const yid = youtubeId(source);
+  const telegram = telegramEmbedUrl(source);
+
+  if (yid) {
+    playerWrap.classList.add("is-embed");
+    playerWrap.innerHTML = `<iframe class="indo-watch-embed" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(yid)}?autoplay=1&mute=1&playsinline=1&rel=0" title="YouTube video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="eager"></iframe>`;
+    return;
   }
+
+  if (telegram) {
+    playerWrap.classList.add("is-embed");
+    playerWrap.innerHTML = `<iframe class="indo-watch-embed" src="${telegram.replace(/"/g, "&quot;")}" title="Telegram video" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="eager"></iframe>`;
+    return;
+  }
+
+  const player = playerWrap.querySelector("#watch-video");
+  if (!player) return;
+  player.autoplay = false;
+  player.muted = true;
+  player.playsInline = true;
+  player.preload = "auto";
+  player.removeAttribute("autoplay");
+
+  // Prefer the stored original URL for direct external links. Fall back to the Indo proxy if needed.
+  const original = String(video?.sourceUrl || "").trim();
+  const proxy = String(video?.secureUrl || video?.videoUrl || "").trim();
+  const preferred = original && isDirectVideoUrl(original) ? original : proxy || original;
+  if (preferred && player.src !== preferred) {
+    player.src = preferred;
+    player.load();
+  }
+
+  const play = () => player.play().catch(() => {});
+  if (player.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) play();
+  else player.addEventListener("canplay", play, { once: true });
+  player.addEventListener("loadeddata", play, { once: true });
+  player.addEventListener("error", () => {
+    if (preferred !== proxy && proxy) {
+      player.src = proxy;
+      player.load();
+      player.addEventListener("canplay", play, { once: true });
+    }
+  }, { once: true });
 }
 
 export async function renderWatchVideo(app) {
@@ -99,8 +133,7 @@ export async function renderWatchVideo(app) {
   const actions = app.querySelector(".indo-watch-actions");
   if (actions) setReferenceIcons(actions);
   const raw = (() => {
-    try { return JSON.parse(sessionStorage.getItem("indo:watch-video-current") || "null"); }
-    catch { return null; }
+    try { return JSON.parse(sessionStorage.getItem("indo:watch-video-current") || "null"); } catch { return null; }
   })();
-  if (raw) installFastPlayback(app, raw);
+  if (raw) installPlayback(app, raw);
 }
