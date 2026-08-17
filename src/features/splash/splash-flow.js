@@ -18,32 +18,35 @@ function renderTransitionError(app, error) {
 export function startSplash(app, nextScreen, delay = 2500) {
   renderSplash(app);
   let transitioned = false;
+  let fallbackTimer;
 
-  window.setTimeout(() => {
+  const finish = () => {
     if (transitioned) return;
     transitioned = true;
-
+    window.clearTimeout(fallbackTimer);
     try {
       nextScreen();
     } catch (error) {
-      console.error(
-        "Indo splash transition failed:",
-        error,
-      );
+      console.error("Indo splash transition failed:", error);
       try {
         renderLogin(app);
       } catch (fallbackError) {
         renderTransitionError(app, fallbackError || error);
       }
     }
+  };
 
-    window.setTimeout(() => {
-      if (!app.querySelector(".splash-screen")) return;
-      try {
-        renderLogin(app);
-      } catch (error) {
-        renderTransitionError(app, error);
-      }
-    }, 600);
-  }, delay);
+  window.setTimeout(finish, Math.max(0, Number(delay) || 2500));
+
+  // Never leave the app on the splash if the normal startup transition is
+  // blocked by a slow module/auth/network operation.
+  fallbackTimer = window.setTimeout(() => {
+    if (transitioned) return;
+    transitioned = true;
+    try {
+      renderLogin(app);
+    } catch (error) {
+      renderTransitionError(app, error);
+    }
+  }, 8000);
 }
