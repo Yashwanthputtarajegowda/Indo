@@ -12,10 +12,12 @@ async function uploadSingleFile(file, options = {}) {
   const meta = options.metadata || {};
   const uploadId = makeUploadId();
   const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
+  if (!base) throw new Error("Video upload service is unavailable.");
+
   const title = String(options.title || file.name || (options.mediaType === "reel" ? "Untitled reel" : "Untitled video")).trim();
   const headers = {
     Authorization: `Bearer ${token}`,
-    "Content-Type": file.type || "video/mp4",
+    "Content-Type": "application/octet-stream",
     "X-Upload-Id": uploadId,
     "X-File-Name": file.name,
     "X-File-Size": String(file.size),
@@ -37,13 +39,13 @@ async function uploadSingleFile(file, options = {}) {
   options.onProgress?.(10, "Uploading one file…");
   let response;
   try {
-    response = await fetch(`${base}/api/media/videos/upload-telegram`, {
+    response = await fetch(`${base}/api/telegram/uploads`, {
       method: "POST",
       headers,
       body: file,
     });
   } catch (error) {
-    throw new Error(error?.message || "Network request failed.");
+    throw new Error(error?.message || "Could not reach the video upload service.");
   }
 
   const data = await response.json().catch(() => ({}));
@@ -55,5 +57,6 @@ async function uploadSingleFile(file, options = {}) {
 export async function uploadVideoToTelegram(file, options = {}) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
+  if (file.size > 50 * 1024 * 1024) throw new Error("Video must be 50 MB or smaller.");
   return uploadSingleFile(file, options);
 }
