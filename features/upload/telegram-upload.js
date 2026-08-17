@@ -20,12 +20,13 @@ function cleanTags(tags) {
     : [];
 }
 
-function safeHeaderFileName(fileName, mimeType = "video/mp4") {
+function safeFileName(fileName, mimeType) {
   const original = String(fileName || "").trim();
-  const extensionMatch = original.match(/\.[A-Za-z0-9]{1,8}$/);
-  const extension = extensionMatch ? extensionMatch[0].toLowerCase() : (mimeType === "video/webm" ? ".webm" : mimeType === "video/quicktime" ? ".mov" : ".mp4");
+  const extension = original.match(/\.[A-Za-z0-9]{1,8}$/)?.[0]?.toLowerCase()
+    || (mimeType === "video/webm" ? ".webm" : mimeType === "video/quicktime" ? ".mov" : ".mp4");
   const base = original
     .replace(/\.[A-Za-z0-9]{1,8}$/, "")
+    .normalize("NFKD")
     .replace(/[^A-Za-z0-9_-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
@@ -63,12 +64,14 @@ async function uploadSingleFile(file, options = {}) {
   const duration = Math.max(0, Number(meta.duration || 0));
   const width = Math.max(0, Number(meta.width || 0));
   const height = Math.max(0, Number(meta.height || 0));
+  const fileName = safeFileName(file.name, mimeType);
 
   const query = new URLSearchParams({
     mediaType,
     title,
     caption,
     privacy,
+    fileName,
     allowComments: options.allowComments !== false ? "true" : "false",
     allowDuet: options.allowDuet !== false ? "true" : "false",
     category: cleanText(options.category, 60),
@@ -79,11 +82,13 @@ async function uploadSingleFile(file, options = {}) {
     height: String(Number.isFinite(height) ? height : 0),
   });
 
+  // Do not put the filename in an HTTP header. Browser Fetch rejects non-ISO-8859-1
+  // header values before the request is sent. The sanitized filename is carried in
+  // the URL query instead, where URLSearchParams safely encodes it.
   const headers = {
     Authorization: `Bearer ${token}`,
     "Content-Type": mimeType,
     "X-Upload-Id": uploadId,
-    "X-File-Name": safeHeaderFileName(file.name, mimeType),
     "X-File-Size": String(file.size),
     "X-Mime-Type": mimeType,
     "X-Media-Type": mediaType,
