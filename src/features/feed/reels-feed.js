@@ -43,7 +43,7 @@ export function renderReel(video) {
   const provider = escapeHtml(video.provider || "Open-source");
   const candidateData = escapeHtml(JSON.stringify([...new Set([mediaUrl, ...candidates].filter(Boolean))]));
   return `<article class="reel-view" data-video-id="${id}" data-source="${escapeHtml(video.source || "")}" data-video-candidates="${candidateData}">
-    <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted loop playsinline preload="none"></video>
+    <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted loop playsinline autoplay preload="metadata"></video>
     <div class="reel-gradient"></div>
     <div class="reel-info"><div class="reel-user" data-profile-uid="${targetUid}" data-profile-username="${userId}">
       <button class="avatar small reel-avatar" type="button" data-profile-avatar data-profile-uid="${targetUid}" data-profile-username="${userId}" data-open-profile="${userId}" aria-label="Open @${userId} profile">${escapeHtml(creator.charAt(0).toUpperCase() || "O")}</button>
@@ -74,6 +74,7 @@ export function bindReelWatchProgress(root) {
       if (!next) return;
       video.src = next;
       video.load();
+      video.play().catch(() => {});
     });
   });
 }
@@ -81,29 +82,32 @@ export function bindReelWatchProgress(root) {
 export function installReelVideoObserver(root) {
   const videos = [...root.querySelectorAll(".reel-video")];
   const activate = (video) => {
-    if (video.dataset.activated === "1") return;
-    video.dataset.activated = "1";
-    video.preload = "metadata";
-    video.load();
+    video.preload = "auto";
+    if (video.readyState === HTMLMediaElement.HAVE_NOTHING) video.load();
   };
 
   const playWhenReady = (video) => {
     if (!video || video.dataset.playBound === "1") return;
     video.dataset.playBound = "1";
     const play = () => {
-      if (!video.closest(".reel-view")) return;
-      if (!video.paused) return;
-      video.play().catch(() => {});
+      if (!video.isConnected || !video.closest(".reel-view")) return;
+      video.muted = true;
+      video.playsInline = true;
+      video.play().catch(() => {
+        const retry = () => video.play().catch(() => {});
+        video.addEventListener("loadeddata", retry, { once: true });
+        video.addEventListener("canplay", retry, { once: true });
+      });
     };
     if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) play();
-    else video.addEventListener("canplay", play, { once: true });
+    else {
+      video.addEventListener("loadeddata", play, { once: true });
+      video.addEventListener("canplay", play, { once: true });
+    }
   };
 
   if (!("IntersectionObserver" in window)) {
-    videos.slice(0, 2).forEach((video) => {
-      activate(video);
-      playWhenReady(video);
-    });
+    videos.slice(0, 2).forEach((video) => { activate(video); playWhenReady(video); });
     return;
   }
 
@@ -112,10 +116,13 @@ export function installReelVideoObserver(root) {
     if (entry.isIntersecting) {
       activate(video);
       playWhenReady(video);
+      const index = videos.indexOf(video);
+      videos.slice(index + 1, index + 2).forEach((next) => { next.preload = "auto"; if (next.readyState === HTMLMediaElement.HAVE_NOTHING) next.load(); });
     } else {
       video.pause();
+      video.removeAttribute("data-play-bound");
     }
-  }), { root, rootMargin: "600px 0px", threshold: 0.2 });
+  }), { root, rootMargin: "800px 0px", threshold: 0.35 });
 
   videos.forEach((video) => observer.observe(video));
 }
