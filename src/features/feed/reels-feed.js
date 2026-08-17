@@ -10,8 +10,7 @@ export async function loadReels(options = {}) {
   const response = await fetch(`${apiBase}/api/media/videos?${params.toString()}`, { headers });
   if (!response.ok) throw new Error("Could not load reels.");
   const payload = await response.json();
-  const videos = Array.isArray(payload) ? payload : (Array.isArray(payload.videos) ? payload.videos : []);
-  return videos;
+  return Array.isArray(payload) ? payload : (Array.isArray(payload.videos) ? payload.videos : []);
 }
 
 export async function recordReelView(reelId) {
@@ -25,19 +24,23 @@ export async function recordReelView(reelId) {
 
 function escapeHtml(value = "") { return String(value).replace(/[&<>\\"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '\"':"&quot;", "'":"&#039;" })[char]); }
 function cleanUserId(value = "") { return String(value || "").trim().replace(/^@+/, ""); }
+
 function bindWatchProgress(videoElement, mediaId) {
   let lastReportedAt = 0;
   const sendDelta = () => {
     const current = Number(videoElement.currentTime || 0);
     const delta = current - lastReportedAt;
-    if (delta >= 10) {
-      lastReportedAt = current;
-      recordWatchProgress(mediaId, Math.min(15, delta));
-    }
+    if (delta >= 10) { lastReportedAt = current; recordWatchProgress(mediaId, Math.min(15, delta)); }
   };
   videoElement.addEventListener("timeupdate", sendDelta);
   videoElement.addEventListener("pause", sendDelta);
   videoElement.addEventListener("ended", sendDelta);
+}
+
+function getVideoCandidates(video) {
+  return [video?.videoUrl, video?.streamUrl, video?.secureUrl, video?.sourceUrl]
+    .map((value) => String(value || "").trim())
+    .filter((value, index, list) => value && list.indexOf(value) === index);
 }
 
 export function renderReel(video) {
@@ -48,9 +51,11 @@ export function renderReel(video) {
   const caption = escapeHtml(video.caption || video.title || "");
   const id = escapeHtml(video.id);
   const likes = Number(video.likes || 0).toLocaleString();
-  const mediaUrl = String(video.secureUrl || video.videoUrl || video.url || "").trim();
-  return `<article class="reel-view" data-video-id="${id}">
-    <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted="true" loop playsinline autoplay preload="auto"></video>
+  const candidates = getVideoCandidates(video);
+  const mediaUrl = candidates[0] || "";
+  const candidateData = escapeHtml(JSON.stringify(candidates));
+  return `<article class="reel-view" data-video-id="${id}" data-video-candidates="${candidateData}">
+    <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted loop playsinline autoplay preload="metadata"></video>
     <div class="reel-gradient"></div>
     <div class="reel-info"><div class="reel-user" data-profile-uid="${targetUid}" data-profile-username="${userId}">
       <button class="avatar small reel-avatar" type="button" data-profile-avatar data-profile-uid="${targetUid}" data-profile-username="${userId}" data-open-profile="${userId}" aria-label="Open @${userId} profile">${escapeHtml(creator.charAt(0).toUpperCase() || "I")}</button>
@@ -61,6 +66,11 @@ export function renderReel(video) {
   </article>`;
 }
 
+function getCandidatesFromCard(video) {
+  const card = video.closest("[data-video-candidates]");
+  try { return JSON.parse(card?.getAttribute("data-video-candidates") || "[]"); } catch { return []; }
+}
+
 export function bindReelWatchProgress(root) {
   root.querySelectorAll(".reel-view .reel-video").forEach((video) => {
     const card = video.closest("[data-video-id]");
@@ -68,7 +78,13 @@ export function bindReelWatchProgress(root) {
     if (video.dataset.bound === "1") return;
     video.dataset.bound = "1";
     video.addEventListener("error", () => {
-      video.pause();
+      const candidates = getCandidatesFromCard(video);
+      const current = String(video.currentSrc || video.src || "");
+      const next = candidates.find((url) => url && url !== current);
+      if (!next) return;
+      video.src = next;
+      video.load();
+      attemptAutoplay(video);
     });
   });
 }
@@ -82,7 +98,9 @@ function attemptAutoplay(video) {
   video.setAttribute("playsinline", "");
   video.setAttribute("autoplay", "");
   const result = video.play();
-  if (result && typeof result.catch === "function") result.catch(() => {});
+  if (result && typeof result.catch === "function") {
+    result.catch(() => {});
+  }
 }
 
 export function installReelVideoObserver(root) {
@@ -96,8 +114,12 @@ export function installReelVideoObserver(root) {
   };
   const start = (video) => {
     activate(video);
-    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) attemptAutoplay(video);
-    else video.addEventListener("loadeddata", () => attemptAutoplay(video), { once: true });
+    const play = () => attemptAutoplay(video);
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) play();
+    else {
+      video.addEventListener("loadeddata", play, { once: true });
+      video.addEventListener("canplay", play, { once: true });
+    }
   };
 
   if (!("IntersectionObserver" in window)) {
@@ -108,7 +130,7 @@ export function installReelVideoObserver(root) {
     const video = entry.target;
     if (entry.isIntersecting) start(video);
     else video.pause();
-  }), { root, rootMargin: "1000px 0px", threshold: 0.1 });
+  }), { root, rootMargin: "800px 0px", threshold: 0.15 });
   videos.forEach((video) => observer.observe(video));
 
   const resumeVisible = () => {
