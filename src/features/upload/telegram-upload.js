@@ -15,7 +15,7 @@ async function uploadSingleFile(file, options = {}) {
   const title = String(options.title || file.name || (options.mediaType === "reel" ? "Untitled reel" : "Untitled video")).trim();
   const headers = {
     Authorization: `Bearer ${token}`,
-    "Content-Type": "application/octet-stream",
+    "Content-Type": file.type || "video/mp4",
     "X-Upload-Id": uploadId,
     "X-File-Name": file.name,
     "X-File-Size": String(file.size),
@@ -37,7 +37,7 @@ async function uploadSingleFile(file, options = {}) {
   options.onProgress?.(10, "Uploading one file…");
   let response;
   try {
-    response = await fetch(`${base}/api/telegram/uploads`, {
+    response = await fetch(`${base}/api/media/videos/upload-telegram`, {
       method: "POST",
       headers,
       body: file,
