@@ -1,5 +1,5 @@
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
-import { loadArchiveKannadaVideos } from "../features/archive/archive-videos.js";
+import { loadArchiveKannadaVideosProgressive } from "../features/archive/archive-videos.js?v=20260817-fast";
 
 const STYLE_ID = "indo-video-archive-v2";
 
@@ -38,8 +38,7 @@ function installStyles() {
     .indo-archive-head{display:flex;justify-content:space-between;align-items:end;margin:4px 2px 10px}
     .indo-archive-head h2{margin:0;font-size:17px;font-weight:900}
     .indo-archive-head small{color:#8c8794;font-size:8px}
-    .indo-archive-status{padding:16px;text-align:center;border:1px dashed #2a2733;border-radius:13px;color:#85808e;font-size:11px}
-    .indo-archive-status.is-hidden{display:none}
+    .indo-archive-status{padding:20px;text-align:center;border:1px dashed #2a2733;border-radius:13px;color:#85808e;font-size:11px}
     .indo-archive-list{display:grid;gap:14px}
     .indo-archive-card{overflow:hidden;border:1px solid #26242d;border-radius:14px;background:#09090e;box-shadow:0 9px 25px rgba(0,0,0,.24)}
     .indo-archive-video-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000}
@@ -88,81 +87,59 @@ export async function renderVideo(app) {
   const searchInput = app.querySelector("#archive-video-search");
   const status = app.querySelector("#archive-video-status");
   const list = app.querySelector("#archive-video-list");
-  let timer = null;
-  let searchTimer = null;
   let stopped = false;
+  let refreshTimer = 0;
+  let searchTimer = 0;
+  let loadSerial = 0;
 
   const renderItems = (items) => {
-    if (!Array.isArray(items) || !items.length) return;
-    const existing = new Set(
-      [...list.querySelectorAll("[data-archive-id]")].map(
-        (node) => node.dataset.archiveId,
-      ),
-    );
-    const fragments = items
-      .filter((item) => !existing.has(String(item.id)))
-      .map(card)
-      .join("");
-    if (fragments) list.insertAdjacentHTML("beforeend", fragments);
+    if (stopped) return;
+    const html = items.map(card).join("");
+    list.innerHTML = html;
+    if (status.parentNode) status.remove();
   };
 
   const load = async (force = false) => {
-    if (stopped) return;
-    status.classList.remove("is-hidden");
-    status.textContent = force
-      ? "Refreshing latest videos..."
-      : "Finding latest Kannada videos...";
-    list.innerHTML = "";
+    const serial = ++loadSerial;
+    if (!list.children.length) status.textContent = "Finding latest Kannada videos…";
 
     try {
-      const items = await loadArchiveKannadaVideos({
+      await loadArchiveKannadaVideosProgressive({
         limit: 100,
         search: searchInput.value.trim(),
         force,
-        onProgress: (progressItems, complete) => {
-          if (stopped) return;
-          renderItems(progressItems);
-          if (progressItems.length) {
-            status.textContent = complete
-              ? `${progressItems.length} videos loaded`
-              : `${progressItems.length} videos loaded…`;
-          }
-          if (progressItems.length) {
-            status.classList.remove("is-hidden");
-          }
+        onBatch: (items, firstBatch) => {
+          if (serial !== loadSerial || stopped || !items.length) return;
+          renderItems(items);
+          if (firstBatch) list.scrollIntoView({ block: "start" });
         },
       });
-
-      if (stopped) return;
-      if (!items.length) {
-        status.textContent = "No playable Kannada videos found right now.";
-        return;
-      }
-      status.textContent = `${items.length} videos loaded`;
     } catch (error) {
-      if (stopped) return;
-      status.textContent = error?.message || "Could not load Internet Archive videos.";
+      if (serial !== loadSerial || stopped) return;
+      if (!list.children.length) {
+        status.textContent = error?.message || "Could not load Internet Archive videos.";
+      }
     }
   };
 
   await load(false);
 
-  timer = window.setInterval(() => {
+  refreshTimer = window.setInterval(() => {
     load(true).catch(() => {});
   }, 60000);
 
   searchInput.addEventListener("input", () => {
     window.clearTimeout(searchTimer);
-    searchTimer = window.setTimeout(() => {
-      load(true).catch(() => {});
-    }, 400);
+    searchTimer = window.setTimeout(() => load(true).catch(() => {}), 350);
   });
 
-  app.addEventListener("DOMNodeRemoved", (event) => {
-    if (event.target === app) {
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(app)) {
       stopped = true;
-      window.clearInterval(timer);
+      window.clearInterval(refreshTimer);
       window.clearTimeout(searchTimer);
+      observer.disconnect();
     }
-  }, { once: true });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 }
