@@ -7,13 +7,18 @@ async function apiJson(path, options = {}) {
   const user = auth.currentUser;
   if (!user) throw new Error("Please login first.");
   const token = await user.getIdToken();
-  const response = await fetch(`${window.INDO_API_BASE || ""}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
+  let response;
+  try {
+    response = await fetch(`${window.INDO_API_BASE || ""}${path}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(options.headers || {}),
+      },
+    });
+  } catch (error) {
+    throw Object.assign(new Error(error?.message || "Network request failed."), { network: true });
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const retryAfter = Number(data?.retryAfter || 0);
@@ -21,9 +26,29 @@ async function apiJson(path, options = {}) {
       await sleep(Math.min(15000, retryAfter * 1000));
       throw Object.assign(new Error(data?.error || "Telegram is busy."), { retryable: true });
     }
-    throw new Error(data?.error || "Request failed.");
+    throw new Error(data?.error || `Request failed (${response.status}).`);
   }
   return data;
+}
+
+async function finalizeTelegramUpload(uploadId) {
+  const path = `/api/telegram/uploads/${encodeURIComponent(uploadId)}/finalize`;
+  let lastError;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      return await apiJson(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+    } catch (error) {
+      lastError = error;
+      if (attempt === 3) break;
+      const delay = error?.network ? 1200 * (attempt + 1) : 600 * (attempt + 1);
+      await sleep(Math.min(5000, delay));
+    }
+  }
+  throw lastError || new Error("Could not finalize Telegram upload.");
 }
 
 export async function uploadVideoToTelegram(file, options = {}) {
@@ -76,11 +101,7 @@ export async function uploadVideoToTelegram(file, options = {}) {
     options.onProgress?.(percent, `Uploading to Telegram… ${index + 1}/${totalChunks}`);
   }
 
-  const finalized = await apiJson(`/api/telegram/uploads/${encodeURIComponent(created.uploadId)}/finalize`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: "{}",
-  });
+  const finalized = await finalizeTelegramUpload(created.uploadId);
   options.onProgress?.(100, "Published successfully.");
   return finalized.video;
 }
