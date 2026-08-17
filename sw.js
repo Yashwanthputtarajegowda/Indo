@@ -1,4 +1,4 @@
-const CACHE_NAME = "indo-shell-v4";
+const CACHE_NAME = "indo-shell-v5";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
