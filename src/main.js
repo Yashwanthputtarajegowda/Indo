@@ -9,7 +9,7 @@ import {
 } from "./features/profile/profile-identity.js?v=20260815-profile-identity-v5";
 import { applyIndoPinkThunderTheme } from "./features/ui/indo-pink-thunder-theme.js?v=20260815-pink-thunder-v1";
 import { installHomeFeedDesign } from "./features/ui/home-feed-design-v2.js?v=20260815-home-video-v3";
-import { installVideoPlaybackFix } from "./features/feed/video-playback-fix.js?v=20260817-telegram-playback-v1";
+import { installVideoPlaybackFix } from "./features/feed/video-playback-fix.js?v=20260817-telegram-playback-v2";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
 import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v10";
@@ -19,23 +19,15 @@ let busy = false;
 let started = false;
 let renderId = 0;
 
-// Start downloading the router immediately so the first screen does not wait
-// for a click or another dynamic import after authentication settles.
 const routerWarmup = import("./router.js?v=20260815-router-reel-flow-v2").catch((error) => {
   console.warn("Router warmup failed; normal startup import will retry:", error);
   return null;
 });
 
-// Warm the Cloud Run connection while the splash/auth screen is visible.
 const backendWarmup = (() => {
   const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
   if (!base) return Promise.resolve(null);
-  return fetch(`${base}/api/health`, {
-    method: "GET",
-    cache: "no-store",
-    credentials: "omit",
-    keepalive: true,
-  }).catch((error) => {
+  return fetch(`${base}/api/health`, { method: "GET", cache: "no-store", credentials: "omit", keepalive: true }).catch((error) => {
     console.warn("Backend warmup failed; request will retry when needed:", error);
     return null;
   });
