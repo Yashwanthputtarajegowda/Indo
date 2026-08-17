@@ -2,8 +2,8 @@ import { auth } from "../auth/firebase-client.js";
 import { recordWatchProgress } from "../earning/earning.js";
 import { loadArchiveKannadaVideos } from "../archive/archive-videos.js";
 
-export async function loadReels(limit = 100) {
-  return loadArchiveKannadaVideos({ limit });
+export async function loadReels() {
+  return loadArchiveKannadaVideos({ limit: 100 });
 }
 
 export async function recordReelView(reelId) {
@@ -12,32 +12,19 @@ export async function recordReelView(reelId) {
   }
   const apiBase = window.INDO_API_BASE || "";
   const headers = {};
-
-  if (auth.currentUser) {
-    headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
-  }
-
+  if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
   const response = await fetch(
     `${apiBase}/api/media/videos/${encodeURIComponent(reelId)}/view`,
     { method: "POST", headers },
   );
-
   if (!response.ok) throw new Error("Could not record reel view.");
   return response.json();
 }
 
 function escapeHtml(value = "") {
-  return String(value).replace(
-    /[&<>\\"']/g,
-    (char) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '\"': "&quot;",
-        "'": "&#039;",
-      })[char],
-  );
+  return String(value).replace(/[&<>\\"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#039;",
+  })[char]);
 }
 
 function cleanUserId(value = "") {
@@ -61,13 +48,9 @@ function bindWatchProgress(videoElement, mediaId) {
 }
 
 export function renderReel(video) {
-  const creatorRaw = String(
-    video.userId || video.username || video.creator || "Internet Archive",
-  );
+  const creatorRaw = String(video.userId || video.username || video.creator || "Internet Archive");
   const creator = escapeHtml(creatorRaw.replace(/^@/, ""));
-  const userId = escapeHtml(
-    cleanUserId(video.userId || video.username || video.creator || "internet-archive"),
-  );
+  const userId = escapeHtml(cleanUserId(video.userId || video.username || video.creator || "internet-archive"));
   const targetUid = escapeHtml(video.ownerUid || "");
   const caption = escapeHtml(video.caption || video.title || "");
   const id = escapeHtml(video.id);
@@ -80,9 +63,7 @@ export function renderReel(video) {
     <div class="reel-gradient"></div>
     <div class="reel-info">
       <div class="reel-user" data-profile-uid="${targetUid}" data-profile-username="${userId}">
-        <button class="avatar small reel-avatar" type="button" data-profile-avatar data-profile-uid="${targetUid}" data-profile-username="${userId}" data-open-profile="${userId}" aria-label="Open @${userId} profile">
-          ${escapeHtml(creator.charAt(0).toUpperCase() || "I")}
-        </button>
+        <button class="avatar small reel-avatar" type="button" data-profile-avatar data-profile-uid="${targetUid}" data-profile-username="${userId}" data-open-profile="${userId}" aria-label="Open @${userId} profile">${escapeHtml(creator.charAt(0).toUpperCase() || "I")}</button>
         <button class="reel-user-id" type="button" data-open-profile="${userId}" data-profile-uid="${targetUid}" data-profile-username="${userId}">@${userId}</button>
         ${targetUid ? `<button class="follow-btn" data-follow-uid="${targetUid}" type="button">Follow</button>` : ""}
       </div>
