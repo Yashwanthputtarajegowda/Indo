@@ -1,7 +1,7 @@
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
 import { loadArchiveKannadaVideos } from "../features/archive/archive-videos.js";
 
-const STYLE_ID = "indo-video-archive-v1";
+const STYLE_ID = "indo-video-archive-v2";
 
 function esc(value = "") {
   return String(value).replace(/[&<>\"']/g, (c) => ({
@@ -38,7 +38,8 @@ function installStyles() {
     .indo-archive-head{display:flex;justify-content:space-between;align-items:end;margin:4px 2px 10px}
     .indo-archive-head h2{margin:0;font-size:17px;font-weight:900}
     .indo-archive-head small{color:#8c8794;font-size:8px}
-    .indo-archive-status{padding:20px;text-align:center;border:1px dashed #2a2733;border-radius:13px;color:#85808e;font-size:11px}
+    .indo-archive-status{padding:16px;text-align:center;border:1px dashed #2a2733;border-radius:13px;color:#85808e;font-size:11px}
+    .indo-archive-status.is-hidden{display:none}
     .indo-archive-list{display:grid;gap:14px}
     .indo-archive-card{overflow:hidden;border:1px solid #26242d;border-radius:14px;background:#09090e;box-shadow:0 9px 25px rgba(0,0,0,.24)}
     .indo-archive-video-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000}
@@ -91,22 +92,53 @@ export async function renderVideo(app) {
   let searchTimer = null;
   let stopped = false;
 
+  const renderItems = (items) => {
+    if (!Array.isArray(items) || !items.length) return;
+    const existing = new Set(
+      [...list.querySelectorAll("[data-archive-id]")].map(
+        (node) => node.dataset.archiveId,
+      ),
+    );
+    const fragments = items
+      .filter((item) => !existing.has(String(item.id)))
+      .map(card)
+      .join("");
+    if (fragments) list.insertAdjacentHTML("beforeend", fragments);
+  };
+
   const load = async (force = false) => {
-    status.textContent = force ? "Refreshing latest videos..." : "Loading latest Kannada videos...";
+    if (stopped) return;
+    status.classList.remove("is-hidden");
+    status.textContent = force
+      ? "Refreshing latest videos..."
+      : "Finding latest Kannada videos...";
+    list.innerHTML = "";
+
     try {
       const items = await loadArchiveKannadaVideos({
         limit: 100,
         search: searchInput.value.trim(),
         force,
+        onProgress: (progressItems, complete) => {
+          if (stopped) return;
+          renderItems(progressItems);
+          if (progressItems.length) {
+            status.textContent = complete
+              ? `${progressItems.length} videos loaded`
+              : `${progressItems.length} videos loaded…`;
+          }
+          if (progressItems.length) {
+            status.classList.remove("is-hidden");
+          }
+        },
       });
+
       if (stopped) return;
       if (!items.length) {
         status.textContent = "No playable Kannada videos found right now.";
-        list.innerHTML = "";
         return;
       }
-      status.remove();
-      list.innerHTML = items.map(card).join("");
+      status.textContent = `${items.length} videos loaded`;
     } catch (error) {
       if (stopped) return;
       status.textContent = error?.message || "Could not load Internet Archive videos.";
