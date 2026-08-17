@@ -1,8 +1,9 @@
 const OPENVERSE_URL = "https://api.openverse.org/v1/videos/";
 const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
 const DEFAULT_LIMIT = 100;
-const CACHE_TTL_MS = 55 * 1000;
-const FIRST_BATCH = 5;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const FIRST_BATCH = 1;
+const SOURCE_PAGE_SIZE = 10;
 const MAX_FILE_SIZE = 700 * 1024 * 1024;
 
 let cache = new Map();
@@ -15,20 +16,14 @@ function safeUrl(value) {
   } catch { return ""; }
 }
 
-async function fetchJson(url, timeoutMs = 9000) {
+async function fetchJson(url, timeoutMs = 2500) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-      signal: controller.signal,
-    });
+    const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "force-cache", signal: controller.signal });
     if (!response.ok) throw new Error(`Video source request failed (${response.status}).`);
     return response.json();
-  } finally {
-    clearTimeout(timer);
-  }
+  } finally { clearTimeout(timer); }
 }
 
 function makeItem({ id, source, provider, title, description, url, mimeType, size, duration, creator, createdAt, license }) {
@@ -37,87 +32,48 @@ function makeItem({ id, source, provider, title, description, url, mimeType, siz
   const bytes = Number(size || 0);
   if (bytes > MAX_FILE_SIZE) return null;
   return {
-    id: `${source}:${id}`,
-    source,
-    provider,
-    creator: text(creator) || provider,
-    creatorName: text(creator) || provider,
-    title: text(title) || "Kannada video",
-    description: text(description),
-    caption: text(description) || text(title),
-    createdAt: Date.parse(text(createdAt)) || 0,
-    videoUrl: playable,
-    secureUrl: playable,
-    url: playable,
-    mimeType: text(mimeType) || "video/webm",
-    size: bytes,
-    duration: Number(duration || 0),
-    license: text(license),
-    views: 0,
-    likes: 0,
-    comments: 0,
-    shares: 0,
-    saves: 0,
-    mediaType: "video",
+    id: `${source}:${id}`, source, provider,
+    creator: text(creator) || provider, creatorName: text(creator) || provider,
+    title: text(title) || "Kannada video", description: text(description),
+    caption: text(description) || text(title), createdAt: Date.parse(text(createdAt)) || 0,
+    videoUrl: playable, secureUrl: playable, url: playable,
+    mimeType: text(mimeType) || "video/webm", size: bytes, duration: Number(duration || 0),
+    license: text(license), views: 0, likes: 0, comments: 0, shares: 0, saves: 0, mediaType: "video",
   };
 }
 
-async function loadOpenverse(search, limit) {
+async function loadOpenverse(search) {
   const params = new URLSearchParams({
     q: search ? `Kannada ${search}` : "Kannada",
-    page: "1",
-    page_size: String(Math.min(40, Math.max(limit, 20))),
+    page: "1", page_size: String(SOURCE_PAGE_SIZE),
+    unstable__sort_by: "indexed_on", unstable__sort_dir: "desc",
   });
   const data = await fetchJson(`${OPENVERSE_URL}?${params.toString()}`);
-  const results = Array.isArray(data?.results) ? data.results : [];
-  return results.map((item) => makeItem({
-    id: text(item.id || item.identifier || item.detail_url),
-    source: "openverse",
-    provider: text(item.provider || item.source || "Openverse"),
-    title: item.title,
-    description: item.description || item.tags?.join?.(", "),
-    url: item.url,
-    mimeType: item.filetype || item.mimetype,
-    size: item.filesize,
-    duration: item.duration,
-    creator: item.creator,
-    createdAt: item.created_on || item.indexed_on,
-    license: item.license,
+  return (Array.isArray(data?.results) ? data.results : []).map((item) => makeItem({
+    id: text(item.id || item.identifier || item.detail_url), source: "openverse",
+    provider: text(item.provider || item.source || "Openverse"), title: item.title,
+    description: item.description || item.tags?.join?.(", "), url: item.url,
+    mimeType: item.filetype || item.mimetype, size: item.filesize, duration: item.duration,
+    creator: item.creator, createdAt: item.created_on || item.indexed_on, license: item.license,
   })).filter(Boolean);
 }
 
-async function loadCommons(search, limit) {
+async function loadCommons(search) {
   const params = new URLSearchParams({
-    action: "query",
-    generator: "search",
-    gsrsearch: search ? `Kannada ${search}` : "Kannada",
-    gsrnamespace: "6",
-    gsrlimit: String(Math.min(30, Math.max(limit, 15))),
-    prop: "imageinfo",
-    iiprop: "url|mime|size|extmetadata",
-    iiurlwidth: "720",
-    format: "json",
-    origin: "*",
+    action: "query", generator: "search", gsrsearch: search ? `Kannada ${search} filetype:video` : "Kannada filetype:video",
+    gsrnamespace: "6", gsrlimit: String(SOURCE_PAGE_SIZE), gsrqiprofile: "classic_noboostlinks",
+    prop: "imageinfo", iiprop: "url|mime|size|extmetadata", iiurlwidth: "720", format: "json", origin: "*",
   });
   const data = await fetchJson(`${COMMONS_API}?${params.toString()}`);
   const pages = Object.values(data?.query?.pages || {});
   return pages.map((page) => {
-    const info = page?.imageinfo?.[0] || {};
-    const meta = info.extmetadata || {};
-    const title = text(page.title).replace(/^File:/i, "");
-    const description = text(meta.ImageDescription?.value || meta.ObjectName?.value);
-    const creator = text(meta.Artist?.value || meta.Creator?.value);
+    const info = page?.imageinfo?.[0] || {}, meta = info.extmetadata || {};
     return makeItem({
-      id: text(page.pageid || page.title),
-      source: "wikimedia-commons",
-      provider: "Wikimedia Commons",
-      title,
-      description,
-      url: info.url,
-      mimeType: info.mime,
-      size: info.size,
-      duration: info.duration,
-      creator,
+      id: text(page.pageid || page.title), source: "wikimedia-commons", provider: "Wikimedia Commons",
+      title: text(page.title).replace(/^File:/i, ""),
+      description: text(meta.ImageDescription?.value || meta.ObjectName?.value),
+      url: info.url, mimeType: info.mime, size: info.size, duration: info.duration,
+      creator: text(meta.Artist?.value || meta.Creator?.value),
       createdAt: meta.DateTimeOriginal?.value || meta.DateTime?.value,
       license: meta.LicenseShortName?.value,
     });
@@ -126,12 +82,7 @@ async function loadCommons(search, limit) {
 
 function unique(items) {
   const seen = new Set();
-  return items.filter((item) => {
-    const key = item.videoUrl;
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return items.filter((item) => item?.videoUrl && !seen.has(item.videoUrl) && seen.add(item.videoUrl));
 }
 
 export async function loadArchiveKannadaVideosProgressive({ limit = DEFAULT_LIMIT, search = "", force = false, onBatch } = {}) {
@@ -140,49 +91,45 @@ export async function loadArchiveKannadaVideosProgressive({ limit = DEFAULT_LIMI
   if (!force) {
     const cached = cache.get(key);
     if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
-      const first = cached.items.slice(0, FIRST_BATCH);
-      if (first.length) onBatch?.(first, true);
-      if (cached.items.length > first.length) onBatch?.(cached.items, false);
+      if (cached.items.length) onBatch?.(cached.items.slice(0, FIRST_BATCH), true);
+      if (cached.items.length > FIRST_BATCH) onBatch?.(cached.items, false);
       return cached.items;
     }
   }
 
-  const [openverse, commons] = await Promise.allSettled([
-    loadOpenverse(search, wanted),
-    loadCommons(search, wanted),
-  ]);
-  const items = unique([
-    ...(openverse.status === "fulfilled" ? openverse.value : []),
-    ...(commons.status === "fulfilled" ? commons.value : []),
-  ]).slice(0, wanted);
+  const all = [];
+  let firstSent = false;
+  const publish = (newItems) => {
+    const merged = unique([...all, ...newItems]).slice(0, wanted);
+    all.splice(0, all.length, ...merged);
+    if (!firstSent && merged.length) {
+      firstSent = true;
+      onBatch?.(merged.slice(0, FIRST_BATCH), true);
+    }
+    onBatch?.(merged, false);
+  };
 
-  if (items.length) onBatch?.(items.slice(0, FIRST_BATCH), true);
-  onBatch?.(items, false);
-  cache.set(key, { at: Date.now(), items });
-  return items;
+  // Do NOT wait for both providers. The first provider to respond immediately feeds the UI.
+  const openversePromise = loadOpenverse(search).then((items) => publish(items)).catch(() => {});
+  const commonsPromise = loadCommons(search).then((items) => publish(items)).catch(() => {});
+  await Promise.allSettled([openversePromise, commonsPromise]);
+
+  cache.set(key, { at: Date.now(), items: all.slice() });
+  return all;
 }
 
 export async function loadArchiveKannadaVideos(options = {}) {
   let latest = [];
-  await loadArchiveKannadaVideosProgressive({
-    ...options,
-    onBatch: (items) => { latest = items; },
-  });
+  await loadArchiveKannadaVideosProgressive({ ...options, onBatch: (items) => { latest = items; } });
   return latest;
 }
 
-export function startArchiveRefresh({ intervalMs = 60000, onUpdate, getSearch } = {}) {
+export function startArchiveRefresh({ intervalMs = 300000, onUpdate, getSearch } = {}) {
   const timer = window.setInterval(async () => {
     try {
-      const items = await loadArchiveKannadaVideosProgressive({
-        limit: 100,
-        search: typeof getSearch === "function" ? getSearch() : "",
-        force: true,
-      });
+      const items = await loadArchiveKannadaVideosProgressive({ limit: 100, search: typeof getSearch === "function" ? getSearch() : "", force: true });
       onUpdate?.(items);
-    } catch (error) {
-      console.warn("Kannada video source refresh failed:", error);
-    }
+    } catch {}
   }, intervalMs);
   return () => window.clearInterval(timer);
 }
