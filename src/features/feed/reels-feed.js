@@ -2,9 +2,12 @@ import { auth } from "../auth/firebase-client.js";
 import { recordWatchProgress } from "../earning/earning.js";
 import { loadArchiveKannadaVideosProgressive } from "../archive/archive-videos.js";
 
-const OPEN_VIDEO_SOURCE_RE = /^(archive|openverse|wikimedia-commons|internet-archive):/i;
+const OPEN_VIDEO_SOURCE_RE = /^(archive|openverse|wikimedia-commons|internet-archive|peertube|library-of-congress):/i;
 
-export async function loadReels(options = {}) { return loadArchiveKannadaVideosProgressive({ limit: 100, ...options }); }
+export async function loadReels(options = {}) {
+  const videos = await loadArchiveKannadaVideosProgressive({ limit: 100, ...options });
+  return videos.filter((video) => OPEN_VIDEO_SOURCE_RE.test(String(video?.id || "")));
+}
 
 export async function recordReelView(reelId) {
   if (OPEN_VIDEO_SOURCE_RE.test(String(reelId || ""))) return { ok: true, source: "open-video-provider" };
@@ -37,7 +40,7 @@ export function renderReel(video) {
   const likes = Number(video.likes || 0).toLocaleString();
   const mediaUrl = String(video.secureUrl || video.videoUrl || video.url || "").trim();
   const candidates = Array.isArray(video.sourceCandidates) ? video.sourceCandidates.map((url) => String(url || "").trim()).filter(Boolean) : [];
-  const provider = escapeHtml(video.provider || (video.source === "wikimedia-commons" ? "Wikimedia Commons" : video.source === "internet-archive" ? "Internet Archive" : "Open-source"));
+  const provider = escapeHtml(video.provider || "Open-source");
   const candidateData = escapeHtml(JSON.stringify([...new Set([mediaUrl, ...candidates].filter(Boolean))]));
   return `<article class="reel-view" data-video-id="${id}" data-source="${escapeHtml(video.source || "")}" data-video-candidates="${candidateData}">
     <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted loop playsinline preload="none"></video>
