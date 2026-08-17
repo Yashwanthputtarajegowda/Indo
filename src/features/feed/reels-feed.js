@@ -2,12 +2,14 @@ import { auth } from "../auth/firebase-client.js";
 import { recordWatchProgress } from "../earning/earning.js";
 import { loadArchiveKannadaVideosProgressive } from "../archive/archive-videos.js";
 
+const OPEN_VIDEO_SOURCE_RE = /^(archive|openverse|wikimedia-commons|internet-archive):/i;
+
 export async function loadReels(options = {}) {
   return loadArchiveKannadaVideosProgressive({ limit: 100, ...options });
 }
 
 export async function recordReelView(reelId) {
-  if (/^(archive|openverse|wikimedia-commons):/.test(String(reelId || ""))) return { ok: true, source: "open-video-provider" };
+  if (OPEN_VIDEO_SOURCE_RE.test(String(reelId || ""))) return { ok: true, source: "open-video-provider" };
   const apiBase = window.INDO_API_BASE || "";
   const headers = {};
   if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
@@ -19,7 +21,7 @@ export async function recordReelView(reelId) {
 function escapeHtml(value = "") { return String(value).replace(/[&<>\\"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '\"':"&quot;", "'":"&#039;" })[char]); }
 function cleanUserId(value = "") { return String(value || "").trim().replace(/^@+/, ""); }
 function bindWatchProgress(videoElement, mediaId) {
-  if (/^(archive|openverse|wikimedia-commons):/.test(String(mediaId || ""))) return;
+  if (OPEN_VIDEO_SOURCE_RE.test(String(mediaId || ""))) return;
   let lastReportedAt = 0;
   const sendDelta = () => { const current = Number(videoElement.currentTime || 0), delta = current - lastReportedAt; if (delta >= 10) { lastReportedAt = current; recordWatchProgress(mediaId, Math.min(15, delta)); } };
   videoElement.addEventListener("timeupdate", sendDelta);
@@ -28,20 +30,20 @@ function bindWatchProgress(videoElement, mediaId) {
 }
 
 export function renderReel(video) {
-  const creatorRaw = String(video.userId || video.username || video.creator || video.provider || "Kannada video");
+  const creatorRaw = String(video.userId || video.username || video.creator || video.provider || "Open-source video");
   const creator = escapeHtml(creatorRaw.replace(/^@/, ""));
-  const userId = escapeHtml(cleanUserId(video.userId || video.username || video.creator || video.provider || "kannada-video"));
+  const userId = escapeHtml(cleanUserId(video.userId || video.username || video.creator || video.provider || "open-video"));
   const targetUid = escapeHtml(video.ownerUid || "");
   const caption = escapeHtml(video.caption || video.title || "");
   const id = escapeHtml(video.id);
   const likes = Number(video.likes || 0).toLocaleString();
   const mediaUrl = String(video.secureUrl || video.videoUrl || video.url || "").trim();
-  const provider = escapeHtml(video.provider || (video.source === "wikimedia-commons" ? "Wikimedia Commons" : "Openverse"));
+  const provider = escapeHtml(video.provider || (video.source === "wikimedia-commons" ? "Wikimedia Commons" : video.source === "internet-archive" ? "Internet Archive" : "Open-source"));
   return `<article class="reel-view" data-video-id="${id}" data-source="${escapeHtml(video.source || "")}">
     <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted loop playsinline preload="none"></video>
     <div class="reel-gradient"></div>
     <div class="reel-info"><div class="reel-user" data-profile-uid="${targetUid}" data-profile-username="${userId}">
-      <button class="avatar small reel-avatar" type="button" data-profile-avatar data-profile-uid="${targetUid}" data-profile-username="${userId}" data-open-profile="${userId}" aria-label="Open @${userId} profile">${escapeHtml(creator.charAt(0).toUpperCase() || "K")}</button>
+      <button class="avatar small reel-avatar" type="button" data-profile-avatar data-profile-uid="${targetUid}" data-profile-username="${userId}" data-open-profile="${userId}" aria-label="Open @${userId} profile">${escapeHtml(creator.charAt(0).toUpperCase() || "O")}</button>
       <button class="reel-user-id" type="button" data-open-profile="${userId}" data-profile-uid="${targetUid}" data-profile-username="${userId}">@${userId}</button>
       ${targetUid ? `<button class="follow-btn" data-follow-uid="${targetUid}" type="button">Follow</button>` : ""}
     </div><p>${caption}</p><small>♪ ${provider}</small></div>
