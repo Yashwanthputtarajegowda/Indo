@@ -1,5 +1,5 @@
 window.INDO_API_BASE =
-  window.INDO_API_BASE || "https://indo-backend-production-41b1.up.railway.app";
+  window.INDO_API_BASE || "https://indo-backend-456919073297.asia-south1.run.app";
 
 (function installRuntimeConfig() {
   if (window.__indoRuntimeV130) return;
@@ -24,8 +24,7 @@ window.INDO_API_BASE =
     const preview = document.getElementById("story-preview");
     const publish = document.getElementById("story-publish-button");
     const add = document.getElementById("story-add-button");
-    if (!preview || !publish || !add || preview.dataset.runtimeControls === "1")
-      return;
+    if (!preview || !publish || !add || preview.dataset.runtimeControls === "1") return;
     preview.dataset.runtimeControls = "1";
     publish.style.setProperty("display", "none", "important");
     publish.style.setProperty("visibility", "hidden", "important");
@@ -33,39 +32,22 @@ window.INDO_API_BASE =
     add.style.setProperty("position", "absolute", "important");
     add.style.setProperty("right", "14px", "important");
     add.style.setProperty("bottom", "62px", "important");
-
     const done = document.createElement("button");
     done.id = "indo-story-done-hit";
     done.type = "button";
     done.textContent = "Done";
     done.setAttribute("aria-label", "Done");
-    done.addEventListener(
-      "pointerup",
-      (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (done.disabled) return;
-        done.disabled = true;
-        done.textContent = "Posting...";
-        publish.disabled = false;
-        publish.removeAttribute("disabled");
-        try {
-          publish.click();
-        } catch {
-          done.disabled = false;
-          done.textContent = "Done";
-        }
-      },
-      true,
-    );
-    done.addEventListener(
-      "click",
-      (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      },
-      true,
-    );
+    done.addEventListener("pointerup", (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (done.disabled) return;
+      done.disabled = true;
+      done.textContent = "Posting...";
+      publish.disabled = false;
+      publish.removeAttribute("disabled");
+      try { publish.click(); } catch { done.disabled = false; done.textContent = "Done"; }
+    }, true);
+    done.addEventListener("click", (event) => { event.preventDefault(); event.stopImmediatePropagation(); }, true);
     preview.appendChild(done);
   }
 
