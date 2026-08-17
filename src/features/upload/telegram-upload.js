@@ -57,6 +57,6 @@ async function uploadSingleFile(file, options = {}) {
 export async function uploadVideoToTelegram(file, options = {}) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
-  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 20 MB or smaller so it can be stored as one Telegram file.");
+  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 20 MB or smaller.");
   return uploadSingleFile(file, options);
 }
