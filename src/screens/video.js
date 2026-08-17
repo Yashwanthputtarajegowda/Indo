@@ -1,7 +1,7 @@
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
-import { loadArchiveKannadaVideosProgressive } from "../features/archive/archive-videos.js?v=20260817-video-thumb1";
+import { loadArchiveKannadaVideosProgressive } from "../features/archive/archive-videos.js?v=20260817-video-thumb2";
 
-const STYLE_ID = "indo-video-archive-v4";
+const STYLE_ID = "indo-video-archive-v5";
 
 function esc(value = "") { return String(value).replace(/[&<>\"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"})[c]); }
 function age(value){const t=Number(value||0);if(!t)return"Latest";const m=Math.max(0,Math.floor((Date.now()-t)/60000));if(m<1)return"Just now";if(m<60)return`${m}m ago`;const h=Math.floor(m/60);return h<24?`${h}h ago`:`${Math.floor(h/24)}d ago`;}
@@ -18,7 +18,7 @@ function installStyles(){
     .indo-archive-head{display:flex;justify-content:space-between;align-items:end;margin:4px 2px 10px}.indo-archive-head h2{margin:0;font-size:17px;font-weight:900}.indo-archive-head small{color:#8c8794;font-size:8px}
     .indo-archive-status{padding:20px;text-align:center;border:1px dashed #2a2733;border-radius:13px;color:#85808e;font-size:11px}.indo-archive-list{display:grid;gap:14px}
     .indo-archive-card{overflow:hidden;border:1px solid #26242d;border-radius:14px;background:#09090e;box-shadow:0 9px 25px rgba(0,0,0,.24);cursor:pointer}
-    .indo-archive-thumb-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#101018;overflow:hidden}.indo-archive-thumb{width:100%;height:100%;display:block;object-fit:cover}.indo-archive-thumb-fallback{width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,#17131e,#08080d);color:#b85fff;font-size:42px;font-weight:900}.indo-archive-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border:1px solid rgba(255,255,255,.3);border-radius:50%;background:rgba(0,0,0,.58);backdrop-filter:blur(5px);color:#fff;display:grid;place-items:center;font-size:24px;padding-left:4px}.indo-archive-card-body{padding:10px 11px 12px}.indo-archive-title{margin:0;color:#f5f3fa;font-size:14px;font-weight:900;line-height:1.3}.indo-archive-meta{display:flex;gap:7px;margin-top:6px;color:#888392;font-size:9px}.indo-archive-source{color:#b85fff;font-weight:800}.indo-archive-top{padding:4px 6px;font-size:8px;font-weight:800;border-radius:999px;background:rgba(183,91,255,.16);color:#d3a1ff;border:1px solid rgba(183,91,255,.25)}
+    .indo-archive-thumb-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#101018;overflow:hidden}.indo-archive-thumb{width:100%;height:100%;display:block;object-fit:cover}.indo-archive-thumb-fallback{width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,#17131e,#08080d);color:#b85fff;font-size:42px;font-weight:900}.indo-archive-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border:1px solid rgba(255,255,255,.3);border-radius:50%;background:rgba(0,0,0,.58);backdrop-filter:blur(5px);color:#fff;display:grid;place-items:center;font-size:24px;padding-left:4px}.indo-archive-card-body{padding:10px 11px 12px}.indo-archive-title{margin:0;color:#f5f3fa;font-size:14px;font-weight:900;line-height:1.3}.indo-archive-meta{display:flex;gap:7px;margin-top:6px;color:#888392;font-size:9px}.indo-archive-source{display:none}.indo-archive-top{padding:4px 6px;font-size:8px;font-weight:800;border-radius:999px;background:rgba(183,91,255,.16);color:#d3a1ff;border:1px solid rgba(183,91,255,.25)}
   `;
   document.head.appendChild(style);
 }
@@ -70,4 +70,13 @@ export async function renderVideo(app){
   refreshTimer=window.setInterval(()=>load(true).catch(()=>{}),60000);
   searchInput.addEventListener("input",()=>{window.clearTimeout(searchTimer);searchTimer=window.setTimeout(()=>{list.innerHTML="";status.textContent="Searching…";load(true).catch(()=>{});},350);});
   const observer=new MutationObserver(()=>{if(!document.body.contains(app)){stopped=true;window.clearInterval(refreshTimer);window.clearTimeout(searchTimer);observer.disconnect();}});observer.observe(document.body,{childList:true,subtree:true});
+
+  list.addEventListener("click",(event)=>{
+    const cardEl=event.target.closest("[data-watch-video-id]");
+    if(!cardEl)return;
+    const item=window.__indoWatchVideoItems?.get(String(cardEl.dataset.watchVideoId));
+    if(!item)return;
+    sessionStorage.setItem("indo:watch-video-current",JSON.stringify(item));
+    window.__indoNavigate?.("watch-video");
+  });
 }
