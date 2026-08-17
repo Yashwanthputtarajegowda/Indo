@@ -80,11 +80,42 @@ export function bindReelWatchProgress(root) {
 
 export function installReelVideoObserver(root) {
   const videos = [...root.querySelectorAll(".reel-video")];
-  const activate = (video) => { if (video.dataset.activated === "1") return; video.dataset.activated = "1"; video.preload = "metadata"; video.load(); };
-  if (!("IntersectionObserver" in window)) { videos.slice(0, 2).forEach(activate); return; }
+  const activate = (video) => {
+    if (video.dataset.activated === "1") return;
+    video.dataset.activated = "1";
+    video.preload = "metadata";
+    video.load();
+  };
+
+  const playWhenReady = (video) => {
+    if (!video || video.dataset.playBound === "1") return;
+    video.dataset.playBound = "1";
+    const play = () => {
+      if (!video.closest(".reel-view")) return;
+      if (!video.paused) return;
+      video.play().catch(() => {});
+    };
+    if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) play();
+    else video.addEventListener("canplay", play, { once: true });
+  };
+
+  if (!("IntersectionObserver" in window)) {
+    videos.slice(0, 2).forEach((video) => {
+      activate(video);
+      playWhenReady(video);
+    });
+    return;
+  }
+
   const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
     const video = entry.target;
-    if (entry.isIntersecting) { activate(video); video.play().catch(() => {}); } else video.pause();
+    if (entry.isIntersecting) {
+      activate(video);
+      playWhenReady(video);
+    } else {
+      video.pause();
+    }
   }), { root, rootMargin: "600px 0px", threshold: 0.2 });
+
   videos.forEach((video) => observer.observe(video));
 }
