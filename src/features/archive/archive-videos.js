@@ -4,6 +4,7 @@ const DEFAULT_LIMIT = 100;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const FIRST_BATCH = 1;
 const SOURCE_PAGE_SIZE = 10;
+const MAX_PAGES = 8;
 const MAX_FILE_SIZE = 700 * 1024 * 1024;
 
 let cache = new Map();
@@ -43,10 +44,10 @@ function makeItem({ id, source, provider, title, description, url, thumbnailUrl,
   };
 }
 
-async function loadOpenverse(search) {
+async function loadOpenversePage(search, page) {
   const params = new URLSearchParams({
     q: search ? `Kannada ${search}` : "Kannada",
-    page: "1", page_size: String(SOURCE_PAGE_SIZE),
+    page: String(page), page_size: String(SOURCE_PAGE_SIZE),
     unstable__sort_by: "indexed_on", unstable__sort_dir: "desc",
   });
   const data = await fetchJson(`${OPENVERSE_URL}?${params.toString()}`);
@@ -60,11 +61,12 @@ async function loadOpenverse(search) {
   })).filter(Boolean);
 }
 
-async function loadCommons(search) {
+async function loadCommonsPage(search, offset) {
   const params = new URLSearchParams({
     action: "query", generator: "search", gsrsearch: search ? `Kannada ${search} filetype:video` : "Kannada filetype:video",
-    gsrnamespace: "6", gsrlimit: String(SOURCE_PAGE_SIZE), gsrqiprofile: "classic_noboostlinks",
-    prop: "imageinfo", iiprop: "url|mime|size|extmetadata", iiurlwidth: "720", format: "json", origin: "*",
+    gsrnamespace: "6", gsrlimit: String(SOURCE_PAGE_SIZE), gsroffset: String(offset),
+    gsrqiprofile: "classic_noboostlinks", prop: "imageinfo", iiprop: "url|mime|size|extmetadata",
+    iiurlwidth: "720", format: "json", origin: "*",
   });
   const data = await fetchJson(`${COMMONS_API}?${params.toString()}`);
   const pages = Object.values(data?.query?.pages || {});
@@ -74,11 +76,9 @@ async function loadCommons(search) {
       id: text(page.pageid || page.title), source: "wikimedia-commons", provider: "Wikimedia Commons",
       title: text(page.title).replace(/^File:/i, ""),
       description: text(meta.ImageDescription?.value || meta.ObjectName?.value),
-      url: info.url, thumbnailUrl: info.thumburl || info.url,
-      mimeType: info.mime, size: info.size, duration: info.duration,
-      creator: text(meta.Artist?.value || meta.Creator?.value),
-      createdAt: meta.DateTimeOriginal?.value || meta.DateTime?.value,
-      license: meta.LicenseShortName?.value,
+      url: info.url, thumbnailUrl: info.thumburl || info.url, mimeType: info.mime, size: info.size,
+      duration: info.duration, creator: text(meta.Artist?.value || meta.Creator?.value),
+      createdAt: meta.DateTimeOriginal?.value || meta.DateTime?.value, license: meta.LicenseShortName?.value,
     });
   }).filter((item) => item && /video\/(webm|mp4|ogg)|\.(webm|mp4|ogv)$/i.test(`${item.mimeType} ${item.url}`));
 }
@@ -112,9 +112,22 @@ export async function loadArchiveKannadaVideosProgressive({ limit = DEFAULT_LIMI
     onBatch?.(merged, false);
   };
 
-  const openversePromise = loadOpenverse(search).then((items) => publish(items)).catch(() => {});
-  const commonsPromise = loadCommons(search).then((items) => publish(items)).catch(() => {});
-  await Promise.allSettled([openversePromise, commonsPromise]);
+  // First pages race for the first thumbnail. Extra pages fill the feed in the background.
+  const firstPage = await Promise.allSettled([
+    loadOpenversePage(search, 1),
+    loadCommonsPage(search, 0),
+  ]);
+  for (const result of firstPage) if (result.status === "fulfilled") publish(result.value);
+
+  const remaining = [];
+  for (let page = 2; page <= MAX_PAGES; page += 1) {
+    remaining.push(loadOpenversePage(search, page));
+    remaining.push(loadCommonsPage(search, (page - 1) * SOURCE_PAGE_SIZE));
+  }
+  for (const result of await Promise.allSettled(remaining)) {
+    if (result.status === "fulfilled") publish(result.value);
+    if (all.length >= wanted) break;
+  }
 
   cache.set(key, { at: Date.now(), items: all.slice() });
   return all;
