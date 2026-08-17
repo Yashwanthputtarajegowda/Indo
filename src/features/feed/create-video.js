@@ -1,7 +1,7 @@
 import { auth } from "../auth/firebase-client.js";
-import { uploadVideoToTelegram } from "../upload/telegram-upload.js";
+import { uploadVideoToTelegram } from "../upload/telegram-upload.js?v=20260817-telegram-upload-v3";
 
-const MAX_VIDEO_BYTES = 20 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
 async function readVideoMetadata(file) {
   const video = document.createElement("video");
@@ -25,7 +25,7 @@ async function readVideoMetadata(file) {
 export async function uploadMedia(file, mediaType = "video", options = {}) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
-  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 20 MB or smaller.");
+  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 50 MB or smaller.");
 
   const user = auth.currentUser;
   if (!user) throw new Error("Please login first.");
