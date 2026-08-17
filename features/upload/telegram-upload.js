@@ -20,6 +20,19 @@ function cleanTags(tags) {
     : [];
 }
 
+function safeHeaderFileName(fileName, mimeType = "video/mp4") {
+  const original = String(fileName || "").trim();
+  const extensionMatch = original.match(/\.[A-Za-z0-9]{1,8}$/);
+  const extension = extensionMatch ? extensionMatch[0].toLowerCase() : (mimeType === "video/webm" ? ".webm" : mimeType === "video/quicktime" ? ".mov" : ".mp4");
+  const base = original
+    .replace(/\.[A-Za-z0-9]{1,8}$/, "")
+    .replace(/[^A-Za-z0-9_-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 100);
+  return `${base || "video"}${extension}`;
+}
+
 async function uploadSingleFile(file, options = {}) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
@@ -38,6 +51,7 @@ async function uploadSingleFile(file, options = {}) {
   if (!base) throw new Error("Video upload service is unavailable.");
 
   const mediaType = options.mediaType === "reel" ? "reel" : "video";
+  const mimeType = file.type || "video/mp4";
   const title = cleanText(
     options.title || file.name || (mediaType === "reel" ? "Untitled reel" : "Untitled video"),
     120,
@@ -67,11 +81,11 @@ async function uploadSingleFile(file, options = {}) {
 
   const headers = {
     Authorization: `Bearer ${token}`,
-    "Content-Type": file.type || "video/mp4",
+    "Content-Type": mimeType,
     "X-Upload-Id": uploadId,
-    "X-File-Name": file.name,
+    "X-File-Name": safeHeaderFileName(file.name, mimeType),
     "X-File-Size": String(file.size),
-    "X-Mime-Type": file.type || "video/mp4",
+    "X-Mime-Type": mimeType,
     "X-Media-Type": mediaType,
   };
 
