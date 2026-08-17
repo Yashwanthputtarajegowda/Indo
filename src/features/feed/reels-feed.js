@@ -43,7 +43,7 @@ export function renderReel(video) {
   const provider = escapeHtml(video.provider || "Open-source");
   const candidateData = escapeHtml(JSON.stringify([...new Set([mediaUrl, ...candidates].filter(Boolean))]));
   return `<article class="reel-view" data-video-id="${id}" data-source="${escapeHtml(video.source || "")}" data-video-candidates="${candidateData}">
-    <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted loop playsinline autoplay preload="metadata"></video>
+    <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted="true" loop playsinline autoplay preload="auto"></video>
     <div class="reel-gradient"></div>
     <div class="reel-info"><div class="reel-user" data-profile-uid="${targetUid}" data-profile-username="${userId}">
       <button class="avatar small reel-avatar" type="button" data-profile-avatar data-profile-uid="${targetUid}" data-profile-username="${userId}" data-open-profile="${userId}" aria-label="Open @${userId} profile">${escapeHtml(creator.charAt(0).toUpperCase() || "O")}</button>
@@ -66,63 +66,79 @@ export function bindReelWatchProgress(root) {
     if (video.dataset.bound === "1") return;
     video.dataset.bound = "1";
     video.addEventListener("error", () => {
-      video.dataset.videoFailed = "1";
       const candidates = getCandidates(video);
       const current = String(video.currentSrc || video.src || "");
       const index = candidates.findIndex((url) => url === current);
-      const next = candidates.slice(index + 1).find(Boolean);
+      const next = candidates[index + 1];
       if (!next) return;
       video.src = next;
       video.load();
-      video.play().catch(() => {});
+      attemptAutoplay(video);
     });
   });
+}
+
+function attemptAutoplay(video) {
+  if (!video || !video.isConnected) return;
+  video.muted = true;
+  video.defaultMuted = true;
+  video.playsInline = true;
+  video.setAttribute("muted", "");
+  video.setAttribute("playsinline", "");
+  video.setAttribute("autoplay", "");
+  const result = video.play();
+  if (result && typeof result.catch === "function") {
+    result.catch(() => {
+      setTimeout(() => {
+        if (!video.paused) return;
+        video.muted = true;
+        video.play().catch(() => {});
+      }, 250);
+    });
+  }
 }
 
 export function installReelVideoObserver(root) {
   const videos = [...root.querySelectorAll(".reel-video")];
   const activate = (video) => {
     video.preload = "auto";
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
     if (video.readyState === HTMLMediaElement.HAVE_NOTHING) video.load();
   };
 
-  const playWhenReady = (video) => {
-    if (!video || video.dataset.playBound === "1") return;
-    video.dataset.playBound = "1";
-    const play = () => {
-      if (!video.isConnected || !video.closest(".reel-view")) return;
-      video.muted = true;
-      video.playsInline = true;
-      video.play().catch(() => {
-        const retry = () => video.play().catch(() => {});
-        video.addEventListener("loadeddata", retry, { once: true });
-        video.addEventListener("canplay", retry, { once: true });
-      });
-    };
-    if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) play();
+  const start = (video) => {
+    activate(video);
+    const play = () => attemptAutoplay(video);
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) play();
     else {
       video.addEventListener("loadeddata", play, { once: true });
       video.addEventListener("canplay", play, { once: true });
+      video.addEventListener("canplaythrough", play, { once: true });
     }
   };
 
   if (!("IntersectionObserver" in window)) {
-    videos.slice(0, 2).forEach((video) => { activate(video); playWhenReady(video); });
-    return;
+    videos.slice(0, 2).forEach(start);
+  } else {
+    const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
+      const video = entry.target;
+      if (entry.isIntersecting) {
+        start(video);
+        const index = videos.indexOf(video);
+        const next = videos[index + 1];
+        if (next) { next.preload = "auto"; if (next.readyState === HTMLMediaElement.HAVE_NOTHING) next.load(); }
+      } else {
+        video.pause();
+      }
+    }), { root, rootMargin: "1000px 0px", threshold: 0.1 });
+    videos.forEach((video) => observer.observe(video));
   }
 
-  const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
-    const video = entry.target;
-    if (entry.isIntersecting) {
-      activate(video);
-      playWhenReady(video);
-      const index = videos.indexOf(video);
-      videos.slice(index + 1, index + 2).forEach((next) => { next.preload = "auto"; if (next.readyState === HTMLMediaElement.HAVE_NOTHING) next.load(); });
-    } else {
-      video.pause();
-      video.removeAttribute("data-play-bound");
-    }
-  }), { root, rootMargin: "800px 0px", threshold: 0.35 });
-
-  videos.forEach((video) => observer.observe(video));
+  // A user gesture on the reels surface unlocks playback on stricter mobile WebViews.
+  const gestureStart = () => videos.find((video) => video.closest(".reel-view")?.matches(":hover")) || videos.find((video) => video.getBoundingClientRect().top >= -window.innerHeight * 0.5 && video.getBoundingClientRect().top < window.innerHeight * 0.75);
+  const resumeVisible = () => { const video = gestureStart(); if (video) attemptAutoplay(video); };
+  root.addEventListener("touchstart", resumeVisible, { passive: true });
+  root.addEventListener("click", resumeVisible, { passive: true });
 }
