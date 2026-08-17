@@ -2,7 +2,7 @@ import { icons } from "../data.js";
 import { nav } from "../components/nav.js";
 import { uploadVideo } from "../features/feed/create-video.js";
 
-const STYLE_ID = "indo-upload-video-v222";
+const STYLE_ID = "indo-upload-video-v223";
 function installStyles() {
   if (document.getElementById(STYLE_ID)) return;
   const s = document.createElement("style");
@@ -13,6 +13,9 @@ function installStyles() {
 export function renderUploadVideo(app) {
   installStyles();
   app.innerHTML = `<div class="app-shell indo-upload-shell"><header class="indo-upload-head"><button type="button" data-screen="create" aria-label="Back">${icons.back}</button><h2>Upload Video</h2><span></span></header><main class="indo-upload-main"><div class="indo-upload-label">Video Preview</div><div class="indo-video-preview" id="upload-preview"><div class="indo-preview-placeholder"><b>▶</b><span>Select a video to preview</span></div></div><div class="indo-upload-label" style="margin-top:12px">Thumbnail</div><div class="indo-thumb-row"><button class="indo-thumb active" type="button">Auto</button><button class="indo-thumb" type="button">Frame 1</button><button class="indo-thumb" type="button">Frame 2</button><button class="indo-thumb" id="choose-video" type="button">＋</button></div><section><div class="indo-upload-section-title">Add Details</div><div class="indo-upload-field"><label for="upload-title">Title *</label><input id="upload-title" maxlength="100" placeholder="Add an attractive title"></div><div class="indo-upload-field"><label for="upload-more">More</label><textarea id="upload-more" class="indo-more-box" maxlength="500" placeholder="Enter details here... (optional)"></textarea></div></section><section id="upload-options"><button class="indo-upload-row clickable" type="button" data-option="privacy"><span class="label">◉ <span>Privacy</span></span><span class="value"><span id="privacy-value">Public</span> ›</span></button><button class="indo-upload-row clickable" type="button" data-option="comments"><span class="label">◉ <span>Allow Comments</span></span><span class="value"><span class="indo-toggle on" id="comments-toggle"><i></i></span></span></button><button class="indo-upload-row clickable" type="button" data-option="duet"><span class="label">◌ <span>Allow Duet</span></span><span class="value"><span class="indo-toggle on" id="duet-toggle"><i></i></span></span></button><button class="indo-upload-row clickable" type="button" data-option="category"><span class="label">▣ <span>Category</span></span><span class="value"><span id="category-value">Select Category</span> ›</span></button><button class="indo-upload-row clickable" type="button" data-option="tags"><span class="label">◇ <span>Tags</span></span><span class="value"><span id="tags-value">Add tags</span> ›</span></button><button class="indo-upload-row clickable" type="button" data-option="location"><span class="label">⌖ <span>Location</span></span><span class="value"><span id="location-value">Add location</span> ›</span></button><div class="indo-upload-hint">These options are saved with your video and shown inside Watch → More → Details.</div></section><input id="upload-file" type="file" accept="video/*" hidden><div id="upload-message" class="indo-upload-message"></div><div class="indo-upload-progress"><span id="upload-progress-bar"></span></div><button id="create-video-submit" class="indo-upload-primary" type="button">Create Video</button></main>${nav("create")}</div>`;
+  app.querySelector('[data-option="tags"]')?.remove();
+  app.querySelector('[data-option="location"]')?.remove();
+  app.querySelector(".indo-upload-hint")?.remove();
   const file = app.querySelector("#upload-file"),
     choose = app.querySelector("#choose-video"),
     preview = app.querySelector("#upload-preview"),
@@ -61,12 +64,6 @@ export function renderUploadVideo(app) {
       .classList.toggle("on", values.allowDuet);
     app.querySelector("#category-value").textContent =
       values.category || "Select Category";
-    app.querySelector("#tags-value").textContent = values
-      .tags.length
-      ? values.tags.map((t) => `#${t}`).join(" ")
-      : "Add tags";
-    app.querySelector("#location-value").textContent =
-      values.location || "Add location";
   }
   app.querySelectorAll("[data-option]").forEach((row) =>
     row.addEventListener("click", () => {
@@ -78,35 +75,15 @@ export function renderUploadVideo(app) {
             values.privacy,
           ) || values.privacy;
         const normalized = answer.trim().toLowerCase();
-        if (
-          ["public", "followers", "private"].includes(
-            normalized,
-          )
-        )
+        if (["public", "followers", "private"].includes(normalized))
           values.privacy = normalized;
       } else if (option === "comments") {
         values.allowComments = !values.allowComments;
       } else if (option === "duet") {
         values.allowDuet = !values.allowDuet;
       } else if (option === "category") {
-        const answer =
-          window.prompt("Category", values.category) || "";
+        const answer = window.prompt("Category", values.category) || "";
         values.category = answer.trim().slice(0, 60);
-      } else if (option === "tags") {
-        const answer =
-          window.prompt(
-            "Tags: separate with commas.",
-            values.tags.join(", "),
-          ) ?? values.tags.join(", ");
-        values.tags = answer
-          .split(",")
-          .map((t) => t.trim().replace(/^#/, ""))
-          .filter(Boolean)
-          .slice(0, 20);
-      } else if (option === "location") {
-        const answer =
-          window.prompt("Location", values.location) || "";
-        values.location = answer.trim().slice(0, 120);
       }
       refreshOptions();
     }),
@@ -118,12 +95,8 @@ export function renderUploadVideo(app) {
       message.textContent = "Select a video first.";
       return;
     }
-    const title = app
-      .querySelector("#upload-title")
-      .value.trim();
-    const more = app
-      .querySelector("#upload-more")
-      .value.trim();
+    const title = app.querySelector("#upload-title").value.trim();
+    const more = app.querySelector("#upload-more").value.trim();
     if (!title) {
       message.textContent = "Add a title first.";
       app.querySelector("#upload-title").focus();
@@ -140,8 +113,6 @@ export function renderUploadVideo(app) {
         allowComments: values.allowComments,
         allowDuet: values.allowDuet,
         category: values.category,
-        tags: values.tags,
-        location: values.location,
         onProgress: (percent, text) => {
           bar.style.width = `${percent}%`;
           message.textContent = text;
@@ -149,14 +120,9 @@ export function renderUploadVideo(app) {
       });
       bar.style.width = "100%";
       message.textContent = "Your video is published!";
-      setTimeout(
-        () => window.__indoNavigate?.("video"),
-        700,
-      );
+      setTimeout(() => window.__indoNavigate?.("video"), 700);
     } catch (error) {
-      message.textContent =
-        error?.message ||
-        "Upload failed. Please try again.";
+      message.textContent = error?.message || "Upload failed. Please try again.";
       submit.disabled = false;
     }
   });
