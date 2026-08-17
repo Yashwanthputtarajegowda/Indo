@@ -10,16 +10,28 @@ let cache = new Map();
 function encode(value) { return encodeURIComponent(String(value || "")); }
 function escapeFileName(value) { return String(value || "").split("/").map((part) => encodeURIComponent(part)).join("/"); }
 
-function pickVideoFile(files = []) {
-  return files.filter((file) => file && file.name && !file.private).map((file) => {
-    const name = String(file.name), format = String(file.format || "").toLowerCase(), source = `${name} ${format}`.toLowerCase();
-    let score = 0;
-    if (/\.mp4$/i.test(name)) score += 100;
-    if (source.includes("mpeg4") || source.includes("h.264")) score += 60;
-    if (source.includes("video")) score += 20;
-    if (file.source === "original") score += 10;
-    return { file, score };
-  }).filter(({ file }) => /\.(mp4|m4v|webm|mov)$/i.test(String(file.name || ""))).sort((a,b) => b.score-a.score)[0]?.file || null;
+function videoFileScore(file) {
+  if (!file || file.private || !file.name) return -Infinity;
+  const name = String(file.name);
+  const lower = `${name} ${String(file.format || "")}`.toLowerCase();
+  if (!/\.(mp4|m4v|webm|mov)$/i.test(name)) return -Infinity;
+  let score = 0;
+  if (/\.mp4$/i.test(name)) score += 1000;
+  if (lower.includes("mpeg4") || lower.includes("h.264") || lower.includes("h264")) score += 250;
+  if (lower.includes("video")) score += 40;
+  if (lower.includes("original")) score -= 30;
+  if (file.source === "original") score -= 20;
+  const size = Number(file.size || 0);
+  if (size > 0 && size < 500 * 1024 * 1024) score += 20;
+  if (size > 1024 * 1024 * 1024) score -= 50;
+  return score;
+}
+
+function pickVideoFiles(files = []) {
+  return files
+    .filter((file) => videoFileScore(file) > -Infinity)
+    .sort((a, b) => videoFileScore(b) - videoFileScore(a))
+    .slice(0, 6);
 }
 
 async function fetchJson(url) {
@@ -50,10 +62,35 @@ async function resolveItem(item) {
   if (!identifier) return null;
   try {
     const data = await fetchJson(`${IA_METADATA_BASE}${encode(identifier)}`);
-    const file = pickVideoFile(Array.isArray(data?.files) ? data.files : []);
-    if (!file) return null;
-    const url = `https://archive.org/download/${encode(identifier)}/${escapeFileName(file.name)}`;
-    return { id:`archive:${identifier}:${file.name}`, source:"internet-archive", archiveIdentifier:identifier, creator:"Internet Archive", creatorName:"Internet Archive", title:String(item.title || data?.metadata?.title || identifier), description:String(item.description || data?.metadata?.description || ""), caption:String(item.description || data?.metadata?.description || ""), createdAt:Date.parse(String(item.date || data?.metadata?.date || "")) || 0, videoUrl:url, secureUrl:url, url, mimeType:/\.webm$/i.test(file.name)?"video/webm":"video/mp4", size:Number(file.size||0), duration:Number(file.length||0), views:0, likes:0, comments:0, shares:0, saves:0, mediaType:"video" };
+    const files = pickVideoFiles(Array.isArray(data?.files) ? data.files : []);
+    if (!files.length) return null;
+    const candidates = files.map((file) => `https://archive.org/download/${encode(identifier)}/${escapeFileName(file.name)}`);
+    const primary = candidates[0];
+    const primaryFile = files[0];
+    return {
+      id: `archive:${identifier}:${primaryFile.name}`,
+      source: "internet-archive",
+      archiveIdentifier: identifier,
+      archiveVideoCandidates: candidates,
+      creator: "Internet Archive",
+      creatorName: "Internet Archive",
+      title: String(item.title || data?.metadata?.title || identifier),
+      description: String(item.description || data?.metadata?.description || ""),
+      caption: String(item.description || data?.metadata?.description || ""),
+      createdAt: Date.parse(String(item.date || data?.metadata?.date || "")) || 0,
+      videoUrl: primary,
+      secureUrl: primary,
+      url: primary,
+      mimeType: /\.webm$/i.test(primaryFile.name) ? "video/webm" : "video/mp4",
+      size: Number(primaryFile.size || 0),
+      duration: Number(primaryFile.length || 0),
+      views: 0,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      saves: 0,
+      mediaType: "video",
+    };
   } catch { return null; }
 }
 
