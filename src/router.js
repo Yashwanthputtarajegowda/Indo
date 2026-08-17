@@ -3,6 +3,7 @@ import { renderLogin, renderSignup } from "./screens/auth.js";
 import { nav } from "./components/nav.js";
 import { renderHomeTopbar, installHomeTopbarStyles } from "./screens/home-topbar-v2.js";
 import { prefetchVideoSection } from "./features/feed/video-prefetch.js";
+import { installExternalVideoLinkCreate } from "./features/feed/external-video-link.js";
 
 const NAV_STYLE_ID = "indo-universal-nav";
 const moduleCache = new Map();
@@ -174,7 +175,10 @@ export async function render(app) {
       case "reels": await lazy(app, "reels", SCREEN_MODULES.reels[0], SCREEN_MODULES.reels[1]); break;
       case "video": await lazy(app, "video", SCREEN_MODULES.video[0], SCREEN_MODULES.video[1]); break;
       case "watch-video": await lazy(app, "watch-video", SCREEN_MODULES["watch-video"][0], SCREEN_MODULES["watch-video"][1]); break;
-      case "create": await lazy(app, "create", SCREEN_MODULES.create[0], SCREEN_MODULES.create[1]); break;
+      case "create":
+        await lazy(app, "create", SCREEN_MODULES.create[0], SCREEN_MODULES.create[1]);
+        installExternalVideoLinkCreate(app);
+        break;
       case "reel-create": await lazy(app, "reel-create", SCREEN_MODULES["reel-create"][0], SCREEN_MODULES["reel-create"][1]); break;
       case "upload-video": await lazy(app, "upload-video", SCREEN_MODULES["upload-video"][0], SCREEN_MODULES["upload-video"][1]); break;
       case "story-create": await lazy(app, "story-create", SCREEN_MODULES["story-create"][0], SCREEN_MODULES["story-create"][1], [window.__indoStoryDraftFile instanceof File ? window.__indoStoryDraftFile : null]); break;
