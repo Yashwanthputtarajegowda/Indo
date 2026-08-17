@@ -1,7 +1,7 @@
 import { auth } from "../auth/firebase-client.js";
 
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
-const UPLOAD_ENDPOINT = "/api/media/videos/upload-telegram";
+const UPLOAD_ENDPOINT = "/api/telegram/uploads";
 
 function makeUploadId() {
   const random = globalThis.crypto?.randomUUID?.();
@@ -82,14 +82,10 @@ async function uploadSingleFile(file, options = {}) {
     height: String(Number.isFinite(height) ? height : 0),
   });
 
-  // Do not put the filename in an HTTP header. Browser Fetch rejects non-ISO-8859-1
-  // header values before the request is sent. The sanitized filename is carried in
-  // the URL query instead, where URLSearchParams safely encodes it.
   const headers = {
     Authorization: `Bearer ${token}`,
     "Content-Type": mimeType,
     "X-Upload-Id": uploadId,
-    "X-File-Size": String(file.size),
     "X-Mime-Type": mimeType,
     "X-Media-Type": mediaType,
   };
@@ -105,11 +101,9 @@ async function uploadSingleFile(file, options = {}) {
       cache: "no-store",
     });
   } catch (error) {
-    throw new Error(
-      error?.message
-        ? `Could not reach the video upload service: ${error.message}`
-        : "Could not reach the video upload service.",
-    );
+    throw new Error(error?.message
+      ? `Could not reach the video upload service: ${error.message}`
+      : "Could not reach the video upload service.");
   }
 
   const data = await response.json().catch(() => ({}));
