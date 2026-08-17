@@ -1,15 +1,13 @@
 import { auth } from "../auth/firebase-client.js";
 import { recordWatchProgress } from "../earning/earning.js";
-import { loadArchiveKannadaVideos } from "../archive/archive-videos.js";
+import { loadArchiveKannadaVideosProgressive } from "../archive/archive-videos.js";
 
-export async function loadReels() {
-  return loadArchiveKannadaVideos({ limit: 100 });
+export async function loadReels(options = {}) {
+  return loadArchiveKannadaVideosProgressive({ limit: 100, ...options });
 }
 
 export async function recordReelView(reelId) {
-  if (String(reelId || "").startsWith("archive:") || String(reelId || "").startsWith("openverse:") || String(reelId || "").startsWith("wikimedia-commons:")) {
-    return { ok: true, source: "open-video-provider" };
-  }
+  if (/^(archive|openverse|wikimedia-commons):/.test(String(reelId || ""))) return { ok: true, source: "open-video-provider" };
   const apiBase = window.INDO_API_BASE || "";
   const headers = {};
   if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
@@ -18,17 +16,12 @@ export async function recordReelView(reelId) {
   return response.json();
 }
 
-function escapeHtml(value = "") {
-  return String(value).replace(/[&<>\\"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '\"':"&quot;", "'":"&#039;" })[char]);
-}
+function escapeHtml(value = "") { return String(value).replace(/[&<>\\"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '\"':"&quot;", "'":"&#039;" })[char]); }
 function cleanUserId(value = "") { return String(value || "").trim().replace(/^@+/, ""); }
 function bindWatchProgress(videoElement, mediaId) {
   if (/^(archive|openverse|wikimedia-commons):/.test(String(mediaId || ""))) return;
   let lastReportedAt = 0;
-  const sendDelta = () => {
-    const current = Number(videoElement.currentTime || 0), delta = current - lastReportedAt;
-    if (delta >= 10) { lastReportedAt = current; recordWatchProgress(mediaId, Math.min(15, delta)); }
-  };
+  const sendDelta = () => { const current = Number(videoElement.currentTime || 0), delta = current - lastReportedAt; if (delta >= 10) { lastReportedAt = current; recordWatchProgress(mediaId, Math.min(15, delta)); } };
   videoElement.addEventListener("timeupdate", sendDelta);
   videoElement.addEventListener("pause", sendDelta);
   videoElement.addEventListener("ended", sendDelta);
@@ -45,23 +38,14 @@ export function renderReel(video) {
   const mediaUrl = String(video.secureUrl || video.videoUrl || video.url || "").trim();
   const provider = escapeHtml(video.provider || (video.source === "wikimedia-commons" ? "Wikimedia Commons" : "Openverse"));
   return `<article class="reel-view" data-video-id="${id}" data-source="${escapeHtml(video.source || "")}">
-    <video class="reel-video" src="${escapeHtml(mediaUrl)}" autoplay muted loop playsinline preload="metadata"></video>
+    <video class="reel-video" src="${escapeHtml(mediaUrl)}" muted loop playsinline preload="none"></video>
     <div class="reel-gradient"></div>
-    <div class="reel-info">
-      <div class="reel-user" data-profile-uid="${targetUid}" data-profile-username="${userId}">
-        <button class="avatar small reel-avatar" type="button" data-profile-avatar data-profile-uid="${targetUid}" data-profile-username="${userId}" data-open-profile="${userId}" aria-label="Open @${userId} profile">${escapeHtml(creator.charAt(0).toUpperCase() || "K")}</button>
-        <button class="reel-user-id" type="button" data-open-profile="${userId}" data-profile-uid="${targetUid}" data-profile-username="${userId}">@${userId}</button>
-        ${targetUid ? `<button class="follow-btn" data-follow-uid="${targetUid}" type="button">Follow</button>` : ""}
-      </div>
-      <p>${caption}</p>
-      <small>♪ ${provider}</small>
-    </div>
-    <div class="reel-actions">
-      <button data-engagement="like" type="button" aria-label="Like">♡<small>${likes}</small></button>
-      <button data-engagement="comment" type="button" aria-label="Comment">◯<small>Comment</small></button>
-      <button data-engagement="share" type="button" aria-label="Share">↗<small>Share</small></button>
-      <button data-engagement="save" type="button" aria-label="Save">🔖</button>
-    </div>
+    <div class="reel-info"><div class="reel-user" data-profile-uid="${targetUid}" data-profile-username="${userId}">
+      <button class="avatar small reel-avatar" type="button" data-profile-avatar data-profile-uid="${targetUid}" data-profile-username="${userId}" data-open-profile="${userId}" aria-label="Open @${userId} profile">${escapeHtml(creator.charAt(0).toUpperCase() || "K")}</button>
+      <button class="reel-user-id" type="button" data-open-profile="${userId}" data-profile-uid="${targetUid}" data-profile-username="${userId}">@${userId}</button>
+      ${targetUid ? `<button class="follow-btn" data-follow-uid="${targetUid}" type="button">Follow</button>` : ""}
+    </div><p>${caption}</p><small>♪ ${provider}</small></div>
+    <div class="reel-actions"><button data-engagement="like" type="button" aria-label="Like">♡<small>${likes}</small></button><button data-engagement="comment" type="button" aria-label="Comment">◯<small>Comment</small></button><button data-engagement="share" type="button" aria-label="Share">↗<small>Share</small></button><button data-engagement="save" type="button" aria-label="Save">🔖</button></div>
   </article>`;
 }
 
@@ -69,17 +53,20 @@ export function bindReelWatchProgress(root) {
   root.querySelectorAll(".reel-view .reel-video").forEach((video) => {
     const card = video.closest("[data-video-id]");
     if (card) bindWatchProgress(video, card.dataset.videoId);
-    if (video.dataset.fallbackBound === "1") return;
-    video.dataset.fallbackBound = "1";
-    video.addEventListener("error", () => {
-      if (video.dataset.failedOnce === "1") return;
-      video.dataset.failedOnce = "1";
-      const fallback = String(video.dataset.fallbackSrc || "").trim();
-      if (!fallback || fallback === video.currentSrc) return;
-      video.src = fallback;
-      video.load();
-      video.play().catch(() => {});
-    });
-    video.addEventListener("loadeddata", () => video.play().catch(() => {}), { once: true });
+    if (video.dataset.bound === "1") return;
+    video.dataset.bound = "1";
+    video.addEventListener("error", () => { video.dataset.videoFailed = "1"; });
   });
+}
+
+export function installReelVideoObserver(root) {
+  const videos = [...root.querySelectorAll(".reel-video")];
+  const activate = (video) => { if (video.dataset.activated === "1") return; video.dataset.activated = "1"; video.preload = "metadata"; video.load(); };
+  if (!("IntersectionObserver" in window)) { videos.slice(0, 2).forEach(activate); return; }
+  const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
+    const video = entry.target;
+    if (entry.isIntersecting) { activate(video); video.play().catch(() => {}); }
+    else video.pause();
+  }), { root, rootMargin: "600px 0px", threshold: 0.2 });
+  videos.forEach((video) => observer.observe(video));
 }
