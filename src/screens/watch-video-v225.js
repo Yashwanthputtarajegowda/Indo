@@ -1,6 +1,6 @@
 import { renderWatchVideo as renderBaseWatchVideo } from "./watch-video-v224.js";
 
-const STYLE_ID = "indo-watch-actions-reference-v227";
+const STYLE_ID = "indo-watch-actions-reference-v228";
 
 function installReferenceActionStyle() {
   if (document.getElementById(STYLE_ID)) return;
@@ -15,8 +15,8 @@ function installReferenceActionStyle() {
     .indo-watch-actions span{font-size:7px!important;line-height:1!important;color:#d9d5de!important;min-height:7px!important}
     .indo-watch-actions button.active-like{color:#ff4abf!important}.indo-watch-actions button.active-save{color:#b071ff!important}
     .indo-watch-fast-quality{font-size:10px!important;color:#caa5ff!important;text-align:right;padding-right:4px;border:0;background:transparent;cursor:pointer}
-    .indo-telegram-player{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#000;border-radius:0}
-    .indo-telegram-player iframe{position:absolute;left:0;top:-46px;width:100%;height:calc(100% + 46px);border:0;display:block;background:#000}
+    .indo-telegram-player{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#000;border-radius:0;isolation:isolate}
+    .indo-telegram-player iframe{position:absolute;left:0;top:-76px;width:100%;height:calc(100% + 76px);border:0;display:block;background:#000}
   `;
   document.head.appendChild(s);
 }
@@ -25,7 +25,7 @@ function setReferenceIcons(actions) {
   const icons = {
     like: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.7c0 5.6-8.8 10.2-8.8 10.2S3.2 14.3 3.2 8.7A4.7 4.7 0 0 1 12 6.1a4.7 4.7 0 0 1 8.8 2.6Z"/></svg>',
     comment: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.8 8.8 0 0 1-4.1-1l-4.2 1.5 1.4-4A7.2 7.2 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z"/></svg>',
-    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.8 10.2l6.1 2.2 6.1 12.4L20.5 3.5Z"/><path d="m9.9 12.4 5.2-4.2"/></svg>',
+    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.8 10.2l6.1 2.2 2.2 6.1L20.5 3.5Z"/><path d="m9.9 12.4 5.2-4.2"/></svg>',
     save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.8L6 21V4.5Z"/></svg>',
     views: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.3-6 9.5-6 9.5 6 9.5 6-3.3 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>',
   };
