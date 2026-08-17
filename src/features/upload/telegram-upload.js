@@ -97,11 +97,14 @@ export async function uploadVideoToTelegram(file, options = {}) {
         await sleep(Math.min(15000, 1000 * (attempt + 1)));
       }
     }
-    const percent = Math.round(((index + 1) / totalChunks) * 95);
-    options.onProgress?.(percent, "Uploading to Telegram…");
+    options.onProgress?.(percentForChunk(index, totalChunks), "Uploading");
   }
 
   const finalized = await finalizeTelegramUpload(created.uploadId);
-  options.onProgress?.(100, "Published successfully.");
+  options.onProgress?.(100, "Uploading");
   return finalized.video;
+}
+
+function percentForChunk(index, totalChunks) {
+  return Math.round(((index + 1) / totalChunks) * 95);
 }
