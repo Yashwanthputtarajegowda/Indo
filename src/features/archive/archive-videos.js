@@ -26,7 +26,7 @@ async function fetchJson(url, timeoutMs = 2500) {
   } finally { clearTimeout(timer); }
 }
 
-function makeItem({ id, source, provider, title, description, url, mimeType, size, duration, creator, createdAt, license }) {
+function makeItem({ id, source, provider, title, description, url, thumbnailUrl, mimeType, size, duration, creator, createdAt, license }) {
   const playable = safeUrl(url);
   if (!playable) return null;
   const bytes = Number(size || 0);
@@ -37,6 +37,7 @@ function makeItem({ id, source, provider, title, description, url, mimeType, siz
     title: text(title) || "Kannada video", description: text(description),
     caption: text(description) || text(title), createdAt: Date.parse(text(createdAt)) || 0,
     videoUrl: playable, secureUrl: playable, url: playable,
+    thumbnailUrl: safeUrl(thumbnailUrl),
     mimeType: text(mimeType) || "video/webm", size: bytes, duration: Number(duration || 0),
     license: text(license), views: 0, likes: 0, comments: 0, shares: 0, saves: 0, mediaType: "video",
   };
@@ -53,6 +54,7 @@ async function loadOpenverse(search) {
     id: text(item.id || item.identifier || item.detail_url), source: "openverse",
     provider: text(item.provider || item.source || "Openverse"), title: item.title,
     description: item.description || item.tags?.join?.(", "), url: item.url,
+    thumbnailUrl: item.thumbnail || item.thumbnail_url || item.thumb,
     mimeType: item.filetype || item.mimetype, size: item.filesize, duration: item.duration,
     creator: item.creator, createdAt: item.created_on || item.indexed_on, license: item.license,
   })).filter(Boolean);
@@ -72,7 +74,8 @@ async function loadCommons(search) {
       id: text(page.pageid || page.title), source: "wikimedia-commons", provider: "Wikimedia Commons",
       title: text(page.title).replace(/^File:/i, ""),
       description: text(meta.ImageDescription?.value || meta.ObjectName?.value),
-      url: info.url, mimeType: info.mime, size: info.size, duration: info.duration,
+      url: info.url, thumbnailUrl: info.thumburl || info.url,
+      mimeType: info.mime, size: info.size, duration: info.duration,
       creator: text(meta.Artist?.value || meta.Creator?.value),
       createdAt: meta.DateTimeOriginal?.value || meta.DateTime?.value,
       license: meta.LicenseShortName?.value,
@@ -109,7 +112,6 @@ export async function loadArchiveKannadaVideosProgressive({ limit = DEFAULT_LIMI
     onBatch?.(merged, false);
   };
 
-  // Do NOT wait for both providers. The first provider to respond immediately feeds the UI.
   const openversePromise = loadOpenverse(search).then((items) => publish(items)).catch(() => {});
   const commonsPromise = loadCommons(search).then((items) => publish(items)).catch(() => {});
   await Promise.allSettled([openversePromise, commonsPromise]);
