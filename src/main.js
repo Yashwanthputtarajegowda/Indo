@@ -9,6 +9,7 @@ import {
 } from "./features/profile/profile-identity.js?v=20260815-profile-identity-v5";
 import { applyIndoPinkThunderTheme } from "./features/ui/indo-pink-thunder-theme.js?v=20260815-pink-thunder-v1";
 import { installHomeFeedDesign } from "./features/ui/home-feed-design-v2.js?v=20260815-home-video-v3";
+import { installVideoPlaybackFix } from "./features/feed/video-playback-fix.js?v=20260817-telegram-playback-v1";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
 import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v10";
@@ -65,6 +66,7 @@ async function render() {
   await render(app);
   applyIndoPinkThunderTheme();
   installHomeFeedDesign();
+  installVideoPlaybackFix();
   scheduleProfileEnhancement(app, currentRender);
   scheduleLiveAvatarInstaller();
   bindAuthSwitches();
