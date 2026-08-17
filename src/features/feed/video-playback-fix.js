@@ -1,4 +1,13 @@
-const PATCH_KEY = "__indoTelegramVideoPlaybackFixV1";
+const PATCH_KEY = "__indoTelegramVideoPlaybackFixV2";
+
+function normalizeTelegramUrl(rawUrl) {
+  const value = String(rawUrl || "").trim();
+  if (!value) return value;
+  if (value.includes("/api/media/videos/telegram/") && value.startsWith("http://")) {
+    return `https://${value.slice("http://".length)}`;
+  }
+  return value;
+}
 
 function patchVideo(video) {
   if (!(video instanceof HTMLVideoElement)) return;
@@ -7,10 +16,15 @@ function patchVideo(video) {
 
   const sources = Array.from(video.querySelectorAll("source"));
   sources.forEach((source) => {
-    // Do not force a MIME type. Telegram storage preserves the original
-    // upload and the browser should inspect the actual stream when needed.
+    const normalized = normalizeTelegramUrl(source.getAttribute("src"));
+    if (normalized) source.setAttribute("src", normalized);
+    // Never force Telegram storage to video/mp4. The backend sends the
+    // original MIME type and the browser should inspect the actual stream.
     source.removeAttribute("type");
   });
+
+  const dataSrc = normalizeTelegramUrl(video.dataset.videoSrc);
+  if (dataSrc) video.dataset.videoSrc = dataSrc;
 
   video.preload = "metadata";
   video.setAttribute("playsinline", "");
@@ -20,7 +34,7 @@ function patchVideo(video) {
     if (retriedDirect) return;
 
     const source = video.querySelector("source[src]");
-    const src = String(video.currentSrc || source?.getAttribute("src") || "").trim();
+    const src = normalizeTelegramUrl(String(video.currentSrc || source?.getAttribute("src") || "").trim());
     if (!src) return;
 
     retriedDirect = true;
@@ -29,6 +43,18 @@ function patchVideo(video) {
     video.src = src;
     video.load();
   });
+
+  // Existing records may contain an HTTP stream URL generated before Express
+  // trusted the Cloud Run forwarded HTTPS protocol. Reload those as HTTPS.
+  const first = video.querySelector("source[src]");
+  if (first) {
+    const src = first.getAttribute("src") || "";
+    const normalized = normalizeTelegramUrl(src);
+    if (normalized && normalized !== src) {
+      first.setAttribute("src", normalized);
+      video.load();
+    }
+  }
 }
 
 function patchRoot(root = document) {
