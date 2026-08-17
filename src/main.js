@@ -9,7 +9,6 @@ import {
 } from "./features/profile/profile-identity.js?v=20260815-profile-identity-v5";
 import { applyIndoPinkThunderTheme } from "./features/ui/indo-pink-thunder-theme.js?v=20260815-pink-thunder-v1";
 import { installHomeFeedDesign } from "./features/ui/home-feed-design-v2.js?v=20260815-home-video-v3";
-import { installCloudinaryVideoCompatibility } from "./features/feed/cloudinary-video-fix.js";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
 import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v10";
@@ -61,7 +60,6 @@ function scheduleLiveAvatarInstaller() {
 
 async function render() {
   const currentRender = ++renderId;
-  installCloudinaryVideoCompatibility();
   const warmedRouter = await routerWarmup;
   const { render } = warmedRouter || await import("./router.js?v=20260815-router-reel-flow-v2");
   await render(app);
@@ -131,7 +129,6 @@ async function start() {
       try {
         const { preloadAppSections } = (await routerWarmup) || {};
         if (state.authenticated && typeof preloadAppSections === "function") preloadAppSections();
-        // Let the backend and route modules warm in parallel with first paint.
         void backendWarmup;
         await Promise.race([render(), new Promise((_, reject) => setTimeout(() => reject(new Error("Startup timed out.")), 10000))]);
       } catch (error) {
