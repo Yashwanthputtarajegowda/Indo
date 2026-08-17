@@ -91,8 +91,6 @@ if (!window.__indoUniversalNavigation) {
     if (!button) return;
     const watchId = button.getAttribute("data-watch-video-id");
     if (watchId) {
-      // Only handle watch cards when this global bridge actually owns the item.
-      // The Video screen has its own local handler which stores the exact item.
       const item = window.__indoWatchVideoItems?.get(String(watchId));
       if (!item) return;
       try { sessionStorage.setItem("indo:watch-video-current", JSON.stringify(item)); } catch {}
@@ -117,13 +115,29 @@ function showBootFailure(message = "Could not start Indo. Please reload the app.
   document.getElementById("indo-retry-boot")?.addEventListener("click", () => window.location.reload());
 }
 
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(() => reject(new Error(`${label} timed out.`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+}
+
 async function start() {
   if (started) return;
   started = true;
   try {
-    const { auth, authPersistenceReady } = await import("./features/auth/firebase-client.js?v=20260815-auth-v6");
-    const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js");
-    await authPersistenceReady;
+    const { auth, authPersistenceReady } = await withTimeout(
+      import("./features/auth/firebase-client.js?v=20260815-auth-v6"),
+      8000,
+      "Authentication module",
+    );
+    const { onAuthStateChanged } = await withTimeout(
+      import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js"),
+      8000,
+      "Firebase authentication",
+    );
+    await withTimeout(authPersistenceReady, 8000, "Authentication persistence");
     let settled = false;
     const bootWithUser = async (user) => {
       if (settled) return;
@@ -151,7 +165,7 @@ async function start() {
     await bootWithUser(user || null);
   } catch (error) {
     console.error("Indo boot failed:", error);
-    showBootFailure("Indo could not start.");
+    showBootFailure(error?.message || "Indo could not start.");
   }
 }
 
