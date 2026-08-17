@@ -19,7 +19,7 @@ let busy = false;
 let started = false;
 let renderId = 0;
 
-const routerWarmup = import("./router.js?v=20260815-router-reel-flow-v2").catch((error) => {
+const routerWarmup = import("./router.js?v=20260817-router-create-clean-v3").catch((error) => {
   console.warn("Router warmup failed; normal startup import will retry:", error);
   return null;
 });
@@ -54,7 +54,7 @@ function scheduleLiveAvatarInstaller() {
 async function render() {
   const currentRender = ++renderId;
   const warmedRouter = await routerWarmup;
-  const { render } = warmedRouter || await import("./router.js?v=20260815-router-reel-flow-v2");
+  const { render } = warmedRouter || await import("./router.js?v=20260817-router-create-clean-v3");
   await render(app);
   applyIndoPinkThunderTheme();
   installHomeFeedDesign();
