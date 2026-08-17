@@ -1,12 +1,10 @@
-const PATCH_KEY = "__indoTelegramVideoPlaybackFixV3";
+const PATCH_KEY = "__indoVideoPlaybackFixV4";
 const FETCH_KEY = "__indoTelegramVideoRecordsPromise";
 
-function normalizeTelegramUrl(rawUrl) {
+function normalizeUrl(rawUrl) {
   const value = String(rawUrl || "").trim();
-  if (!value) return value;
-  if (value.includes("/api/media/videos/telegram/") && value.startsWith("http://")) {
-    return `https://${value.slice("http://".length)}`;
-  }
+  if (!value) return "";
+  if (value.startsWith("http://")) return `https://${value.slice(7)}`;
   return value;
 }
 
@@ -14,103 +12,89 @@ function telegramStreamUrl(uploadId) {
   const id = String(uploadId || "").trim();
   if (!id) return "";
   const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
-  return `${base}/api/media/videos/telegram/${encodeURIComponent(id)}/stream`;
+  return base ? `${base}/api/media/videos/telegram/${encodeURIComponent(id)}/stream` : "";
 }
 
 function getTelegramUploadId(record) {
   return String(
-    record?.telegram?.uploadId ||
-      record?.telegramUploadId ||
-      record?.telegram_upload_id ||
-      record?.uploadId ||
-      "",
+    record?.telegram?.uploadId || record?.telegramUploadId || record?.telegram_upload_id || record?.uploadId || "",
   ).trim();
 }
 
 async function loadVideoRecords() {
   if (window[FETCH_KEY]) return window[FETCH_KEY];
-
   const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
   if (!base) return [];
-
-  window[FETCH_KEY] = fetch(`${base}/api/media/videos?limit=100`, {
-    headers: {},
-    cache: "no-store",
-  })
+  window[FETCH_KEY] = fetch(`${base}/api/media/videos?limit=100`, { cache: "no-store", credentials: "omit" })
     .then(async (response) => {
       if (!response.ok) return [];
       const data = await response.json().catch(() => ({}));
       return Array.isArray(data.videos) ? data.videos : [];
     })
     .catch(() => []);
-
   return window[FETCH_KEY];
 }
 
+function isOpenSource(video) {
+  const card = video.closest?.("[data-video-id]");
+  const source = String(video.dataset.source || card?.getAttribute("data-source") || "").toLowerCase();
+  const id = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").toLowerCase();
+  return source === "wikimedia-commons" || source === "internet-archive" || source === "archive" || source === "openverse" || /^(wikimedia-commons|internet-archive|archive|openverse):/.test(id);
+}
+
+function isTelegram(video) {
+  const card = video.closest?.("[data-video-id]");
+  const source = String(video.dataset.source || card?.getAttribute("data-source") || "").toLowerCase();
+  const id = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").toLowerCase();
+  return source === "telegram" || id.startsWith("telegram:") || id.startsWith("tg:");
+}
+
 async function resolveTelegramSource(video) {
-  if (!(video instanceof HTMLVideoElement)) return "";
-
   const card = video.closest("[data-video-id]");
-  const videoId = String(
-    video.dataset.videoId || card?.getAttribute("data-video-id") || "",
-  ).trim();
+  const videoId = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").trim();
   if (!videoId) return "";
-
   const records = await loadVideoRecords();
   const record = records.find((item) => String(item?.id || "").trim() === videoId);
-  const uploadId = getTelegramUploadId(record);
-  return telegramStreamUrl(uploadId);
+  return telegramStreamUrl(getTelegramUploadId(record));
 }
 
-function clearVideoSources(video) {
+function resetForSource(video, src) {
+  const normalized = normalizeUrl(src);
+  if (!normalized) return false;
+  const current = normalizeUrl(video.currentSrc || video.src || video.querySelector("source")?.src || "");
+  if (current === normalized) return true;
   video.removeAttribute("src");
   video.querySelectorAll("source").forEach((source) => source.remove());
-}
-
-function markUnavailable(video) {
-  clearVideoSources(video);
-  video.removeAttribute("poster");
-  video.dataset.indoTelegramUnavailable = "1";
-  video.setAttribute("aria-label", "Video unavailable");
+  const source = document.createElement("source");
+  source.src = normalized;
+  video.appendChild(source);
+  video.dataset.videoSrc = normalized;
+  video.load();
+  return true;
 }
 
 async function patchVideo(video) {
   if (!(video instanceof HTMLVideoElement)) return;
   if (video.dataset.indoPlaybackFixed === "1") return;
   video.dataset.indoPlaybackFixed = "1";
-
   video.preload = "metadata";
   video.setAttribute("playsinline", "");
 
-  // Never use Cloudinary, secureUrl, videoUrl, or any other stored fallback.
-  // The only playable source is the Telegram uploadId stream.
-  const telegramUrl = normalizeTelegramUrl(await resolveTelegramSource(video));
-  if (!telegramUrl) {
-    markUnavailable(video);
-    return;
-  }
+  // Open-source videos already contain their real Wikimedia/Internet Archive
+  // file URL. Never replace those URLs with a Telegram stream.
+  if (isOpenSource(video)) return;
 
-  clearVideoSources(video);
-  video.dataset.videoSrc = telegramUrl;
-  video.dataset.originalVideoSrc = telegramUrl;
+  if (!isTelegram(video)) return;
+  const telegramUrl = await resolveTelegramSource(video);
+  if (!telegramUrl) return;
 
-  const source = document.createElement("source");
-  source.src = telegramUrl;
-  video.appendChild(source);
-  video.load();
-
-  let retried = false;
+  resetForSource(video, telegramUrl);
+  let retries = 0;
   video.addEventListener("error", () => {
-    if (retried) {
-      markUnavailable(video);
-      return;
-    }
-
-    retried = true;
-    // Retry the same Telegram stream once only. There is deliberately no
-    // Cloudinary/original-URL fallback here.
+    if (retries >= 1) return;
+    retries += 1;
     video.load();
-  });
+  }, { once: false });
 }
 
 function patchRoot(root = document) {
@@ -118,16 +102,12 @@ function patchRoot(root = document) {
     void patchVideo(root);
     return;
   }
-
-  root.querySelectorAll?.("video.post-video, video[data-video-src]").forEach((video) => {
-    void patchVideo(video);
-  });
+  root.querySelectorAll?.("video").forEach((video) => void patchVideo(video));
 }
 
 export function installVideoPlaybackFix() {
   if (window[PATCH_KEY]) return;
   window[PATCH_KEY] = true;
-
   patchRoot(document);
 
   const root = document.getElementById("root") || document.body;
@@ -138,6 +118,5 @@ export function installVideoPlaybackFix() {
       });
     }
   });
-
   observer.observe(root, { childList: true, subtree: true });
 }
