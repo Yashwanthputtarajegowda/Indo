@@ -1,3 +1,5 @@
+import { preferredLanguage, rankVideos } from "../feed/interest-engine.js";
+
 const OPENVERSE_URL = "https://api.openverse.org/v1/videos/";
 const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
 const SOURCE_PAGE_SIZE = 20;
@@ -42,8 +44,7 @@ function detectPreferredLanguage() {
       if (value) return normaliseLanguage(value);
     }
   } catch {}
-  // Indo's initial/default feed is Kannada until the app has a stored preference.
-  return "kn";
+  return normaliseLanguage(preferredLanguage("kn"));
 }
 function getTopics(topic = "") {
   const requested = text(topic).toLowerCase();
@@ -135,8 +136,9 @@ export async function loadArchiveKannadaVideosProgressive({ limit = 12, search =
   if (!force) {
     const cached = cache.get(key);
     if (cached && Date.now() - cached.at < CACHE_TTL_MS && cached.items.length >= wanted) {
-      onBatch?.(cached.items.slice(0, wanted), false);
-      return cached.items.slice(0, wanted);
+      const ranked = rankVideos(cached.items.slice(0, wanted));
+      onBatch?.(ranked, false);
+      return ranked;
     }
   }
   const session = getSession(options, force);
@@ -171,10 +173,10 @@ export async function loadArchiveKannadaVideosProgressive({ limit = 12, search =
     session.nextPage += 1;
     session.nextOffset += SOURCE_PAGE_SIZE;
     if (session.items.length === before) roundsWithoutNewItems += 1; else roundsWithoutNewItems = 0;
-    if (!firstSent && session.items.length) { firstSent = true; onBatch?.(session.items.slice(0, FIRST_BATCH), true); }
-    onBatch?.(session.items.slice(0, wanted), false);
+    const ranked = rankVideos(session.items.slice(0, wanted));
+    if (!firstSent && session.items.length) { firstSent = true; onBatch?.(ranked.slice(0, FIRST_BATCH), true); }
+    onBatch?.(ranked, false);
 
-    // Every request advances to another topic, so a feed gets broad variety instead of one repeated subject.
     session.topicIndex += 1;
     if (session.topicIndex % session.topics.length === 0) {
       session.doneOpenverse = false;
@@ -185,7 +187,7 @@ export async function loadArchiveKannadaVideosProgressive({ limit = 12, search =
     if (!newItems.length && session.topicIndex >= session.topics.length * 2) break;
   }
   cache.set(key, { at: Date.now(), items: session.items.slice() });
-  return session.items.slice(0, wanted);
+  return rankVideos(session.items.slice(0, wanted));
 }
 export async function loadArchiveKannadaVideos(options = {}) {
   let latest = [];
