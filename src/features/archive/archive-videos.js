@@ -1,13 +1,12 @@
 const OPENVERSE_URL = "https://api.openverse.org/v1/videos/";
 const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
-const DEFAULT_LIMIT = 100;
-const CACHE_TTL_MS = 5 * 60 * 1000;
-const FIRST_BATCH = 1;
 const SOURCE_PAGE_SIZE = 10;
-const MAX_PAGES = 8;
+const FIRST_BATCH = 1;
 const MAX_FILE_SIZE = 700 * 1024 * 1024;
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 let cache = new Map();
+let sessions = new Map();
 
 function text(value) { return String(value || "").trim(); }
 function safeUrl(value) {
@@ -38,9 +37,9 @@ function makeItem({ id, source, provider, title, description, url, thumbnailUrl,
     title: text(title) || "Kannada video", description: text(description),
     caption: text(description) || text(title), createdAt: Date.parse(text(createdAt)) || 0,
     videoUrl: playable, secureUrl: playable, url: playable,
-    thumbnailUrl: safeUrl(thumbnailUrl),
-    mimeType: text(mimeType) || "video/webm", size: bytes, duration: Number(duration || 0),
-    license: text(license), views: 0, likes: 0, comments: 0, shares: 0, saves: 0, mediaType: "video",
+    thumbnailUrl: safeUrl(thumbnailUrl), mimeType: text(mimeType) || "video/webm",
+    size: bytes, duration: Number(duration || 0), license: text(license),
+    views: 0, likes: 0, comments: 0, shares: 0, saves: 0, mediaType: "video",
   };
 }
 
@@ -63,10 +62,11 @@ async function loadOpenversePage(search, page) {
 
 async function loadCommonsPage(search, offset) {
   const params = new URLSearchParams({
-    action: "query", generator: "search", gsrsearch: search ? `Kannada ${search} filetype:video` : "Kannada filetype:video",
+    action: "query", generator: "search",
+    gsrsearch: search ? `Kannada ${search} filetype:video` : "Kannada filetype:video",
     gsrnamespace: "6", gsrlimit: String(SOURCE_PAGE_SIZE), gsroffset: String(offset),
-    gsrqiprofile: "classic_noboostlinks", prop: "imageinfo", iiprop: "url|mime|size|extmetadata",
-    iiurlwidth: "720", format: "json", origin: "*",
+    gsrqiprofile: "classic_noboostlinks", prop: "imageinfo",
+    iiprop: "url|mime|size|extmetadata", iiurlwidth: "720", format: "json", origin: "*",
   });
   const data = await fetchJson(`${COMMONS_API}?${params.toString()}`);
   const pages = Object.values(data?.query?.pages || {});
@@ -88,49 +88,67 @@ function unique(items) {
   return items.filter((item) => item?.videoUrl && !seen.has(item.videoUrl) && seen.add(item.videoUrl));
 }
 
-export async function loadArchiveKannadaVideosProgressive({ limit = DEFAULT_LIMIT, search = "", force = false, onBatch } = {}) {
-  const wanted = Math.min(100, Math.max(1, Number(limit) || DEFAULT_LIMIT));
-  const key = `${text(search).toLowerCase()}:${wanted}`;
+function sessionKey(search) { return text(search).toLowerCase(); }
+function getSession(search, force = false) {
+  const key = sessionKey(search);
+  if (force || !sessions.has(key)) sessions.set(key, { nextPage: 1, nextOffset: 0, items: [], doneOpenverse: false, doneCommons: false, loading: false });
+  return sessions.get(key);
+}
+
+export async function loadArchiveKannadaVideosProgressive({ limit = 12, search = "", force = false, onBatch } = {}) {
+  const wanted = Math.max(1, Number(limit) || 12);
+  const key = sessionKey(search);
   if (!force) {
     const cached = cache.get(key);
-    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
-      if (cached.items.length) onBatch?.(cached.items.slice(0, FIRST_BATCH), true);
-      if (cached.items.length > FIRST_BATCH) onBatch?.(cached.items, false);
-      return cached.items;
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS && cached.items.length >= wanted) {
+      onBatch?.(cached.items.slice(0, wanted), false);
+      return cached.items.slice(0, wanted);
     }
   }
 
-  const all = [];
-  let firstSent = false;
-  const publish = (newItems) => {
-    const merged = unique([...all, ...newItems]).slice(0, wanted);
-    all.splice(0, all.length, ...merged);
-    if (!firstSent && merged.length) {
+  const session = getSession(search, force);
+  if (force) cache.delete(key);
+  let firstSent = session.items.length > 0;
+
+  while (session.items.length < wanted && (!session.doneOpenverse || !session.doneCommons)) {
+    if (session.loading) break;
+    session.loading = true;
+    const page = session.nextPage;
+    const offset = session.nextOffset;
+    const results = await Promise.allSettled([
+      session.doneOpenverse ? Promise.resolve([]) : loadOpenversePage(search, page),
+      session.doneCommons ? Promise.resolve([]) : loadCommonsPage(search, offset),
+    ]);
+    session.loading = false;
+
+    const openverse = results[0];
+    const commons = results[1];
+    const newItems = [];
+    if (openverse.status === "fulfilled") {
+      const items = openverse.value || [];
+      newItems.push(...items);
+      if (items.length < SOURCE_PAGE_SIZE) session.doneOpenverse = true;
+    } else if (page >= 3) session.doneOpenverse = true;
+    if (commons.status === "fulfilled") {
+      const items = commons.value || [];
+      newItems.push(...items);
+      if (items.length < SOURCE_PAGE_SIZE) session.doneCommons = true;
+    } else if (offset >= SOURCE_PAGE_SIZE * 2) session.doneCommons = true;
+
+    session.items = unique([...session.items, ...newItems]);
+    session.nextPage += 1;
+    session.nextOffset += SOURCE_PAGE_SIZE;
+
+    if (!firstSent && session.items.length) {
       firstSent = true;
-      onBatch?.(merged.slice(0, FIRST_BATCH), true);
+      onBatch?.(session.items.slice(0, FIRST_BATCH), true);
     }
-    onBatch?.(merged, false);
-  };
-
-  // First pages race for the first thumbnail. Extra pages fill the feed in the background.
-  const firstPage = await Promise.allSettled([
-    loadOpenversePage(search, 1),
-    loadCommonsPage(search, 0),
-  ]);
-  for (const result of firstPage) if (result.status === "fulfilled") publish(result.value);
-
-  const remaining = [];
-  for (let page = 2; page <= MAX_PAGES; page += 1) {
-    remaining.push(loadOpenversePage(search, page));
-    remaining.push(loadCommonsPage(search, (page - 1) * SOURCE_PAGE_SIZE));
-  }
-  for (const result of await Promise.allSettled(remaining)) {
-    if (result.status === "fulfilled") publish(result.value);
-    if (all.length >= wanted) break;
+    onBatch?.(session.items.slice(), false);
+    if (!newItems.length) break;
   }
 
-  cache.set(key, { at: Date.now(), items: all.slice() });
-  return all;
+  cache.set(key, { at: Date.now(), items: session.items.slice() });
+  return session.items.slice(0, wanted);
 }
 
 export async function loadArchiveKannadaVideos(options = {}) {
@@ -142,11 +160,11 @@ export async function loadArchiveKannadaVideos(options = {}) {
 export function startArchiveRefresh({ intervalMs = 300000, onUpdate, getSearch } = {}) {
   const timer = window.setInterval(async () => {
     try {
-      const items = await loadArchiveKannadaVideosProgressive({ limit: 100, search: typeof getSearch === "function" ? getSearch() : "", force: true });
+      const items = await loadArchiveKannadaVideosProgressive({ limit: 12, search: typeof getSearch === "function" ? getSearch() : "", force: true });
       onUpdate?.(items);
     } catch {}
   }, intervalMs);
   return () => window.clearInterval(timer);
 }
 
-export function clearArchiveCache() { cache = new Map(); }
+export function clearArchiveCache() { cache = new Map(); sessions = new Map(); }
