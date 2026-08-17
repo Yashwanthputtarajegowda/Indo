@@ -1,4 +1,5 @@
-const PATCH_KEY = "__indoTelegramVideoPlaybackFixV2";
+const PATCH_KEY = "__indoTelegramVideoPlaybackFixV3";
+const FETCH_KEY = "__indoTelegramVideoRecordsPromise";
 
 function normalizeTelegramUrl(rawUrl) {
   const value = String(rawUrl || "").trim();
@@ -9,57 +10,118 @@ function normalizeTelegramUrl(rawUrl) {
   return value;
 }
 
-function patchVideo(video) {
+function telegramStreamUrl(uploadId) {
+  const id = String(uploadId || "").trim();
+  if (!id) return "";
+  const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
+  return `${base}/api/media/videos/telegram/${encodeURIComponent(id)}/stream`;
+}
+
+function getTelegramUploadId(record) {
+  return String(
+    record?.telegram?.uploadId ||
+      record?.telegramUploadId ||
+      record?.telegram_upload_id ||
+      record?.uploadId ||
+      "",
+  ).trim();
+}
+
+async function loadVideoRecords() {
+  if (window[FETCH_KEY]) return window[FETCH_KEY];
+
+  const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
+  if (!base) return [];
+
+  window[FETCH_KEY] = fetch(`${base}/api/media/videos?limit=100`, {
+    headers: {},
+    cache: "no-store",
+  })
+    .then(async (response) => {
+      if (!response.ok) return [];
+      const data = await response.json().catch(() => ({}));
+      return Array.isArray(data.videos) ? data.videos : [];
+    })
+    .catch(() => []);
+
+  return window[FETCH_KEY];
+}
+
+async function resolveTelegramSource(video) {
+  if (!(video instanceof HTMLVideoElement)) return "";
+
+  const card = video.closest("[data-video-id]");
+  const videoId = String(
+    video.dataset.videoId || card?.getAttribute("data-video-id") || "",
+  ).trim();
+  if (!videoId) return "";
+
+  const records = await loadVideoRecords();
+  const record = records.find((item) => String(item?.id || "").trim() === videoId);
+  const uploadId = getTelegramUploadId(record);
+  return telegramStreamUrl(uploadId);
+}
+
+function clearVideoSources(video) {
+  video.removeAttribute("src");
+  video.querySelectorAll("source").forEach((source) => source.remove());
+}
+
+function markUnavailable(video) {
+  clearVideoSources(video);
+  video.removeAttribute("poster");
+  video.dataset.indoTelegramUnavailable = "1";
+  video.setAttribute("aria-label", "Video unavailable");
+}
+
+async function patchVideo(video) {
   if (!(video instanceof HTMLVideoElement)) return;
   if (video.dataset.indoPlaybackFixed === "1") return;
   video.dataset.indoPlaybackFixed = "1";
 
-  const sources = Array.from(video.querySelectorAll("source"));
-  sources.forEach((source) => {
-    const normalized = normalizeTelegramUrl(source.getAttribute("src"));
-    if (normalized) source.setAttribute("src", normalized);
-    // Never force Telegram storage to video/mp4. The backend sends the
-    // original MIME type and the browser should inspect the actual stream.
-    source.removeAttribute("type");
-  });
-
-  const dataSrc = normalizeTelegramUrl(video.dataset.videoSrc);
-  if (dataSrc) video.dataset.videoSrc = dataSrc;
-
   video.preload = "metadata";
   video.setAttribute("playsinline", "");
 
-  let retriedDirect = false;
+  // Never use Cloudinary, secureUrl, videoUrl, or any other stored fallback.
+  // The only playable source is the Telegram uploadId stream.
+  const telegramUrl = normalizeTelegramUrl(await resolveTelegramSource(video));
+  if (!telegramUrl) {
+    markUnavailable(video);
+    return;
+  }
+
+  clearVideoSources(video);
+  video.dataset.videoSrc = telegramUrl;
+  video.dataset.originalVideoSrc = telegramUrl;
+
+  const source = document.createElement("source");
+  source.src = telegramUrl;
+  video.appendChild(source);
+  video.load();
+
+  let retried = false;
   video.addEventListener("error", () => {
-    if (retriedDirect) return;
+    if (retried) {
+      markUnavailable(video);
+      return;
+    }
 
-    const source = video.querySelector("source[src]");
-    const src = normalizeTelegramUrl(String(video.currentSrc || source?.getAttribute("src") || "").trim());
-    if (!src) return;
-
-    retriedDirect = true;
-    video.removeAttribute("src");
-    video.querySelectorAll("source").forEach((item) => item.remove());
-    video.src = src;
+    retried = true;
+    // Retry the same Telegram stream once only. There is deliberately no
+    // Cloudinary/original-URL fallback here.
     video.load();
   });
-
-  // Existing records may contain an HTTP stream URL generated before Express
-  // trusted the Cloud Run forwarded HTTPS protocol. Reload those as HTTPS.
-  const first = video.querySelector("source[src]");
-  if (first) {
-    const src = first.getAttribute("src") || "";
-    const normalized = normalizeTelegramUrl(src);
-    if (normalized && normalized !== src) {
-      first.setAttribute("src", normalized);
-      video.load();
-    }
-  }
 }
 
 function patchRoot(root = document) {
-  if (root instanceof HTMLVideoElement) patchVideo(root);
-  root.querySelectorAll?.("video.post-video, video[data-video-src]").forEach(patchVideo);
+  if (root instanceof HTMLVideoElement) {
+    void patchVideo(root);
+    return;
+  }
+
+  root.querySelectorAll?.("video.post-video, video[data-video-src]").forEach((video) => {
+    void patchVideo(video);
+  });
 }
 
 export function installVideoPlaybackFix() {
