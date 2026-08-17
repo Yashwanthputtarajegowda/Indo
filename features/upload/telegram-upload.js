@@ -1,7 +1,7 @@
 import { auth } from "../auth/firebase-client.js";
 
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
-const UPLOAD_ENDPOINT = "/api/telegram/uploads";
+const UPLOAD_ENDPOINT = "/api/media/videos/upload-telegram";
 
 function makeUploadId() {
   const random = globalThis.crypto?.randomUUID?.();
@@ -50,32 +50,36 @@ async function uploadSingleFile(file, options = {}) {
   const width = Math.max(0, Number(meta.width || 0));
   const height = Math.max(0, Number(meta.height || 0));
 
+  const query = new URLSearchParams({
+    mediaType,
+    title,
+    caption,
+    privacy,
+    allowComments: options.allowComments !== false ? "true" : "false",
+    allowDuet: options.allowDuet !== false ? "true" : "false",
+    category: cleanText(options.category, 60),
+    tags: tags.join(","),
+    location: cleanText(options.location, 120),
+    duration: String(Number.isFinite(duration) ? duration : 0),
+    width: String(Number.isFinite(width) ? width : 0),
+    height: String(Number.isFinite(height) ? height : 0),
+  });
+
   const headers = {
     Authorization: `Bearer ${token}`,
-    "Content-Type": "application/octet-stream",
+    "Content-Type": file.type || "video/mp4",
     "X-Upload-Id": uploadId,
     "X-File-Name": file.name,
     "X-File-Size": String(file.size),
     "X-Mime-Type": file.type || "video/mp4",
     "X-Media-Type": mediaType,
-    "X-Title": title,
-    "X-Caption": caption,
-    "X-Privacy": privacy,
-    "X-Allow-Comments": options.allowComments !== false ? "true" : "false",
-    "X-Allow-Duet": options.allowDuet !== false ? "true" : "false",
-    "X-Category": cleanText(options.category, 60),
-    "X-Tags": tags.join(","),
-    "X-Location": cleanText(options.location, 120),
-    "X-Duration": String(Number.isFinite(duration) ? duration : 0),
-    "X-Width": String(Number.isFinite(width) ? width : 0),
-    "X-Height": String(Number.isFinite(height) ? height : 0),
   };
 
   options.onProgress?.(10, "Uploading to Telegram…");
 
   let response;
   try {
-    response = await fetch(`${base}${UPLOAD_ENDPOINT}`, {
+    response = await fetch(`${base}${UPLOAD_ENDPOINT}?${query.toString()}`, {
       method: "POST",
       headers,
       body: file,
@@ -90,14 +94,10 @@ async function uploadSingleFile(file, options = {}) {
   }
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data?.error || `Upload failed (${response.status}).`);
-  }
-  if (!data?.ok || !data?.video) {
-    throw new Error(data?.error || "Upload completed without a video record.");
-  }
+  if (!response.ok) throw new Error(data?.error || `Upload failed (${response.status}).`);
+  if (!data?.ok || !data?.video) throw new Error(data?.error || "Upload completed without a video record.");
 
-  options.onProgress?.(100, data.duplicate ? "Already uploaded" : "Uploaded");
+  options.onProgress?.(100, "Uploaded");
   return data.video;
 }
 
