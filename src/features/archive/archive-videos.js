@@ -4,7 +4,7 @@ const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
 const ARCHIVE_API = "https://archive.org/advancedsearch.php";
 const SOURCE_PAGE_SIZE = 20;
 const MAX_FILE_SIZE = 700 * 1024 * 1024;
-const CACHE_TTL_MS = 90 * 1000;
+const CACHE_TTL_MS = 60 * 1000;
 const MAX_PAGES_PER_SOURCE = 20;
 
 const LANGUAGE_NAMES = {
@@ -61,8 +61,12 @@ async function fetchJson(url, timeoutMs = 8000) {
     return await response.json();
   } finally { clearTimeout(timer); }
 }
-function makeItem({ id, source, provider, title, description, url, thumbnailUrl, mimeType, size, duration, creator, createdAt, license, language, topic }) {
-  const playable = safeUrl(url);
+function playableUrlCandidates(values = []) {
+  return [...new Set(values.map(safeUrl).filter(Boolean))].filter((url) => /\.(mp4|webm|ogv|ogg)(?:$|[?#])/i.test(url));
+}
+function makeItem({ id, source, provider, title, description, url, candidates = [], thumbnailUrl, mimeType, size, duration, creator, createdAt, license, language, topic }) {
+  const playableCandidates = playableUrlCandidates([url, ...candidates]);
+  const playable = playableCandidates[0] || safeUrl(url);
   if (!playable || Number(size || 0) > MAX_FILE_SIZE) return null;
   if (!/^(video\/(mp4|webm|ogg)|application\/ogg)$/i.test(text(mimeType)) && !/\.(mp4|webm|ogv|ogg)(?:$|[?#])/i.test(playable)) return null;
   return {
@@ -72,7 +76,7 @@ function makeItem({ id, source, provider, title, description, url, thumbnailUrl,
     title: text(title) || `${LANGUAGE_NAMES[normaliseLanguage(language)] || "Language"} video`,
     description: text(description), caption: text(description) || text(title),
     createdAt: Date.parse(text(createdAt)) || 0, videoUrl: playable, secureUrl: playable, url: playable,
-    thumbnailUrl: safeUrl(thumbnailUrl), mimeType: text(mimeType) || "video/webm", size: Number(size || 0),
+    sourceCandidates: playableCandidates, thumbnailUrl: safeUrl(thumbnailUrl), mimeType: text(mimeType) || "video/webm", size: Number(size || 0),
     duration: Number(duration || 0), license: text(license), views: 0, likes: 0, comments: 0,
     shares: 0, saves: 0, mediaType: "video",
   };
@@ -98,7 +102,9 @@ async function loadCommonsPage(language, topic, search, offset) {
   }).filter(Boolean);
 }
 async function loadArchivePage(language, topic, search, page) {
-  const query = encodeURIComponent(`mediatype:movies AND (${queryFor(language, topic, search).split(/\s+/).filter(Boolean).map((word) => `title:"${word}" OR subject:"${word}"`).join(" OR ")})`);
+  const words = queryFor(language, topic, search).split(/\s+/).filter(Boolean).slice(0, 8);
+  const queryText = words.map((word) => `(title:"${word}" OR subject:"${word}")`).join(" AND ");
+  const query = encodeURIComponent(`mediatype:movies AND ${queryText || "mediatype:movies"}`);
   const data = await fetchJson(`${ARCHIVE_API}?q=${query}&fl[]=identifier&fl[]=title&fl[]=description&fl[]=creator&rows=${SOURCE_PAGE_SIZE}&page=${page}&output=json`);
   const docs = Array.isArray(data?.response?.docs) ? data.response.docs : [];
   const results = await Promise.all(docs.map(async (doc) => {
@@ -113,13 +119,13 @@ async function loadArchivePage(language, topic, search, page) {
         const size = Number(file?.size || 0);
         return size > 0 && size <= MAX_FILE_SIZE && (format.includes("mpeg4") || format.includes("h.264") || /\.(mp4|webm|ogv)$/i.test(name)) && !/(thumb|sample|preview|_files\.xml)/i.test(name);
       }).sort((a, b) => Number(a?.size || 0) - Number(b?.size || 0));
-      const file = candidates[0];
-      if (!file) return null;
-      const path = text(file.name).split("/").map(encodeURIComponent).join("/");
+      const urls = candidates.map((file) => `https://archive.org/download/${encodeURIComponent(identifier)}/${String(file.name).split("/").map(encodeURIComponent).join("/")}`);
+      if (!urls.length) return null;
+      const first = candidates[0];
       return makeItem({
         id: identifier, source: "internet-archive", provider: "Internet Archive", title: doc?.title,
-        description: doc?.description, creator: doc?.creator, url: `https://archive.org/download/${encodeURIComponent(identifier)}/${path}`,
-        mimeType: "video/mp4", size: file?.size, license: meta?.metadata?.licenseurl || meta?.metadata?.license, language, topic,
+        description: doc?.description, creator: doc?.creator, url: urls[0], candidates: urls.slice(1),
+        mimeType: "video/mp4", size: first?.size, license: meta?.metadata?.licenseurl || meta?.metadata?.license, language, topic,
       });
     } catch { return null; }
   }));
@@ -128,7 +134,7 @@ async function loadArchivePage(language, topic, search, page) {
 function unique(items) {
   const seen = new Set();
   return items.filter((item) => {
-    const key = text(item?.videoUrl).toLowerCase();
+    const key = text(item?.videoUrl).toLowerCase() || text(item?.id).toLowerCase();
     if (!key || seen.has(key)) return false;
     seen.add(key); return true;
   });
@@ -161,7 +167,7 @@ export async function loadArchiveKannadaVideosProgressive({ limit = 12, search =
   const session = getSession(options, force);
   if (force) cache.delete(key);
   let roundsWithoutNewItems = 0;
-  while (session.items.length < wanted && roundsWithoutNewItems < Math.max(6, session.topics.length)) {
+  while (session.items.length < wanted && roundsWithoutNewItems < Math.min(8, Math.max(3, session.topics.length))) {
     if (session.loading) break;
     session.loading = true;
     const query = sessionQuery(session);
@@ -178,7 +184,7 @@ export async function loadArchiveKannadaVideosProgressive({ limit = 12, search =
     session.commonsOffset += SOURCE_PAGE_SIZE;
     session.archivePage += 1;
     if (session.items.length === before) roundsWithoutNewItems += 1; else roundsWithoutNewItems = 0;
-    const ranked = rankVideos(session.items.slice(0, wanted));
+    const ranked = rankVideos(unique(session.items).slice(0, wanted));
     onBatch?.(ranked, false);
     session.topicIndex += 1;
   }
@@ -191,10 +197,13 @@ export async function loadArchiveKannadaVideos(options = {}) {
   await loadArchiveKannadaVideosProgressive({ ...options, onBatch: (items) => { latest = items; } });
   return latest;
 }
+export async function refreshArchiveVideoBatch(options = {}) {
+  return loadArchiveKannadaVideosProgressive({ ...options, force: true });
+}
 export function startArchiveRefresh({ intervalMs = 300000, onUpdate, getSearch, getLanguage, getTopic } = {}) {
   const timer = window.setInterval(async () => {
     try {
-      const items = await loadArchiveKannadaVideosProgressive({ limit: 12, search: typeof getSearch === "function" ? getSearch() : "", language: typeof getLanguage === "function" ? getLanguage() : detectPreferredLanguage(), topic: typeof getTopic === "function" ? getTopic() : "", force: true });
+      const items = await refreshArchiveVideoBatch({ limit: 12, search: typeof getSearch === "function" ? getSearch() : "", language: typeof getLanguage === "function" ? getLanguage() : detectPreferredLanguage(), topic: typeof getTopic === "function" ? getTopic() : "" });
       onUpdate?.(items);
     } catch {}
   }, intervalMs);
