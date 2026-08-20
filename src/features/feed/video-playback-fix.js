@@ -1,47 +1,21 @@
-const PATCH_KEY = "__indoVideoPlaybackFixV4";
-const FETCH_KEY = "__indoTelegramVideoRecordsPromise";
-const DRIVE_ONLY_FETCH_KEY = "__indoGoogleDriveOnlyFeedV1";
+const PATCH_KEY = "__indoVideoPlaybackFixV5";
+const DRIVE_ONLY_FETCH_KEY = "__indoGoogleDriveOnlyFeedV2";
 
 function normalizeUrl(rawUrl) {
   const value = String(rawUrl || "").trim();
   if (!value) return "";
-  if (value.startsWith("http://")) return `https://${value.slice(7)}`;
-  return value;
+  return value.startsWith("http://") ? `https://${value.slice(7)}` : value;
 }
 
-function telegramStreamUrl(uploadId) {
-  const id = String(uploadId || "").trim();
-  if (!id) return "";
-  const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
-  return base ? `${base}/api/media/videos/telegram/${encodeURIComponent(id)}/stream` : "";
-}
-
-function getTelegramUploadId(record) {
-  return String(
-    record?.telegram?.uploadId || record?.telegramUploadId || record?.telegram_upload_id || record?.uploadId || "",
-  ).trim();
-}
-
-async function loadVideoRecords() {
-  if (window[FETCH_KEY]) return window[FETCH_KEY];
-  const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
-  if (!base) return [];
-  window[FETCH_KEY] = fetch(`${base}/api/media/videos?limit=100`, { cache: "no-store", credentials: "omit" })
-    .then(async (response) => {
-      if (!response.ok) return [];
-      const data = await response.json().catch(() => ({}));
-      return Array.isArray(data.videos) ? data.videos : [];
-    })
-    .catch(() => []);
-  return window[FETCH_KEY];
+function apiBase() {
+  return String(window.INDO_API_BASE || "").replace(/\/$/, "");
 }
 
 function isMediaVideosRequest(input) {
   try {
     const url = typeof input === "string" ? input : input?.url;
-    const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
-    if (!base) return false;
-    return String(url || "").startsWith(`${base}/api/media/videos`);
+    const base = apiBase();
+    return Boolean(base && String(url || "").startsWith(`${base}/api/media/videos`));
   } catch {
     return false;
   }
@@ -50,7 +24,8 @@ function isMediaVideosRequest(input) {
 function isGoogleDriveVideoRecord(video) {
   const provider = String(video?.storage?.provider || video?.googleDrive?.provider || "").trim().toLowerCase();
   const fileId = String(video?.googleDrive?.fileId || "").trim();
-  return provider === "google-drive" || Boolean(fileId);
+  const url = normalizeUrl(video?.streamUrl || video?.videoUrl || video?.secureUrl);
+  return provider === "google-drive" || Boolean(fileId) || /\/api\/google-drive\/videos\/[^/]+\/stream(?:$|\?)/i.test(url);
 }
 
 async function applyGoogleDriveOnlyFeedFilter(response) {
@@ -58,14 +33,11 @@ async function applyGoogleDriveOnlyFeedFilter(response) {
   try {
     const payload = await response.clone().json();
     if (!payload || !Array.isArray(payload.videos)) return response;
-    const filtered = {
-      ...payload,
-      videos: payload.videos.filter(isGoogleDriveVideoRecord),
-    };
+    const filtered = { ...payload, videos: payload.videos.filter(isGoogleDriveVideoRecord) };
     return new Response(JSON.stringify(filtered), {
       status: response.status,
       statusText: response.statusText,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   } catch {
     return response;
@@ -76,73 +48,82 @@ function installGoogleDriveOnlyFeedFilter() {
   if (window[DRIVE_ONLY_FETCH_KEY] || typeof window.fetch !== "function") return;
   window[DRIVE_ONLY_FETCH_KEY] = true;
   const originalFetch = window.fetch.bind(window);
-  window.fetch = async (input, init) => {
-    const response = await originalFetch(input, init);
+  window.fetch = async (input, init = {}) => {
+    const requestInit = { ...init, cache: "no-store" };
+    const response = await originalFetch(input, requestInit);
     if (!isMediaVideosRequest(input)) return response;
     return applyGoogleDriveOnlyFeedFilter(response);
   };
 }
 
-function isOpenSource(video) {
+function driveStreamUrl(video) {
+  const base = apiBase();
+  const fileId = String(video?.googleDrive?.fileId || "").trim();
+  const videoId = String(video?.id || "").trim();
+  if (!base || (!fileId && !videoId)) return "";
+  // The backend canonical Google Drive stream endpoint is the only playback source.
+  return `${base}/api/google-drive/videos/${encodeURIComponent(videoId || fileId)}/stream`;
+}
+
+function getDriveSourceFromCard(video) {
   const card = video.closest?.("[data-video-id]");
-  const source = String(video.dataset.source || card?.getAttribute("data-source") || "").toLowerCase();
-  const id = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").toLowerCase();
-  return source === "wikimedia-commons" || source === "internet-archive" || source === "archive" || source === "openverse" || /^(wikimedia-commons|internet-archive|archive|openverse):/.test(id);
+  return card?.__indoVideoRecord || null;
 }
 
-function isTelegram(video) {
-  const card = video.closest?.("[data-video-id]");
-  const source = String(video.dataset.source || card?.getAttribute("data-source") || "").toLowerCase();
-  const id = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").toLowerCase();
-  return source === "telegram" || id.startsWith("telegram:") || id.startsWith("tg:");
-}
-
-async function resolveTelegramSource(video) {
-  const card = video.closest("[data-video-id]");
-  const videoId = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").trim();
-  if (!videoId) return "";
-  const records = await loadVideoRecords();
-  const record = records.find((item) => String(item?.id || "").trim() === videoId);
-  return telegramStreamUrl(getTelegramUploadId(record));
-}
-
-function resetForSource(video, src) {
-  const normalized = normalizeUrl(src);
-  if (!normalized) return false;
+function resetForDriveSource(video, record) {
+  const src = normalizeUrl(driveStreamUrl(record));
+  if (!src) return false;
   const current = normalizeUrl(video.currentSrc || video.src || video.querySelector("source")?.src || "");
-  if (current === normalized) return true;
-  video.removeAttribute("src");
-  video.querySelectorAll("source").forEach((source) => source.remove());
-  const source = document.createElement("source");
-  source.src = normalized;
-  video.appendChild(source);
-  video.dataset.videoSrc = normalized;
-  video.load();
+  // Always replace any cached/blob/external source with the canonical Drive endpoint.
+  if (current !== src || video.dataset.indoDriveSource !== src) {
+    video.pause();
+    video.removeAttribute("src");
+    video.querySelectorAll("source").forEach((source) => source.remove());
+    video.load();
+    const source = document.createElement("source");
+    source.src = src;
+    source.type = "video/mp4";
+    video.appendChild(source);
+    video.dataset.indoDriveSource = src;
+    video.dataset.videoSrc = src;
+    video.load();
+  }
+  video.preload = "metadata";
+  video.setAttribute("playsinline", "");
   return true;
+}
+
+async function resolveDriveRecord(video) {
+  const cardRecord = getDriveSourceFromCard(video);
+  if (cardRecord && isGoogleDriveVideoRecord(cardRecord)) return cardRecord;
+  const videoId = String(video.dataset.videoId || video.closest?.("[data-video-id]")?.getAttribute("data-video-id") || "").trim();
+  const base = apiBase();
+  if (!base || !videoId) return null;
+  try {
+    const response = await fetch(`${base}/api/media/videos?limit=1000`, { cache: "no-store", credentials: "omit" });
+    if (!response.ok) return null;
+    const payload = await response.json().catch(() => ({}));
+    const record = Array.isArray(payload.videos) ? payload.videos.find((item) => String(item?.id || "") === videoId) : null;
+    return record && isGoogleDriveVideoRecord(record) ? record : null;
+  } catch {
+    return null;
+  }
 }
 
 async function patchVideo(video) {
   if (!(video instanceof HTMLVideoElement)) return;
   if (video.dataset.indoPlaybackFixed === "1") return;
   video.dataset.indoPlaybackFixed = "1";
-  video.preload = "metadata";
-  video.setAttribute("playsinline", "");
-
-  // Open-source videos already contain their real Wikimedia/Internet Archive
-  // file URL. Never replace those URLs with a Telegram stream.
-  if (isOpenSource(video)) return;
-
-  if (!isTelegram(video)) return;
-  const telegramUrl = await resolveTelegramSource(video);
-  if (!telegramUrl) return;
-
-  resetForSource(video, telegramUrl);
-  let retries = 0;
-  video.addEventListener("error", () => {
-    if (retries >= 1) return;
-    retries += 1;
+  const record = await resolveDriveRecord(video);
+  if (!record) {
+    // Remove anything that could have come from an old storage backend/cache.
+    video.pause();
+    video.removeAttribute("src");
+    video.querySelectorAll("source").forEach((source) => source.remove());
     video.load();
-  }, { once: false });
+    return;
+  }
+  resetForDriveSource(video, record);
 }
 
 function patchRoot(root = document) {
@@ -153,11 +134,22 @@ function patchRoot(root = document) {
   root.querySelectorAll?.("video").forEach((video) => void patchVideo(video));
 }
 
+function attachDriveRecordLookup() {
+  document.querySelectorAll?.("[data-video-id]").forEach((card) => {
+    if (card.__indoVideoRecord) return;
+    const video = card.querySelector?.("video");
+    if (!video) return;
+    // A later feed pass will resolve and pin the canonical Drive source.
+    void patchVideo(video);
+  });
+}
+
 export function installVideoPlaybackFix() {
   if (window[PATCH_KEY]) return;
   window[PATCH_KEY] = true;
   installGoogleDriveOnlyFeedFilter();
   patchRoot(document);
+  attachDriveRecordLookup();
 
   const root = document.getElementById("root") || document.body;
   const observer = new MutationObserver((mutations) => {
@@ -166,6 +158,7 @@ export function installVideoPlaybackFix() {
         if (node.nodeType === Node.ELEMENT_NODE) patchRoot(node);
       });
     }
+    attachDriveRecordLookup();
   });
   observer.observe(root, { childList: true, subtree: true });
 }
