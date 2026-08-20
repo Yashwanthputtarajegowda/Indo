@@ -1,6 +1,6 @@
 import { icons } from "../data.js";
 import { nav } from "../components/nav.js";
-import { uploadVideo } from "../features/feed/create-video.js";
+import { uploadVideo } from "../features/feed/create-video.js?v=20260820-drive-resumable-v3";
 
 const STYLE_ID = "indo-upload-video-v223";
 function installStyles() {
@@ -16,114 +16,15 @@ export function renderUploadVideo(app) {
   app.querySelector('[data-option="tags"]')?.remove();
   app.querySelector('[data-option="location"]')?.remove();
   app.querySelector(".indo-upload-hint")?.remove();
-  const file = app.querySelector("#upload-file"),
-    choose = app.querySelector("#choose-video"),
-    preview = app.querySelector("#upload-preview"),
-    message = app.querySelector("#upload-message"),
-    bar = app.querySelector("#upload-progress-bar"),
-    submit = app.querySelector("#create-video-submit");
-  const values = {
-    privacy: "public",
-    allowComments: true,
-    allowDuet: true,
-    category: "",
-    tags: [],
-    location: "",
-  };
-  app.querySelectorAll("[data-screen]").forEach((button) =>
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      window.__indoNavigate?.(button.dataset.screen);
-    }),
-  );
-  function chooseFile() {
-    file.click();
-  }
+  const file = app.querySelector("#upload-file"), choose = app.querySelector("#choose-video"), preview = app.querySelector("#upload-preview"), message = app.querySelector("#upload-message"), bar = app.querySelector("#upload-progress-bar"), submit = app.querySelector("#create-video-submit");
+  const values = { privacy: "public", allowComments: true, allowDuet: true, category: "", tags: [], location: "" };
+  app.querySelectorAll("[data-screen]").forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); window.__indoNavigate?.(button.dataset.screen); }));
+  function chooseFile() { file.click(); }
   choose.addEventListener("click", chooseFile);
   preview.addEventListener("click", chooseFile);
-  file.addEventListener("change", () => {
-    const f = file.files?.[0];
-    if (!f) return;
-    const url = URL.createObjectURL(f);
-    preview.innerHTML = `<video src="${url}" controls playsinline></video>`;
-    message.textContent = `${f.name} • ${(f.size / (1024 * 1024)).toFixed(1)} MB`;
-  });
-  function refreshOptions() {
-    app.querySelector("#privacy-value").textContent =
-      values.privacy === "followers"
-        ? "Followers"
-        : values.privacy === "private"
-          ? "Private"
-          : "Public";
-    app
-      .querySelector("#comments-toggle")
-      .classList.toggle("on", values.allowComments);
-    app
-      .querySelector("#duet-toggle")
-      .classList.toggle("on", values.allowDuet);
-    app.querySelector("#category-value").textContent =
-      values.category || "Select Category";
-  }
-  app.querySelectorAll("[data-option]").forEach((row) =>
-    row.addEventListener("click", () => {
-      const option = row.dataset.option;
-      if (option === "privacy") {
-        const answer =
-          window.prompt(
-            "Privacy: enter public, followers, or private.",
-            values.privacy,
-          ) || values.privacy;
-        const normalized = answer.trim().toLowerCase();
-        if (["public", "followers", "private"].includes(normalized))
-          values.privacy = normalized;
-      } else if (option === "comments") {
-        values.allowComments = !values.allowComments;
-      } else if (option === "duet") {
-        values.allowDuet = !values.allowDuet;
-      } else if (option === "category") {
-        const answer = window.prompt("Category", values.category) || "";
-        values.category = answer.trim().slice(0, 60);
-      }
-      refreshOptions();
-    }),
-  );
+  file.addEventListener("change", () => { const f = file.files?.[0]; if (!f) return; const url = URL.createObjectURL(f); preview.innerHTML = `<video src="${url}" controls playsinline></video>`; message.textContent = `${f.name} • ${(f.size / (1024 * 1024)).toFixed(1)} MB`; });
+  function refreshOptions() { app.querySelector("#privacy-value").textContent = values.privacy === "followers" ? "Followers" : values.privacy === "private" ? "Private" : "Public"; app.querySelector("#comments-toggle").classList.toggle("on", values.allowComments); app.querySelector("#duet-toggle").classList.toggle("on", values.allowDuet); app.querySelector("#category-value").textContent = values.category || "Select Category"; }
+  app.querySelectorAll("[data-option]").forEach((row) => row.addEventListener("click", () => { const option = row.dataset.option; if (option === "privacy") { const answer = window.prompt("Privacy: enter public, followers, or private.", values.privacy) || values.privacy; const normalized = answer.trim().toLowerCase(); if (["public", "followers", "private"].includes(normalized)) values.privacy = normalized; } else if (option === "comments") { values.allowComments = !values.allowComments; } else if (option === "duet") { values.allowDuet = !values.allowDuet; } else if (option === "category") { const answer = window.prompt("Category", values.category) || ""; values.category = answer.trim().slice(0, 60); } refreshOptions(); }));
   refreshOptions();
-  submit.addEventListener("click", async () => {
-    const f = file.files?.[0];
-    if (!f) {
-      message.textContent = "Select a video first.";
-      return;
-    }
-    const title = app.querySelector("#upload-title").value.trim();
-    const more = app.querySelector("#upload-more").value.trim();
-    if (!title) {
-      message.textContent = "Add a title first.";
-      app.querySelector("#upload-title").focus();
-      return;
-    }
-    submit.disabled = true;
-    message.textContent = "Creating your video...";
-    try {
-      await uploadVideo(f, {
-        title,
-        caption: more,
-        description: more,
-        privacy: values.privacy,
-        allowComments: values.allowComments,
-        allowDuet: values.allowDuet,
-        category: values.category,
-        onProgress: (percent, text) => {
-          bar.style.width = `${percent}%`;
-          message.textContent = text;
-        },
-      });
-      bar.style.width = "100%";
-      message.textContent = "Your video is published!";
-      setTimeout(() => window.__indoNavigate?.("video"), 700);
-    } catch (error) {
-      message.textContent = error?.message || "Upload failed. Please try again.";
-      submit.disabled = false;
-    }
-  });
+  submit.addEventListener("click", async () => { const f = file.files?.[0]; if (!f) { message.textContent = "Select a video first."; return; } const title = app.querySelector("#upload-title").value.trim(); const more = app.querySelector("#upload-more").value.trim(); if (!title) { message.textContent = "Add a title first."; app.querySelector("#upload-title").focus(); return; } submit.disabled = true; message.textContent = "Creating your video..."; try { await uploadVideo(f, { title, caption: more, description: more, privacy: values.privacy, allowComments: values.allowComments, allowDuet: values.allowDuet, category: values.category, onProgress: (percent, text) => { bar.style.width = `${percent}%`; message.textContent = text; } }); bar.style.width = "100%"; message.textContent = "Your video is published!"; setTimeout(() => window.__indoNavigate?.("video"), 700); } catch (error) { message.textContent = error?.message || "Upload failed. Please try again."; submit.disabled = false; } });
 }
