@@ -1,9 +1,11 @@
 import { auth } from "../auth/firebase-client.js";
 
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+const LEGACY_FALLBACK_MAX_BYTES = 30 * 1024 * 1024;
 const CHUNK_BYTES = 8 * 1024 * 1024;
 const INIT_ENDPOINT = "/api/google-drive/videos/upload-resumable/init";
 const CHUNK_ENDPOINT = "/api/google-drive/videos/upload-resumable";
+const LEGACY_ENDPOINT = "/api/google-drive/videos/upload";
 
 function makeUploadId() {
   const random = globalThis.crypto?.randomUUID?.();
@@ -20,6 +22,11 @@ function safeFileName(fileName, mimeType) {
 }
 
 async function readJson(response) {
+  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+  if (!contentType.includes("application/json") && !contentType.includes("text/json")) {
+    const text = await response.text().catch(() => "");
+    return { __nonJson: true, status: response.status, contentType, text: text.slice(0, 240) };
+  }
   return response.json().catch(() => ({}));
 }
 
@@ -40,22 +47,8 @@ async function fetchWithRetry(url, init, attempts = 3) {
   throw lastError || new Error("Upload request failed.");
 }
 
-export async function uploadVideoToGoogleDrive(file, options = {}) {
-  if (!(file instanceof File)) throw new Error("Select a video file.");
-  if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
-  if (file.size <= 0) throw new Error("The selected video is empty.");
-  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 500 MB or smaller.");
-  const user = auth.currentUser;
-  if (!user) throw new Error("Please login first.");
-  const token = await user.getIdToken(true);
-  if (!token) throw new Error("Authentication token is unavailable. Please login again.");
-  const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
-  if (!base) throw new Error("Video upload service is unavailable.");
-
-  const meta = options.metadata || {};
-  const mediaType = options.mediaType === "reel" ? "reel" : "video";
-  const mimeType = file.type || "video/mp4";
-  const queryMeta = {
+function buildUploadMeta(file, options, meta, mediaType, mimeType) {
+  return {
     mediaType,
     title: cleanText(options.title || file.name || "Untitled video", 120),
     caption: cleanText(options.caption ?? options.description, 500),
@@ -72,6 +65,59 @@ export async function uploadVideoToGoogleDrive(file, options = {}) {
     totalSize: file.size,
     mimeType,
   };
+}
+
+async function uploadViaLegacyEndpoint(file, options, base, token, queryMeta) {
+  if (file.size > LEGACY_FALLBACK_MAX_BYTES) {
+    throw new Error("The upload service is still updating. Please retry in a moment; large videos use the new resumable uploader.");
+  }
+  const params = new URLSearchParams({
+    mediaType: queryMeta.mediaType,
+    title: queryMeta.title,
+    caption: queryMeta.caption,
+    privacy: queryMeta.privacy,
+    allowComments: String(queryMeta.allowComments),
+    allowDuet: String(queryMeta.allowDuet),
+    category: queryMeta.category,
+    tags: queryMeta.tags.join(","),
+    location: queryMeta.location,
+    duration: String(queryMeta.duration),
+    width: String(queryMeta.width),
+    height: String(queryMeta.height),
+    fileName: queryMeta.fileName,
+  });
+  options.onProgress?.(5, "Using compatible upload service…");
+  const response = await fetchWithRetry(`${base}${LEGACY_ENDPOINT}?${params.toString()}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": queryMeta.mimeType },
+    body: file,
+    cache: "no-store",
+  }, 1);
+  const data = await readJson(response);
+  if (!response.ok || !data?.ok || !data?.video) {
+    if (data?.__nonJson) throw new Error("Upload service returned an invalid response. Please refresh the app and try again.");
+    throw new Error(data?.error || `Could not upload video (${response.status}).`);
+  }
+  options.onProgress?.(100, "Uploaded");
+  return data.video;
+}
+
+export async function uploadVideoToGoogleDrive(file, options = {}) {
+  if (!(file instanceof File)) throw new Error("Select a video file.");
+  if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
+  if (file.size <= 0) throw new Error("The selected video is empty.");
+  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 500 MB or smaller.");
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please login first.");
+  const token = await user.getIdToken(true);
+  if (!token) throw new Error("Authentication token is unavailable. Please login again.");
+  const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
+  if (!base) throw new Error("Video upload service is unavailable.");
+
+  const meta = options.metadata || {};
+  const mediaType = options.mediaType === "reel" ? "reel" : "video";
+  const mimeType = file.type || "video/mp4";
+  const queryMeta = buildUploadMeta(file, options, meta, mediaType, mimeType);
 
   options.onProgress?.(3, "Preparing secure Google Drive upload…");
   const initResponse = await fetchWithRetry(`${base}${INIT_ENDPOINT}`, {
@@ -81,7 +127,16 @@ export async function uploadVideoToGoogleDrive(file, options = {}) {
     cache: "no-store",
   });
   const initData = await readJson(initResponse);
-  if (!initResponse.ok || !initData?.ok || !initData?.uploadId) throw new Error(initData?.error || `Could not start upload (${initResponse.status}).`);
+  const contentType = String(initResponse.headers.get("content-type") || "").toLowerCase();
+
+  if (!initResponse.ok || !initData?.ok || !initData?.uploadId) {
+    const looksLikeStaleRoute = initResponse.status === 404 || initResponse.status === 405 || initResponse.status === 501 || initData?.__nonJson || !contentType.includes("json");
+    if (looksLikeStaleRoute && file.size <= LEGACY_FALLBACK_MAX_BYTES) {
+      return uploadViaLegacyEndpoint(file, options, base, token, queryMeta);
+    }
+    if (initData?.__nonJson) throw new Error("Upload service returned an invalid response. Please refresh the app and try again.");
+    throw new Error(initData?.error || `Could not start upload (${initResponse.status}).`);
+  }
 
   const uploadId = String(initData.uploadId);
   let offset = Math.max(0, Number(initData.nextOffset || 0));
@@ -107,7 +162,10 @@ export async function uploadVideoToGoogleDrive(file, options = {}) {
       offset = Number(data.nextOffset);
       continue;
     }
-    if (!response.ok || !data?.ok) throw new Error(data?.error || `Upload part failed (${response.status}).`);
+    if (!response.ok || !data?.ok) {
+      if (data?.__nonJson) throw new Error("Upload service returned an invalid response. Please refresh the app and try again.");
+      throw new Error(data?.error || `Upload part failed (${response.status}).`);
+    }
     if (data.complete && data.video) {
       options.onProgress?.(100, "Uploaded");
       return data.video;
