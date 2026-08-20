@@ -1,6 +1,6 @@
 import { icons } from "../data.js";
 import { nav } from "../components/nav.js";
-import { uploadVideo } from "../features/feed/create-video.js?v=20260820-drive-resumable-v4";
+import { uploadVideo } from "../features/feed/create-video.js?v=20260820-drive-final-v5";
 
 const STYLE_ID = "indo-upload-video-v223";
 function installStyles() {
