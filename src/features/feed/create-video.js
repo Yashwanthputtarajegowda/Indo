@@ -1,5 +1,5 @@
 import { auth } from "../auth/firebase-client.js";
-import { uploadVideoToTelegram } from "../upload/telegram-upload.js?v=20260817-telegram-upload-v3";
+import { uploadVideoToTelegram } from "../upload/telegram-upload.js?v=20260820-google-drive-v1";
 
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
