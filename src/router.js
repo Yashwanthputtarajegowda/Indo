@@ -22,7 +22,7 @@ const SCREEN_MODULES = {
   "profile-relation": ["./screens/profile-relation.js", "renderProfileRelation"],
   "edit-profile": ["./screens/edit-profile.js", "renderEditProfile"],
   "watch-video": ["./screens/watch-video.js?v=20260818-source-player-v3", "renderWatchVideo"],
-  "upload-video": ["./screens/upload-video.js?v=20260820-drive-resumable-v4", "renderUploadVideo"],
+  "upload-video": ["./screens/upload-video.js?v=20260820-drive-final-v5", "renderUploadVideo"],
   "story-create": ["./screens/story-create.js", "renderStoryCreate"],
   wallet: ["./screens/wallet.js", "renderWallet"],
   "blocked-users": ["./screens/blocked-users.js", "renderBlockedUsers"],
