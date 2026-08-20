@@ -1,5 +1,6 @@
 const PATCH_KEY = "__indoVideoPlaybackFixV4";
 const FETCH_KEY = "__indoTelegramVideoRecordsPromise";
+const DRIVE_ONLY_FETCH_KEY = "__indoGoogleDriveOnlyFeedV1";
 
 function normalizeUrl(rawUrl) {
   const value = String(rawUrl || "").trim();
@@ -33,6 +34,53 @@ async function loadVideoRecords() {
     })
     .catch(() => []);
   return window[FETCH_KEY];
+}
+
+function isMediaVideosRequest(input) {
+  try {
+    const url = typeof input === "string" ? input : input?.url;
+    const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
+    if (!base) return false;
+    return String(url || "").startsWith(`${base}/api/media/videos`);
+  } catch {
+    return false;
+  }
+}
+
+function isGoogleDriveVideoRecord(video) {
+  const provider = String(video?.storage?.provider || video?.googleDrive?.provider || "").trim().toLowerCase();
+  const fileId = String(video?.googleDrive?.fileId || "").trim();
+  return provider === "google-drive" || Boolean(fileId);
+}
+
+async function applyGoogleDriveOnlyFeedFilter(response) {
+  if (!response?.ok || !response.clone) return response;
+  try {
+    const payload = await response.clone().json();
+    if (!payload || !Array.isArray(payload.videos)) return response;
+    const filtered = {
+      ...payload,
+      videos: payload.videos.filter(isGoogleDriveVideoRecord),
+    };
+    return new Response(JSON.stringify(filtered), {
+      status: response.status,
+      statusText: response.statusText,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch {
+    return response;
+  }
+}
+
+function installGoogleDriveOnlyFeedFilter() {
+  if (window[DRIVE_ONLY_FETCH_KEY] || typeof window.fetch !== "function") return;
+  window[DRIVE_ONLY_FETCH_KEY] = true;
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const response = await originalFetch(input, init);
+    if (!isMediaVideosRequest(input)) return response;
+    return applyGoogleDriveOnlyFeedFilter(response);
+  };
 }
 
 function isOpenSource(video) {
@@ -108,6 +156,7 @@ function patchRoot(root = document) {
 export function installVideoPlaybackFix() {
   if (window[PATCH_KEY]) return;
   window[PATCH_KEY] = true;
+  installGoogleDriveOnlyFeedFilter();
   patchRoot(document);
 
   const root = document.getElementById("root") || document.body;
