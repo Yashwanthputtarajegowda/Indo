@@ -1,6 +1,6 @@
 import { auth } from "../auth/firebase-client.js";
 
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 const UPLOAD_ENDPOINT = "/api/google-drive/videos/upload";
 
 function makeUploadId() {
@@ -21,7 +21,7 @@ export async function uploadVideoToGoogleDrive(file, options = {}) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
   if (file.size <= 0) throw new Error("The selected video is empty.");
-  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 50 MB or smaller.");
+  if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 500 MB or smaller.");
   const user = auth.currentUser;
   if (!user) throw new Error("Please login first.");
   const token = await user.getIdToken(true);
