@@ -1,5 +1,5 @@
 import { auth } from "../auth/firebase-client.js";
-import { uploadVideoToGoogleDrive } from "../upload/google-drive-upload.js?v=20260820-google-drive-500mb";
+import { uploadVideoToGoogleDrive } from "../upload/google-drive-upload.js?v=20260820-google-drive-resumable-v1";
 
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 
