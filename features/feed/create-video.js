@@ -1,5 +1,5 @@
 import { auth } from "../auth/firebase-client.js";
-import { uploadVideoToTelegram } from "../upload/telegram-upload.js?v=20260817-telegram-upload-v8";
+import { uploadVideoToGoogleDrive } from "../upload/google-drive-upload.js?v=20260820-google-drive-v1";
 
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
@@ -9,32 +9,23 @@ async function readVideoMetadata(file) {
   const url = URL.createObjectURL(file);
   try {
     return await new Promise((resolve) => {
-      video.onloadedmetadata = () => resolve({
-        duration: Number.isFinite(video.duration) ? video.duration : 0,
-        width: Number(video.videoWidth || 0),
-        height: Number(video.videoHeight || 0),
-      });
+      video.onloadedmetadata = () => resolve({ duration: Number.isFinite(video.duration) ? video.duration : 0, width: Number(video.videoWidth || 0), height: Number(video.videoHeight || 0) });
       video.onerror = () => resolve({ duration: 0, width: 0, height: 0 });
       video.src = url;
     });
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  } finally { URL.revokeObjectURL(url); }
 }
 
 export async function uploadMedia(file, mediaType = "video", options = {}) {
   if (!(file instanceof File)) throw new Error("Select a video file.");
   if (!file.type.startsWith("video/")) throw new Error("Please select a valid video file.");
   if (file.size > MAX_VIDEO_BYTES) throw new Error("Video must be 50 MB or smaller.");
-
   const user = auth.currentUser;
   if (!user) throw new Error("Please login first.");
-
   const onProgress = options.onProgress || (() => {});
   const meta = await readVideoMetadata(file);
   onProgress(2, mediaType === "reel" ? "Preparing reel…" : "Preparing video…");
-
-  return uploadVideoToTelegram(file, {
+  return uploadVideoToGoogleDrive(file, {
     mediaType,
     title: options.title,
     caption: options.description ?? options.caption ?? "",
@@ -50,10 +41,5 @@ export async function uploadMedia(file, mediaType = "video", options = {}) {
   });
 }
 
-export async function uploadVideo(file, options = {}) {
-  return uploadMedia(file, "video", options);
-}
-
-export async function uploadReel(file, options = {}) {
-  return uploadMedia(file, "reel", options);
-}
+export async function uploadVideo(file, options = {}) { return uploadMedia(file, "video", options); }
+export async function uploadReel(file, options = {}) { return uploadMedia(file, "reel", options); }
