@@ -19,7 +19,7 @@ let busy = false;
 let started = false;
 let renderId = 0;
 
-const routerWarmup = import("./router.js?v=20260820-drive-resumable-v4").catch((error) => {
+const routerWarmup = import("./router.js?v=20260820-drive-final-v5").catch((error) => {
   console.warn("Router warmup failed; normal startup import will retry:", error);
   return null;
 });
@@ -54,7 +54,7 @@ function scheduleLiveAvatarInstaller() {
 async function render() {
   const currentRender = ++renderId;
   const warmedRouter = await routerWarmup;
-  const { render } = warmedRouter || await import("./router.js?v=20260820-drive-resumable-v4");
+  const { render } = warmedRouter || await import("./router.js?v=20260820-drive-final-v5");
   await render(app);
   applyIndoPinkThunderTheme();
   installHomeFeedDesign();
