@@ -20,7 +20,7 @@ const app = document.getElementById("root");
 let started = false;
 let renderId = 0;
 let navigationId = 0;
-const ROUTER_VERSION = "./router.js?v=20260821-nav-responsive-v5";
+const ROUTER_VERSION = "./router.js?v=20260821-upload-v7";
 const routerWarmup = import(ROUTER_VERSION).catch(() => null);
 
 const backendWarmup = (() => {
@@ -84,7 +84,6 @@ async function navigate(screen) {
   state.screen = nextScreen;
   window.__indoUpdatePersistentNav?.(nextScreen);
 
-  // Video gets an immediate visual handoff instead of waiting for the async router stage.
   if (nextScreen === "video") {
     const fastSequence = ++renderId;
     app.innerHTML = `<main style="min-height:100vh;background:#030308;color:#fff;padding:20px 14px 100px"><div style="font-weight:900;font-size:18px;margin-bottom:14px">Video</div><div style="height:180px;border-radius:14px;background:linear-gradient(90deg,#101018,#181822,#101018);background-size:200% 100%;animation:indoVideoLoad 1.1s ease-in-out infinite"></div><style>@keyframes indoVideoLoad{0%{background-position:0% 0}50%{background-position:100% 0}100%{background-position:0% 0}}</style></main>`;
