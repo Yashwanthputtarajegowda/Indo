@@ -1,3 +1,4 @@
+import { state } from "./state.js";
 import {
   bindAuthSwitches,
   bindLoginForm,
@@ -10,7 +11,7 @@ import {
 import { applyIndoPinkThunderTheme } from "./features/ui/indo-pink-thunder-theme.js?v=20260815-pink-thunder-v1";
 import { installHomeFeedDesign } from "./features/ui/home-feed-design-v2.js?v=20260815-home-video-v3";
 import { installVideoPlaybackFix } from "./features/feed/video-playback-fix.js?v=20260817-telegram-playback-v2";
-import "./features/ui/button-touch-hardener.js?v=20260821-touch-v2";
+import "./features/ui/button-touch-hardener.js?v=20260821-touch-v3";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
 import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v10";
@@ -19,26 +20,19 @@ const app = document.getElementById("root");
 let started = false;
 let renderId = 0;
 let navigationId = 0;
-
-const ROUTER_VERSION = "./router.js?v=20260821-nav-responsive-v4";
-const routerWarmup = import(ROUTER_VERSION).catch((error) => {
-  console.warn("Router warmup failed; normal startup import will retry:", error);
-  return null;
-});
+const ROUTER_VERSION = "./router.js?v=20260821-nav-responsive-v5";
+const routerWarmup = import(ROUTER_VERSION).catch(() => null);
 
 const backendWarmup = (() => {
   const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
   if (!base) return Promise.resolve(null);
-  return fetch(`${base}/api/health`, { method: "GET", cache: "no-store", credentials: "omit", keepalive: true }).catch((error) => {
-    console.warn("Backend warmup failed; request will retry when needed:", error);
-    return null;
-  });
+  return fetch(`${base}/api/health`, { method: "GET", cache: "no-store", credentials: "omit", keepalive: true }).catch(() => null);
 })();
 
 function scheduleProfileEnhancement(root, id) {
   const run = () => {
     if (id !== renderId) return;
-    enhanceProfileIdentity(root).catch((error) => console.warn("Profile identity enhancement failed:", error));
+    enhanceProfileIdentity(root).catch(() => {});
   };
   if ("requestIdleCallback" in window) window.requestIdleCallback(run, { timeout: 1200 });
   else window.setTimeout(run, 40);
@@ -46,8 +40,7 @@ function scheduleProfileEnhancement(root, id) {
 
 function scheduleLiveAvatarInstaller() {
   const run = async () => {
-    try { await import("./features/profile/profile-avatar-live.js?v=20260815-avatar-v8"); }
-    catch (error) { console.warn("Live profile avatars unavailable:", error); }
+    try { await import("./features/profile/profile-avatar-live.js?v=20260815-avatar-v8"); } catch {}
   };
   if ("requestIdleCallback" in window) window.requestIdleCallback(() => run().catch(() => {}), { timeout: 1600 });
   else window.setTimeout(() => run().catch(() => {}), 80);
@@ -55,12 +48,9 @@ function scheduleLiveAvatarInstaller() {
 
 async function render() {
   const currentRender = ++renderId;
-  const warmedRouter = await routerWarmup;
-  const router = warmedRouter || await import(ROUTER_VERSION);
+  const router = (await routerWarmup) || await import(ROUTER_VERSION);
   await router.render(app);
-
   if (currentRender !== renderId) return;
-
   applyIndoPinkThunderTheme();
   installHomeFeedDesign();
   installVideoPlaybackFix();
@@ -71,118 +61,80 @@ async function render() {
   bindSignupForm();
 }
 
+function activateNavigation(target) {
+  const watchId = target.getAttribute("data-watch-video-id");
+  if (watchId) {
+    const item = window.__indoWatchVideoItems?.get(String(watchId));
+    if (!item) return;
+    try { sessionStorage.setItem("indo:watch-video-current", JSON.stringify(item)); } catch {}
+    void navigate("watch-video");
+    return;
+  }
+  const screen = target.getAttribute("data-screen");
+  if (!screen) return;
+  target.classList.add("indo-nav-pressed");
+  window.setTimeout(() => target.classList.remove("indo-nav-pressed"), 140);
+  void navigate(screen);
+}
+
 async function navigate(screen) {
   const nextScreen = String(screen || "home");
   const requestId = ++navigationId;
-
-  const { state } = await import("./state.js");
   if (nextScreen === "profile") state.profile = null;
   state.screen = nextScreen;
-
-  // Navigation must react immediately. It must never wait for an async screen/API load.
   window.__indoUpdatePersistentNav?.(nextScreen);
-
-  try {
-    await render();
-  } catch (error) {
-    console.error("Indo navigation failed:", error);
-  }
-
-  // A newer navigation supersedes an older one. The router also guards its final swap.
+  try { await render(); } catch (error) { console.error("Indo navigation failed:", error); }
   if (requestId !== navigationId) return;
 }
 
 if (!window.__indoUniversalNavigation) {
   window.__indoUniversalNavigation = true;
-  document.addEventListener("click", (event) => {
+  const handleActivation = (event) => {
     const el = event.target instanceof Element ? event.target : null;
-    const button = el?.closest("[data-screen],[data-watch-video-id]");
-    if (!button) return;
-
-    const watchId = button.getAttribute("data-watch-video-id");
-    if (watchId) {
-      const item = window.__indoWatchVideoItems?.get(String(watchId));
-      if (!item) return;
-      try { sessionStorage.setItem("indo:watch-video-current", JSON.stringify(item)); } catch {}
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      void navigate("watch-video");
-      return;
-    }
-
-    const screen = button.getAttribute("data-screen");
-    if (!screen) return;
+    const target = el?.closest("[data-screen],[data-watch-video-id]");
+    if (!target) return;
+    if (target.hasAttribute("disabled") || target.getAttribute("aria-disabled") === "true") return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    button.classList.add("indo-nav-pressed");
-    window.setTimeout(() => button.classList.remove("indo-nav-pressed"), 140);
-    void navigate(screen);
-  }, true);
+    const now = performance.now();
+    const last = Number(target.dataset.indoActivatedAt || 0);
+    if (now - last < 700) return;
+    target.dataset.indoActivatedAt = String(now);
+    activateNavigation(target);
+  };
+  document.addEventListener("pointerdown", handleActivation, { capture: true, passive: false });
+  document.addEventListener("click", handleActivation, { capture: true, passive: false });
 }
 
 function showBootFailure(message = "Could not start Indo. Please reload the app.") {
   if (!app) return;
-  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>${message}</p><button type="button" id="indo-retry-boot" style="margin-top:14px;padding:10px 16px;border-radius:10px;background:#743cff;color:#fff;font-weight:800;cursor:pointer">Retry</button></main>`;
+  app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>${message}</p><button type="button" id="indo-retry-boot">Retry</button></main>`;
   document.getElementById("indo-retry-boot")?.addEventListener("click", () => window.location.reload());
-}
-
-function withTimeout(promise, ms, label) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = window.setTimeout(() => reject(new Error(`${label} timed out.`)), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
 }
 
 async function start() {
   if (started) return;
   started = true;
   try {
-    const { auth, authPersistenceReady } = await withTimeout(
-      import("./features/auth/firebase-client.js?v=20260815-auth-v6"),
-      8000,
-      "Authentication module",
-    );
-    const { onAuthStateChanged } = await withTimeout(
-      import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js"),
-      8000,
-      "Firebase authentication",
-    );
-    await withTimeout(authPersistenceReady, 8000, "Authentication persistence");
-
-    let settled = false;
-    const bootWithUser = async (user) => {
-      if (settled) return;
-      settled = true;
-      const { state } = await import("./state.js");
-      state.authenticated = Boolean(user);
-      if (user && (state.screen === "auth-login" || state.screen === "auth-signup")) state.screen = "home";
-      if (!user && !String(state.screen || "").startsWith("auth-")) state.screen = "auth-login";
-
-      try {
-        const warmed = await routerWarmup;
-        if (state.authenticated && typeof warmed?.preloadAppSections === "function") warmed.preloadAppSections();
-        void backendWarmup;
-        await Promise.race([
-          render(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Startup timed out.")), 10000)),
-        ]);
-      } catch (error) {
-        console.error("Indo startup failed:", error);
-        showBootFailure();
-      }
-    };
-
-    let unsubscribe;
-    const firstAuth = new Promise((resolve) => {
-      unsubscribe = onAuthStateChanged(auth, (user) => resolve(user), () => resolve(auth.currentUser || null));
+    const { auth, authPersistenceReady } = await (async () => {
+      const m = await import("./features/auth/firebase-client.js?v=20260815-auth-v6");
+      return m;
+    })();
+    const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js");
+    await authPersistenceReady;
+    const user = await new Promise((resolve) => {
+      let done = false;
+      const finish = (value) => { if (done) return; done = true; resolve(value); };
+      const unsub = onAuthStateChanged(auth, (u) => { try { unsub?.(); } catch {} finish(u); }, () => finish(auth.currentUser || null));
+      window.setTimeout(() => finish(auth.currentUser || null), 8000);
     });
-    const user = await Promise.race([
-      firstAuth,
-      new Promise((resolve) => setTimeout(() => resolve(auth.currentUser || null), 8000)),
-    ]);
-    try { unsubscribe?.(); } catch {}
-    await bootWithUser(user || null);
+    state.authenticated = Boolean(user);
+    if (user && String(state.screen).startsWith("auth-")) state.screen = "home";
+    if (!user && !String(state.screen).startsWith("auth-")) state.screen = "auth-login";
+    const warmed = await routerWarmup;
+    if (state.authenticated && typeof warmed?.preloadAppSections === "function") warmed.preloadAppSections();
+    void backendWarmup;
+    await render();
   } catch (error) {
     console.error("Indo boot failed:", error);
     showBootFailure(error?.message || "Indo could not start.");
