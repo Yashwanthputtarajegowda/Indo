@@ -6,8 +6,10 @@ import { prefetchVideoSection } from "./features/feed/video-prefetch.js";
 import { installExternalVideoLinkCreate } from "./features/feed/external-video-link.js";
 
 const NAV_HOST_ID = "indo-persistent-nav-host";
+const RENDER_STAGE_PREFIX = "indo-render-stage-";
 const moduleCache = new Map();
 let preloadStarted = false;
+let renderSequence = 0;
 
 const SCREEN_MODULES = {
   messages: ["./screens/messages.js", "renderMessages"],
@@ -45,17 +47,17 @@ function enforceAuthGuard() {
   return true;
 }
 
-function activeNav() {
-  if (state.screen === "messages") return "messages";
-  if (state.screen === "reels") return "reels";
-  if (state.screen === "video" || state.screen === "watch-video") return "video";
-  if (["profile", "settings", "edit-profile"].includes(state.screen)) return "profile";
+function activeNavForScreen(screen) {
+  if (screen === "messages") return "messages";
+  if (screen === "reels") return "reels";
+  if (screen === "video" || screen === "watch-video") return "video";
+  if (["profile", "settings", "edit-profile"].includes(screen)) return "profile";
   return "home";
 }
 
-function ensureUniversalNav() {
+function updatePersistentNav(screen = state.screen) {
+  const shouldHide = HIDE_NAV_SCREENS.has(screen) || !state.authenticated;
   const existingHost = document.getElementById(NAV_HOST_ID);
-  const shouldHide = HIDE_NAV_SCREENS.has(state.screen) || !state.authenticated;
 
   if (shouldHide) {
     existingHost?.remove();
@@ -64,13 +66,14 @@ function ensureUniversalNav() {
 
   const host = existingHost || document.createElement("div");
   host.id = NAV_HOST_ID;
-  host.innerHTML = nav(activeNav());
   host.className = "indo-persistent-nav-host";
+  host.innerHTML = nav(activeNavForScreen(screen));
   document.body.appendChild(host);
 
-  const oldNested = document.getElementById("root")?.querySelectorAll(".bottom-nav, .indo-global-bottom-nav");
-  oldNested?.forEach((node) => node.remove());
+  document.getElementById("root")?.querySelectorAll(".bottom-nav,.indo-global-bottom-nav").forEach((node) => node.remove());
 }
+
+window.__indoUpdatePersistentNav = updatePersistentNav;
 
 function ensureHomeTopbar(app) {
   if (state.screen !== "home") return;
@@ -134,14 +137,64 @@ export function preloadAppSections() {
   scheduleIdle(warmNext);
 }
 
-async function lazy(app, screen, path, name, args = []) {
-  try {
-    const m = await loadScreenModule(screen, path);
-    if (typeof m[name] !== "function") throw new Error(`Missing screen renderer: ${name}`);
-    await m[name](app, ...args);
-  } catch (e) {
-    fail(app, e);
+async function renderIntoStage(stage, screen) {
+  switch (screen) {
+    case "auth-login":
+      return renderLogin(stage);
+    case "auth-signup":
+      return renderSignup(stage);
+    case "home":
+      await lazy(stage, "home", "./screens/home-v2.js", "renderHome");
+      ensureHomeTopbar(stage);
+      await installHomeReels(stage);
+      preloadAppSections();
+      return;
+    case "messages":
+      return lazy(stage, "messages", SCREEN_MODULES.messages[0], SCREEN_MODULES.messages[1]);
+    case "reels":
+      return lazy(stage, "reels", SCREEN_MODULES.reels[0], SCREEN_MODULES.reels[1]);
+    case "video":
+      return lazy(stage, "video", SCREEN_MODULES.video[0], SCREEN_MODULES.video[1]);
+    case "watch-video":
+      return lazy(stage, "watch-video", SCREEN_MODULES["watch-video"][0], SCREEN_MODULES["watch-video"][1]);
+    case "create":
+      await lazy(stage, "create", SCREEN_MODULES.create[0], SCREEN_MODULES.create[1]);
+      installExternalVideoLinkCreate(stage);
+      return;
+    case "reel-create":
+      return lazy(stage, "reel-create", SCREEN_MODULES["reel-create"][0], SCREEN_MODULES["reel-create"][1]);
+    case "upload-video":
+      return lazy(stage, "upload-video", SCREEN_MODULES["upload-video"][0], SCREEN_MODULES["upload-video"][1]);
+    case "story-create":
+      return lazy(stage, "story-create", SCREEN_MODULES["story-create"][0], SCREEN_MODULES["story-create"][1], [window.__indoStoryDraftFile instanceof File ? window.__indoStoryDraftFile : null]);
+    case "profile":
+      return lazy(stage, "profile", SCREEN_MODULES.profile[0], SCREEN_MODULES.profile[1], [state.profile]);
+    case "profile-relation":
+      return lazy(stage, "profile-relation", SCREEN_MODULES["profile-relation"][0], SCREEN_MODULES["profile-relation"][1]);
+    case "edit-profile":
+      return lazy(stage, "edit-profile", SCREEN_MODULES["edit-profile"][0], SCREEN_MODULES["edit-profile"][1], [state.profile]);
+    case "settings":
+      return lazy(stage, "settings", SCREEN_MODULES.settings[0], SCREEN_MODULES.settings[1], [state.accountType, state.earning, state.earningSummary]);
+    case "search":
+      return lazy(stage, "search", SCREEN_MODULES.search[0], SCREEN_MODULES.search[1]);
+    case "notifications":
+      return lazy(stage, "notifications", SCREEN_MODULES.notifications[0], SCREEN_MODULES.notifications[1]);
+    case "wallet":
+      return lazy(stage, "wallet", SCREEN_MODULES.wallet[0], SCREEN_MODULES.wallet[1]);
+    case "blocked-users":
+      return lazy(stage, "blocked-users", SCREEN_MODULES["blocked-users"][0], SCREEN_MODULES["blocked-users"][1]);
+    case "report":
+      return lazy(stage, "report", SCREEN_MODULES.report[0], SCREEN_MODULES.report[1]);
+    default:
+      state.screen = "home";
+      return renderIntoStage(stage, "home");
   }
+}
+
+async function lazy(app, screen, path, name, args = []) {
+  const m = await loadScreenModule(screen, path);
+  if (typeof m[name] !== "function") throw new Error(`Missing screen renderer: ${name}`);
+  await m[name](app, ...args);
 }
 
 async function installHomeReels(app) {
@@ -155,91 +208,45 @@ async function installHomeReels(app) {
 }
 
 export async function render(app) {
+  const mySequence = ++renderSequence;
+  const requestedScreen = state.screen;
+
+  if (enforceAuthGuard()) {
+    updatePersistentNav(state.screen);
+    try {
+      await renderLogin(app);
+    } catch (error) {
+      fail(app, error);
+    }
+    return;
+  }
+
+  updatePersistentNav(requestedScreen);
+
+  const stage = document.createElement("div");
+  stage.id = `${RENDER_STAGE_PREFIX}${mySequence}`;
+  stage.setAttribute("data-screen", requestedScreen);
+  stage.setAttribute("aria-hidden", "true");
+  stage.style.cssText = "position:fixed;inset:0;z-index:-1;visibility:hidden;pointer-events:none;overflow:auto;";
+  app.appendChild(stage);
+
   try {
-    if (enforceAuthGuard()) {
-      ensureUniversalNav();
-      return renderLogin(app);
+    await renderIntoStage(stage, requestedScreen);
+
+    // If another navigation happened while this screen was loading, discard this stage.
+    if (mySequence !== renderSequence || state.screen !== requestedScreen) {
+      stage.remove();
+      return;
     }
 
-    // Mount navigation before the screen renderer. The navigation lives on document.body,
-    // not inside #root, so an async screen renderer can never delay or erase it.
-    ensureUniversalNav();
-
-    switch (state.screen) {
-      case "auth-login":
-        return renderLogin(app);
-      case "auth-signup":
-        return renderSignup(app);
-      case "home":
-        await lazy(app, "home", "./screens/home-v2.js", "renderHome");
-        ensureHomeTopbar(app);
-        await installHomeReels(app);
-        preloadAppSections();
-        break;
-      case "messages":
-        await lazy(app, "messages", SCREEN_MODULES.messages[0], SCREEN_MODULES.messages[1]);
-        break;
-      case "reels":
-        await lazy(app, "reels", SCREEN_MODULES.reels[0], SCREEN_MODULES.reels[1]);
-        break;
-      case "video":
-        await lazy(app, "video", SCREEN_MODULES.video[0], SCREEN_MODULES.video[1]);
-        break;
-      case "watch-video":
-        await lazy(app, "watch-video", SCREEN_MODULES["watch-video"][0], SCREEN_MODULES["watch-video"][1]);
-        break;
-      case "create":
-        await lazy(app, "create", SCREEN_MODULES.create[0], SCREEN_MODULES.create[1]);
-        installExternalVideoLinkCreate(app);
-        break;
-      case "reel-create":
-        await lazy(app, "reel-create", SCREEN_MODULES["reel-create"][0], SCREEN_MODULES["reel-create"][1]);
-        break;
-      case "upload-video":
-        await lazy(app, "upload-video", SCREEN_MODULES["upload-video"][0], SCREEN_MODULES["upload-video"][1]);
-        break;
-      case "story-create":
-        await lazy(app, "story-create", SCREEN_MODULES["story-create"][0], SCREEN_MODULES["story-create"][1], [window.__indoStoryDraftFile instanceof File ? window.__indoStoryDraftFile : null]);
-        break;
-      case "profile":
-        await lazy(app, "profile", SCREEN_MODULES.profile[0], SCREEN_MODULES.profile[1], [state.profile]);
-        break;
-      case "profile-relation":
-        await lazy(app, "profile-relation", SCREEN_MODULES["profile-relation"][0], SCREEN_MODULES["profile-relation"][1]);
-        break;
-      case "edit-profile":
-        await lazy(app, "edit-profile", SCREEN_MODULES["edit-profile"][0], SCREEN_MODULES["edit-profile"][1], [state.profile]);
-        break;
-      case "settings":
-        await lazy(app, "settings", SCREEN_MODULES.settings[0], SCREEN_MODULES.settings[1], [state.accountType, state.earning, state.earningSummary]);
-        break;
-      case "search":
-        await lazy(app, "search", SCREEN_MODULES.search[0], SCREEN_MODULES.search[1]);
-        break;
-      case "notifications":
-        await lazy(app, "notifications", SCREEN_MODULES.notifications[0], SCREEN_MODULES.notifications[1]);
-        break;
-      case "wallet":
-        await lazy(app, "wallet", SCREEN_MODULES.wallet[0], SCREEN_MODULES.wallet[1]);
-        break;
-      case "blocked-users":
-        await lazy(app, "blocked-users", SCREEN_MODULES["blocked-users"][0], SCREEN_MODULES["blocked-users"][1]);
-        break;
-      case "report":
-        await lazy(app, "report", SCREEN_MODULES.report[0], SCREEN_MODULES.report[1]);
-        break;
-      default:
-        state.screen = "home";
-        ensureUniversalNav();
-        await lazy(app, "home", "./screens/home-v2.js", "renderHome");
-        ensureHomeTopbar(app);
-        await installHomeReels(app);
-        preloadAppSections();
-    }
-
-    // Re-assert the current active state after the screen renderer completes.
-    ensureUniversalNav();
-  } catch (e) {
-    fail(app, e);
+    const fragment = document.createDocumentFragment();
+    while (stage.firstChild) fragment.appendChild(stage.firstChild);
+    stage.remove();
+    app.replaceChildren(fragment);
+    updatePersistentNav(state.screen);
+  } catch (error) {
+    stage.remove();
+    if (mySequence !== renderSequence || state.screen !== requestedScreen) return;
+    fail(app, error);
   }
 }
