@@ -1,8 +1,7 @@
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
-import { nav } from "../components/nav.js";
 import { auth } from "../features/auth/firebase-client.js";
 
-const STYLE_ID = "indo-video-community-v14";
+const STYLE_ID = "indo-video-community-v15";
 const API_BASE = () => window.INDO_API_BASE || "";
 const PAGE_SIZE = 12;
 const PRIORITY_SESSION_KEY = "indo:video-priority-shown-v4";
@@ -25,15 +24,82 @@ function shuffle(items) { const out = [...items]; for (let i = out.length - 1; i
 async function getCurrentFollowingIds() { try { const user = auth.currentUser; if (!user) return new Set(); const token = await user.getIdToken(false); const response = await fetch(`${API_BASE()}/api/account/me`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }); const data = await response.json().catch(() => ({})); if (!response.ok) return new Set(); const following = data?.social?.following || {}; const ids = new Set(); if (Array.isArray(following)) { for (const item of following) { const uid = String(item?.uid || item?.targetUid || item || "").trim(); if (uid) ids.add(uid); } } else if (following && typeof following === "object") { for (const [key, value] of Object.entries(following)) { const uid = String(value?.uid || value?.targetUid || key || "").trim(); if (uid) ids.add(uid); } } return ids; } catch { return new Set(); } }
 function buildFirstLoadOrder(items, followingIds) { const followers = []; const others = []; for (const item of items) (isPriorityFollowerVideo(item, followingIds) ? followers : others).push(item); if (!items.length) return []; if (!followers.length) return shuffle(items); followers.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0)); const trending = [...others].sort((a, b) => trendingScore(b) - trendingScore(a)).slice(0, Math.min(12, others.length)); const trendingIds = new Set(trending.map((item) => item.id)); const normal = shuffle(others.filter((item) => !trendingIds.has(item.id))); const mixed = []; const max = Math.max(followers.length, trending.length); for (let i = 0; i < max; i += 1) { if (followers[i]) mixed.push(followers[i]); if (trending[i]) mixed.push(trending[i]); } return [...mixed, ...normal]; }
 function buildRefreshOrder(items, followingIds) { if (!items.length) return []; const followerIds = new Set(items.filter((item) => isPriorityFollowerVideo(item, followingIds)).map((item) => item.id)); const trending = [...items].sort((a, b) => trendingScore(b) - trendingScore(a)); const trendingIds = new Set(trending.slice(0, Math.min(12, trending.length)).map((item) => item.id)); const normal = items.filter((item) => !followerIds.has(item.id) && !trendingIds.has(item.id)); return shuffle(normal.length ? normal : items); }
+
 export async function renderVideo(app) {
   installStyles();
   const top = renderIndoBrandTopbar({ rightHtml: '<button type="button" data-screen="create" aria-label="Create">＋</button>', rightLabel: "Create" });
   app.innerHTML = `<div class="app-shell indo-community-video-shell">${top}<main class="indo-community-video-main"><label class="indo-community-video-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="community-video-search" type="search" placeholder="Search Indo videos..." autocomplete="off"></label><div class="indo-community-video-head"><h2>Latest Community Videos</h2><small>Following + Trending interleaved · Normal videos mixed when needed</small></div><div id="community-video-status" class="indo-community-video-status">Loading community videos…</div><div id="community-video-list" class="indo-community-video-list"></div><div id="community-video-more" class="indo-community-video-more"></div></main></div>`;
-  app.insertAdjacentHTML("beforeend", nav("video"));
-  const input = app.querySelector("#community-video-search"); const status = app.querySelector("#community-video-status"); const list = app.querySelector("#community-video-list"); const more = app.querySelector("#community-video-more"); let all = []; let visible = 0; let stopped = false;
-  const render = () => { const q = input.value.trim().toLowerCase(); const filtered = q ? all.filter((v) => `${v.title || ""} ${v.description || ""} ${v.creatorName || ""} ${v.username || ""}`.toLowerCase().includes(q)) : all; visible = Math.min(visible || PAGE_SIZE, filtered.length); list.innerHTML = filtered.slice(0, visible).map(card).join(""); more.textContent = visible < filtered.length ? "Scroll for more" : (filtered.length ? "All available videos loaded" : "No community videos found."); status.textContent = filtered.length ? "" : (q ? "No matching videos." : "No community videos available yet."); status.style.display = filtered.length ? "none" : "block"; };
-  try { const response = await fetch(`${API_BASE()}/api/media/videos?type=video&limit=50`, { cache: "no-store" }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || "Could not load community videos."); const seen = new Set(); const source = (Array.isArray(data.videos) ? data.videos : []).map(normalize).filter((v) => v && !seen.has(v.id) && seen.add(v.id)); const followingIds = await getCurrentFollowingIds(); let ordered; try { ordered = sessionStorage.getItem(PRIORITY_SESSION_KEY) === "1" ? buildRefreshOrder(source, followingIds) : buildFirstLoadOrder(source, followingIds); sessionStorage.setItem(PRIORITY_SESSION_KEY, "1"); } catch { ordered = buildFirstLoadOrder(source, followingIds); } all = ordered; visible = PAGE_SIZE; render(); } catch (error) { status.textContent = error.message || "Could not load community videos."; more.textContent = ""; }
-  const sentinel = document.createElement("div"); sentinel.style.height = "1px"; more.after(sentinel); const io = new IntersectionObserver((entries) => { if (stopped || !entries.some((e) => e.isIntersecting)) return; const q = input.value.trim().toLowerCase(); const filteredLength = q ? all.filter((v) => `${v.title || ""} ${v.description || ""} ${v.creatorName || ""} ${v.username || ""}`.toLowerCase().includes(q)).length : all.length; if (visible < filteredLength) { visible = Math.min(visible + PAGE_SIZE, filteredLength); render(); } }, { rootMargin: "1000px 0px" }); io.observe(sentinel);
-  input.addEventListener("input", render); list.addEventListener("click", (event) => { const el = event.target.closest("[data-watch-video-id]"); if (!el) return; const item = all.find((v) => v.id === String(el.dataset.watchVideoId)); if (!item) return; sessionStorage.setItem("indo:watch-video-current", JSON.stringify(item)); window.__indoNavigate?.("watch-video"); });
-  const observer = new MutationObserver(() => { if (!document.body.contains(app)) { stopped = true; io.disconnect(); observer.disconnect(); } }); observer.observe(document.body, { childList: true, subtree: true });
+
+  const input = app.querySelector("#community-video-search");
+  const status = app.querySelector("#community-video-status");
+  const list = app.querySelector("#community-video-list");
+  const more = app.querySelector("#community-video-more");
+  let all = [];
+  let visible = 0;
+  let stopped = false;
+
+  const render = () => {
+    const q = input.value.trim().toLowerCase();
+    const filtered = q ? all.filter((v) => `${v.title || ""} ${v.description || ""} ${v.creatorName || ""} ${v.username || ""}`.toLowerCase().includes(q)) : all;
+    visible = Math.min(visible || PAGE_SIZE, filtered.length);
+    list.innerHTML = filtered.slice(0, visible).map(card).join("");
+    more.textContent = visible < filtered.length ? "Scroll for more" : (filtered.length ? "All available videos loaded" : "No community videos found.");
+    status.textContent = filtered.length ? "" : (q ? "No matching videos." : "No community videos available yet.");
+    status.style.display = filtered.length ? "none" : "block";
+  };
+
+  try {
+    const response = await fetch(`${API_BASE()}/api/media/videos?type=video&limit=50`, { cache: "no-store" });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not load community videos.");
+    const seen = new Set();
+    const source = (Array.isArray(data.videos) ? data.videos : []).map(normalize).filter((v) => v && !seen.has(v.id) && seen.add(v.id));
+    const followingIds = await getCurrentFollowingIds();
+    let ordered;
+    try {
+      ordered = sessionStorage.getItem(PRIORITY_SESSION_KEY) === "1" ? buildRefreshOrder(source, followingIds) : buildFirstLoadOrder(source, followingIds);
+      sessionStorage.setItem(PRIORITY_SESSION_KEY, "1");
+    } catch {
+      ordered = buildFirstLoadOrder(source, followingIds);
+    }
+    all = ordered;
+    visible = PAGE_SIZE;
+    render();
+  } catch (error) {
+    status.textContent = error.message || "Could not load community videos.";
+    more.textContent = "";
+  }
+
+  const sentinel = document.createElement("div");
+  sentinel.style.height = "1px";
+  more.after(sentinel);
+  const io = new IntersectionObserver((entries) => {
+    if (stopped || !entries.some((e) => e.isIntersecting)) return;
+    const q = input.value.trim().toLowerCase();
+    const filteredLength = q ? all.filter((v) => `${v.title || ""} ${v.description || ""} ${v.creatorName || ""} ${v.username || ""}`.toLowerCase().includes(q)).length : all.length;
+    if (visible < filteredLength) {
+      visible = Math.min(visible + PAGE_SIZE, filteredLength);
+      render();
+    }
+  }, { rootMargin: "1000px 0px" });
+  io.observe(sentinel);
+
+  input.addEventListener("input", render);
+  list.addEventListener("click", (event) => {
+    const el = event.target.closest("[data-watch-video-id]");
+    if (!el) return;
+    const item = all.find((v) => v.id === String(el.dataset.watchVideoId));
+    if (!item) return;
+    sessionStorage.setItem("indo:watch-video-current", JSON.stringify(item));
+    window.__indoNavigate?.("watch-video");
+  });
+
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(app)) {
+      stopped = true;
+      io.disconnect();
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 }
