@@ -83,6 +83,25 @@ async function navigate(screen) {
   if (nextScreen === "profile") state.profile = null;
   state.screen = nextScreen;
   window.__indoUpdatePersistentNav?.(nextScreen);
+
+  // Video gets an immediate visual handoff instead of waiting for the async router stage.
+  if (nextScreen === "video") {
+    const fastSequence = ++renderId;
+    app.innerHTML = `<main style="min-height:100vh;background:#030308;color:#fff;padding:20px 14px 100px"><div style="font-weight:900;font-size:18px;margin-bottom:14px">Video</div><div style="height:180px;border-radius:14px;background:linear-gradient(90deg,#101018,#181822,#101018);background-size:200% 100%;animation:indoVideoLoad 1.1s ease-in-out infinite"></div><style>@keyframes indoVideoLoad{0%{background-position:0% 0}50%{background-position:100% 0}100%{background-position:0% 0}}</style></main>`;
+    try {
+      const mod = await import("./screens/video.js?nav-fast-v6");
+      if (fastSequence !== renderId || state.screen !== "video" || requestId !== navigationId) return;
+      await mod.renderVideo(app);
+      if (fastSequence !== renderId || state.screen !== "video" || requestId !== navigationId) return;
+      applyIndoPinkThunderTheme();
+      installHomeFeedDesign();
+      installVideoPlaybackFix();
+    } catch (error) {
+      console.error("Fast video navigation failed:", error);
+    }
+    return;
+  }
+
   try { await render(); } catch (error) { console.error("Indo navigation failed:", error); }
   if (requestId !== navigationId) return;
 }
@@ -98,7 +117,8 @@ if (!window.__indoUniversalNavigation) {
     event.stopImmediatePropagation();
     const now = performance.now();
     const last = Number(target.dataset.indoActivatedAt || 0);
-    if (now - last < 700) return;
+    const cooldown = target.getAttribute("data-screen") === "video" ? 150 : 700;
+    if (now - last < cooldown) return;
     target.dataset.indoActivatedAt = String(now);
     activateNavigation(target);
   };
