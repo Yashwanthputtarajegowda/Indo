@@ -67,9 +67,7 @@ function installReliableBack(app) {
     event?.stopImmediatePropagation?.();
     const navigate = window.__indoNavigate;
     if (typeof navigate === "function") {
-      Promise.resolve(navigate("video")).catch(() => {
-        try { window.history.back(); } catch {}
-      });
+      Promise.resolve(navigate("video")).catch(() => { try { window.history.back(); } catch {} });
       return;
     }
     try { window.history.back(); } catch {}
@@ -91,4 +89,14 @@ async function wireActions(app, video) {
   shareBtn?.addEventListener("click", async () => { try { if (navigator.share) await navigator.share({ title: video.title || "Indo video", url: location.href }); else await navigator.clipboard?.writeText(location.href); emitInterest(video, "share"); showStatus(app, "Link shared"); } catch {} });
   viewsBtn?.addEventListener("click", () => app.querySelector(".indo-watch-player")?.scrollIntoView({ behavior: "smooth", block: "center" }));
 }
-export async function renderWatchVideo(app) { installStyles(); await renderStyledWatchVideo(app); const raw = currentVideo(); if (!raw) return; installReliableBack(app); replaceExternalPlayer(app, raw); await wireActions(app, raw); }
+export async function renderWatchVideo(app) {
+  installStyles();
+  const raw = currentVideo();
+  if (!raw) return;
+  // Let the base renderer paint the video immediately; secondary API/UI work continues asynchronously.
+  const baseRender = renderStyledWatchVideo(app);
+  baseRender.then(() => {
+    replaceExternalPlayer(app, raw);
+    return wireActions(app, raw);
+  }).catch((error) => console.warn("Watch secondary setup failed:", error));
+}
