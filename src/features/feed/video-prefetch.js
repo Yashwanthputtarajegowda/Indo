@@ -85,24 +85,51 @@ async function fetchFollowing() {
   }
 }
 
+function isGoogleDriveVideo(video) {
+  const provider = String(video?.storage?.provider || video?.googleDrive?.provider || "").trim().toLowerCase();
+  const fileId = String(video?.googleDrive?.fileId || "").trim();
+  return provider === "google-drive" || Boolean(fileId);
+}
+
+function driveStreamUrl(video) {
+  const base = apiBase();
+  const id = String(video?.id || "").trim();
+  if (!base || !id || !isGoogleDriveVideo(video)) return "";
+  return `${base}/api/google-drive/videos/${encodeURIComponent(id)}/stream`;
+}
+
 function warmVideoMetadata(payload) {
   const videos = Array.isArray(payload?.videos) ? payload.videos : [];
+  const driveVideos = videos.filter(isGoogleDriveVideo).slice(0, 4);
+  if (!driveVideos.length) return;
+
   requestAnimationFrame(() => {
-    videos.slice(0, 8).forEach((video) => {
-      const src = String(video?.secureUrl || video?.videoUrl || video?.url || "").trim();
+    driveVideos.forEach((video) => {
+      const src = driveStreamUrl(video);
       if (!src) return;
       const el = document.createElement("video");
-      el.preload = "metadata";
+      el.preload = "auto";
       el.muted = true;
       el.playsInline = true;
+      el.setAttribute("playsinline", "");
+      el.setAttribute("muted", "");
+      el.style.position = "fixed";
+      el.style.width = "1px";
+      el.style.height = "1px";
+      el.style.opacity = "0";
+      el.style.pointerEvents = "none";
+      el.style.left = "-9999px";
       el.src = src;
-      el.load();
+      document.body.appendChild(el);
+      try { el.load(); } catch {}
       setTimeout(() => {
         try {
+          el.pause();
           el.removeAttribute("src");
           el.load();
+          el.remove();
         } catch {}
-      }, 15000);
+      }, 30000);
     });
   });
 }
