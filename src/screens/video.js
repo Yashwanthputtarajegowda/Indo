@@ -1,10 +1,10 @@
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
 import { auth } from "../features/auth/firebase-client.js";
 
-const STYLE_ID = "indo-video-community-v10";
+const STYLE_ID = "indo-video-community-v11";
 const API_BASE = () => window.INDO_API_BASE || "";
 const PAGE_SIZE = 12;
-const PRIORITY_SESSION_KEY = "indo:video-priority-shown-v1";
+const PRIORITY_SESSION_KEY = "indo:video-priority-shown-v2";
 
 function esc(value = "") {
   return String(value).replace(/[&<>\"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#039;" }[c]));
@@ -38,12 +38,10 @@ function card(item) {
     : `<div class="indo-community-video-fallback">▶</div>`;
   return `<article class="indo-community-video-card" data-watch-video-id="${esc(item.id)}"><div class="indo-community-video-thumb-wrap">${img}<span class="indo-community-video-play">▶</span></div><div class="indo-community-video-body"><div style="display:flex;justify-content:space-between;gap:8px"><h3 class="indo-community-video-title">${esc(item.title || "Indo video")}</h3><span class="indo-community-video-badge">COMMUNITY</span></div><div class="indo-community-video-meta"><span>@${esc(String(item.creatorName || item.username || "user").replace(/^@/, ""))}</span><span>·</span><span>${esc(age(item.createdAt))}</span></div></div></article>`;
 }
-
 function isPriorityFollowerVideo(item, followingIds) {
   const ownerUid = String(item.ownerUid || item.creatorUid || item.uid || "").trim();
   return Boolean(ownerUid) && followingIds.has(ownerUid);
 }
-
 function trendingScore(item) {
   const likes = Math.max(0, Number(item.likes || 0));
   const views = Math.max(0, Number(item.views || 0));
@@ -51,7 +49,6 @@ function trendingScore(item) {
   const recency = 1 / Math.max(1, Math.sqrt(ageHours + 1));
   return (likes * 5 + views) * (0.7 + 0.3 * recency);
 }
-
 function shuffle(items) {
   const out = [...items];
   for (let i = out.length - 1; i > 0; i -= 1) {
@@ -60,7 +57,6 @@ function shuffle(items) {
   }
   return out;
 }
-
 async function getCurrentFollowingIds() {
   try {
     const user = auth.currentUser;
@@ -91,6 +87,8 @@ async function getCurrentFollowingIds() {
   }
 }
 
+// First load: interleave follower videos with trending videos.
+// Example: followers [1,2,3] + trending [4,5,6] -> [1,4,2,5,3,6].
 function buildFirstLoadOrder(items, followingIds) {
   const followers = [];
   const others = [];
@@ -98,15 +96,26 @@ function buildFirstLoadOrder(items, followingIds) {
     if (isPriorityFollowerVideo(item, followingIds)) followers.push(item);
     else others.push(item);
   }
+
   followers.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+
   const trending = [...others]
     .sort((a, b) => trendingScore(b) - trendingScore(a))
     .slice(0, Math.min(12, others.length));
+
   const trendingIds = new Set(trending.map((item) => item.id));
   const normal = shuffle(others.filter((item) => !trendingIds.has(item.id)));
-  return [...followers, ...trending, ...normal];
+
+  const mixed = [];
+  const max = Math.max(followers.length, trending.length);
+  for (let i = 0; i < max; i += 1) {
+    if (followers[i]) mixed.push(followers[i]);
+    if (trending[i]) mixed.push(trending[i]);
+  }
+  return [...mixed, ...normal];
 }
 
+// Subsequent refreshes: show normal videos only, shuffled so the same 1,2,3,4 order does not repeat.
 function buildRefreshOrder(items, followingIds) {
   const followerIds = new Set(items.filter((item) => isPriorityFollowerVideo(item, followingIds)).map((item) => item.id));
   const trending = [...items].sort((a, b) => trendingScore(b) - trendingScore(a));
@@ -118,7 +127,7 @@ function buildRefreshOrder(items, followingIds) {
 export async function renderVideo(app) {
   installStyles();
   const top = renderIndoBrandTopbar({ rightHtml: '<button type="button" data-screen="create" aria-label="Create">＋</button>', rightLabel: "Create" });
-  app.innerHTML = `<div class="app-shell indo-community-video-shell">${top}<main class="indo-community-video-main"><label class="indo-community-video-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="community-video-search" type="search" placeholder="Search Indo videos..." autocomplete="off"></label><div class="indo-community-video-head"><h2>Latest Community Videos</h2><small>Following first · Trending next · Normal videos after</small></div><div id="community-video-status" class="indo-community-video-status">Loading community videos…</div><div id="community-video-list" class="indo-community-video-list"></div><div id="community-video-more" class="indo-community-video-more"></div></main></div>`;
+  app.innerHTML = `<div class="app-shell indo-community-video-shell">${top}<main class="indo-community-video-main"><label class="indo-community-video-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="community-video-search" type="search" placeholder="Search Indo videos..." autocomplete="off"></label><div class="indo-community-video-head"><h2>Latest Community Videos</h2><small>Following + Trending interleaved · Normal videos after</small></div><div id="community-video-status" class="indo-community-video-status">Loading community videos…</div><div id="community-video-list" class="indo-community-video-list"></div><div id="community-video-more" class="indo-community-video-more"></div></main></div>`;
   const input = app.querySelector("#community-video-search");
   const status = app.querySelector("#community-video-status");
   const list = app.querySelector("#community-video-list");
