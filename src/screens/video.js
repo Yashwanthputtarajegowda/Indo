@@ -1,7 +1,8 @@
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
+import { nav } from "../components/nav.js";
 import { auth } from "../features/auth/firebase-client.js";
 
-const STYLE_ID = "indo-video-community-v13";
+const STYLE_ID = "indo-video-community-v14";
 const API_BASE = () => window.INDO_API_BASE || "";
 const PAGE_SIZE = 12;
 const PRIORITY_SESSION_KEY = "indo:video-priority-shown-v4";
@@ -28,6 +29,7 @@ export async function renderVideo(app) {
   installStyles();
   const top = renderIndoBrandTopbar({ rightHtml: '<button type="button" data-screen="create" aria-label="Create">＋</button>', rightLabel: "Create" });
   app.innerHTML = `<div class="app-shell indo-community-video-shell">${top}<main class="indo-community-video-main"><label class="indo-community-video-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="community-video-search" type="search" placeholder="Search Indo videos..." autocomplete="off"></label><div class="indo-community-video-head"><h2>Latest Community Videos</h2><small>Following + Trending interleaved · Normal videos mixed when needed</small></div><div id="community-video-status" class="indo-community-video-status">Loading community videos…</div><div id="community-video-list" class="indo-community-video-list"></div><div id="community-video-more" class="indo-community-video-more"></div></main></div>`;
+  app.insertAdjacentHTML("beforeend", nav("video"));
   const input = app.querySelector("#community-video-search"); const status = app.querySelector("#community-video-status"); const list = app.querySelector("#community-video-list"); const more = app.querySelector("#community-video-more"); let all = []; let visible = 0; let stopped = false;
   const render = () => { const q = input.value.trim().toLowerCase(); const filtered = q ? all.filter((v) => `${v.title || ""} ${v.description || ""} ${v.creatorName || ""} ${v.username || ""}`.toLowerCase().includes(q)) : all; visible = Math.min(visible || PAGE_SIZE, filtered.length); list.innerHTML = filtered.slice(0, visible).map(card).join(""); more.textContent = visible < filtered.length ? "Scroll for more" : (filtered.length ? "All available videos loaded" : "No community videos found."); status.textContent = filtered.length ? "" : (q ? "No matching videos." : "No community videos available yet."); status.style.display = filtered.length ? "none" : "block"; };
   try { const response = await fetch(`${API_BASE()}/api/media/videos?type=video&limit=50`, { cache: "no-store" }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || "Could not load community videos."); const seen = new Set(); const source = (Array.isArray(data.videos) ? data.videos : []).map(normalize).filter((v) => v && !seen.has(v.id) && seen.add(v.id)); const followingIds = await getCurrentFollowingIds(); let ordered; try { ordered = sessionStorage.getItem(PRIORITY_SESSION_KEY) === "1" ? buildRefreshOrder(source, followingIds) : buildFirstLoadOrder(source, followingIds); sessionStorage.setItem(PRIORITY_SESSION_KEY, "1"); } catch { ordered = buildFirstLoadOrder(source, followingIds); } all = ordered; visible = PAGE_SIZE; render(); } catch (error) { status.textContent = error.message || "Could not load community videos."; more.textContent = ""; }
