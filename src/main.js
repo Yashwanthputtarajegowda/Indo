@@ -10,17 +10,18 @@ import {
 import { applyIndoPinkThunderTheme } from "./features/ui/indo-pink-thunder-theme.js?v=20260815-pink-thunder-v1";
 import { installHomeFeedDesign } from "./features/ui/home-feed-design-v2.js?v=20260815-home-video-v3";
 import { installVideoPlaybackFix } from "./features/feed/video-playback-fix.js?v=20260817-telegram-playback-v2";
-import "./features/ui/button-touch-hardener.js?v=20260821-touch-v1";
+import "./features/ui/button-touch-hardener.js?v=20260821-touch-v2";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
 import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v10";
 
 const app = document.getElementById("root");
-let busy = false;
 let started = false;
 let renderId = 0;
+let navigationId = 0;
 
-const routerWarmup = import("./router.js?v=20260821-nav-fix-v3").catch((error) => {
+const ROUTER_VERSION = "./router.js?v=20260821-nav-responsive-v4";
+const routerWarmup = import(ROUTER_VERSION).catch((error) => {
   console.warn("Router warmup failed; normal startup import will retry:", error);
   return null;
 });
@@ -55,8 +56,11 @@ function scheduleLiveAvatarInstaller() {
 async function render() {
   const currentRender = ++renderId;
   const warmedRouter = await routerWarmup;
-  const { render } = warmedRouter || await import("./router.js?v=20260821-nav-fix-v3");
-  await render(app);
+  const router = warmedRouter || await import(ROUTER_VERSION);
+  await router.render(app);
+
+  if (currentRender !== renderId) return;
+
   applyIndoPinkThunderTheme();
   installHomeFeedDesign();
   installVideoPlaybackFix();
@@ -68,20 +72,24 @@ async function render() {
 }
 
 async function navigate(screen) {
-  if (busy) return;
-  busy = true;
+  const nextScreen = String(screen || "home");
+  const requestId = ++navigationId;
+
+  const { state } = await import("./state.js");
+  if (nextScreen === "profile") state.profile = null;
+  state.screen = nextScreen;
+
+  // Navigation must react immediately. It must never wait for an async screen/API load.
+  window.__indoUpdatePersistentNav?.(nextScreen);
+
   try {
-    const { state } = await import("./state.js");
-    if (screen === "profile") state.profile = null;
-    state.screen = String(screen || "home");
     await render();
-    window.scrollTo({ top: 0, behavior: "auto" });
   } catch (error) {
     console.error("Indo navigation failed:", error);
-    throw error;
-  } finally {
-    busy = false;
   }
+
+  // A newer navigation supersedes an older one. The router also guards its final swap.
+  if (requestId !== navigationId) return;
 }
 
 if (!window.__indoUniversalNavigation) {
@@ -90,6 +98,7 @@ if (!window.__indoUniversalNavigation) {
     const el = event.target instanceof Element ? event.target : null;
     const button = el?.closest("[data-screen],[data-watch-video-id]");
     if (!button) return;
+
     const watchId = button.getAttribute("data-watch-video-id");
     if (watchId) {
       const item = window.__indoWatchVideoItems?.get(String(watchId));
@@ -97,16 +106,17 @@ if (!window.__indoUniversalNavigation) {
       try { sessionStorage.setItem("indo:watch-video-current", JSON.stringify(item)); } catch {}
       event.preventDefault();
       event.stopImmediatePropagation();
-      navigate("watch-video").catch(console.error);
+      void navigate("watch-video");
       return;
     }
+
     const screen = button.getAttribute("data-screen");
     if (!screen) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     button.classList.add("indo-nav-pressed");
     window.setTimeout(() => button.classList.remove("indo-nav-pressed"), 140);
-    navigate(screen).catch(console.error);
+    void navigate(screen);
   }, true);
 }
 
@@ -139,6 +149,7 @@ async function start() {
       "Firebase authentication",
     );
     await withTimeout(authPersistenceReady, 8000, "Authentication persistence");
+
     let settled = false;
     const bootWithUser = async (user) => {
       if (settled) return;
@@ -147,21 +158,29 @@ async function start() {
       state.authenticated = Boolean(user);
       if (user && (state.screen === "auth-login" || state.screen === "auth-signup")) state.screen = "home";
       if (!user && !String(state.screen || "").startsWith("auth-")) state.screen = "auth-login";
+
       try {
-        const { preloadAppSections } = (await routerWarmup) || {};
-        if (state.authenticated && typeof preloadAppSections === "function") preloadAppSections();
+        const warmed = await routerWarmup;
+        if (state.authenticated && typeof warmed?.preloadAppSections === "function") warmed.preloadAppSections();
         void backendWarmup;
-        await Promise.race([render(), new Promise((_, reject) => setTimeout(() => reject(new Error("Startup timed out.")), 10000))]);
+        await Promise.race([
+          render(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Startup timed out.")), 10000)),
+        ]);
       } catch (error) {
         console.error("Indo startup failed:", error);
         showBootFailure();
       }
     };
+
     let unsubscribe;
     const firstAuth = new Promise((resolve) => {
       unsubscribe = onAuthStateChanged(auth, (user) => resolve(user), () => resolve(auth.currentUser || null));
     });
-    const user = await Promise.race([firstAuth, new Promise((resolve) => setTimeout(() => resolve(auth.currentUser || null), 8000))]);
+    const user = await Promise.race([
+      firstAuth,
+      new Promise((resolve) => setTimeout(() => resolve(auth.currentUser || null), 8000)),
+    ]);
     try { unsubscribe?.(); } catch {}
     await bootWithUser(user || null);
   } catch (error) {
