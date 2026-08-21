@@ -8,7 +8,6 @@ import { installExternalVideoLinkCreate } from "./features/feed/external-video-l
 const NAV_STYLE_ID = "indo-universal-nav";
 const moduleCache = new Map();
 let preloadStarted = false;
-
 const SCREEN_MODULES = {
   messages: ["./screens/messages.js", "renderMessages"],
   reels: ["./screens/reels.js", "renderReels"],
@@ -21,18 +20,16 @@ const SCREEN_MODULES = {
   settings: ["./screens/settings.js", "renderSettings"],
   "profile-relation": ["./screens/profile-relation.js", "renderProfileRelation"],
   "edit-profile": ["./screens/edit-profile.js", "renderEditProfile"],
-  "watch-video": ["./screens/watch-video.js?v=20260818-source-player-v3", "renderWatchVideo"],
+  "watch-video": ["./screens/watch-video.js?v=20260821-watch-stable-v1", "renderWatchVideo"],
   "upload-video": ["./screens/upload-video.js?v=20260820-drive-final-v5", "renderUploadVideo"],
   "story-create": ["./screens/story-create.js", "renderStoryCreate"],
   wallet: ["./screens/wallet.js", "renderWallet"],
   "blocked-users": ["./screens/blocked-users.js", "renderBlockedUsers"],
   report: ["./screens/report.js", "renderReport"],
 };
-
 const HIGH_PRIORITY = ["messages", "reels", "video", "search", "profile", "notifications"];
 const SECONDARY_PRIORITY = ["create", "reel-create", "settings", "profile-relation", "edit-profile", "watch-video", "upload-video", "story-create", "wallet", "blocked-users", "report"];
 const AUTH_SCREENS = new Set(["auth-login", "auth-signup"]);
-
 function fail(app, error) { console.error("Indo route error:", error); app.innerHTML = `<main class="splash-screen splash-error"><div class="splash-name">Indo</div><p>Indo could not open this screen.</p><small>${String(error?.message || error || "Unable to open this screen.").replace(/[&<>\\"']/g, "")}</small><button type="button" data-screen="home">Back to Home</button></main>`; }
 function enforceAuthGuard() { if (state.authenticated || AUTH_SCREENS.has(state.screen)) return false; state.screen = "auth-login"; return true; }
 function installNavStyles() { if (document.getElementById(NAV_STYLE_ID)) return; const s = document.createElement("style"); s.id = NAV_STYLE_ID; s.textContent = `.indo-global-bottom-nav,.bottom-nav{position:fixed!important;left:50%!important;bottom:0!important;transform:translateX(-50%)!important;width:min(100%,520px)!important;height:68px!important;z-index:99999!important;display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:0!important;background:#0f0f14!important;border-top:1px solid #24242b!important;box-sizing:border-box!important;padding:0!important;margin:0!important}.indo-global-bottom-nav button,.bottom-nav button{border:0!important;background:transparent!important;color:#85858f!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;padding:6px 2px!important;margin:0!important;font:700 11px/1.1 Arial,sans-serif!important;cursor:pointer!important}.indo-global-bottom-nav button.active,.bottom-nav button.active{color:#fff!important}.indo-global-bottom-nav svg,.bottom-nav svg{width:20px!important;height:20px!important}.indo-global-bottom-nav span,.bottom-nav span{display:block!important}`; document.head.appendChild(s); }
