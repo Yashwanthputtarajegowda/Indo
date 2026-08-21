@@ -1,8 +1,9 @@
 import { auth } from "../auth/firebase-client.js";
 
-const STYLE_ID = "indo-video-delete-manager-v3";
+const STYLE_ID = "indo-video-delete-manager-v4";
 const MENU_ID = "indo-video-delete-menu";
 const DELETE_PATH = "/api/media/videos/";
+const FIREBASE_DATABASE_URL = "https://indo-174f0-default-rtdb.firebaseio.com";
 let installed = false;
 let deleting = false;
 
@@ -57,7 +58,7 @@ function removeAllMatchingCards(videoId) {
   });
 }
 
-async function requestDelete(videoId, user) {
+async function requestBackendDelete(videoId, user) {
   const token = await user.getIdToken(true);
   const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
   if (!base) throw new Error("Backend URL is not configured.");
@@ -83,15 +84,105 @@ async function requestDelete(videoId, user) {
   return data;
 }
 
+async function firebaseGet(path, token) {
+  const url = `${FIREBASE_DATABASE_URL}/${String(path || "").replace(/^\/+|\/+$/g, "")}.json?auth=${encodeURIComponent(token)}`;
+  const response = await fetch(url, { method: "GET", cache: "no-store" });
+  const text = await response.text().catch(() => "");
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch {}
+  if (!response.ok) {
+    throw new Error(String(data?.error || `Firebase read failed (${response.status}).`).slice(0, 300));
+  }
+  return data;
+}
+
+async function firebasePatch(updates, token) {
+  const url = `${FIREBASE_DATABASE_URL}/.json?auth=${encodeURIComponent(token)}`;
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(updates),
+    cache: "no-store",
+  });
+  const text = await response.text().catch(() => "");
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch {}
+  if (!response.ok) {
+    throw new Error(String(data?.error || `Firebase delete failed (${response.status}).`).slice(0, 300));
+  }
+  return data;
+}
+
+async function findFirebaseVideoRecords(videoId, token) {
+  const cleanId = String(videoId || "").trim();
+  if (!cleanId) return [];
+  const data = await firebaseGet("videos", token);
+  if (!data || typeof data !== "object") return [];
+  return Object.entries(data)
+    .filter(([, value]) => value && String(value.id || "") === cleanId)
+    .map(([key, value]) => ({ key, value }));
+}
+
+async function deleteFirebaseCopies(videoId, uid, token) {
+  const cleanId = String(videoId || "").trim();
+  const cleanUid = String(uid || "").trim();
+  if (!cleanId || !cleanUid) return { deleted: false, records: 0 };
+
+  const records = await findFirebaseVideoRecords(cleanId, token);
+  const owned = records.filter(({ value }) => String(value?.ownerUid || "") === cleanUid);
+  if (records.length && !owned.length) throw new Error("You can delete only your own video.");
+
+  const updates = {};
+  for (const { key } of owned) updates[`videos/${key}`] = null;
+
+  // Canonical Indo user tree and legacy engagement trees.
+  updates[`users/${cleanUid}/content/posts/${cleanId}`] = null;
+  updates[`users/${cleanUid}/content/videos/${cleanId}`] = null;
+  updates[`users/${cleanUid}/engagement/videos/${cleanId}`] = null;
+  updates[`videoLikes/${cleanId}`] = null;
+  updates[`videoComments/${cleanId}`] = null;
+  updates[`videoSaves/${cleanId}`] = null;
+
+  await firebasePatch(updates, token);
+  return { deleted: true, records: owned.length };
+}
+
+async function safeDelete(videoId, user) {
+  const token = await user.getIdToken(true);
+  let backendResult = null;
+  let backendError = null;
+
+  try {
+    backendResult = await requestBackendDelete(videoId, user);
+  } catch (error) {
+    backendError = error;
+  }
+
+  // Always verify and clean Firebase from the authenticated owner's context.
+  let firebaseResult = null;
+  try {
+    firebaseResult = await deleteFirebaseCopies(videoId, user.uid, token);
+  } catch (error) {
+    if (!backendResult?.deleted) throw error;
+    console.warn("Firebase client cleanup failed after backend delete:", error);
+  }
+
+  if (backendError && !firebaseResult?.deleted) throw backendError;
+
+  return {
+    ok: true,
+    backend: backendResult,
+    firebase: firebaseResult,
+  };
+}
+
 function createMenu(card, anchor) {
   closeMenu();
-
   const user = auth.currentUser;
   if (!user) return;
 
   const videoId = cardVideoId(card);
   if (!videoId) return;
-
   const ownerUid = cardOwnerUid(card);
   if (ownerUid && ownerUid !== String(user.uid)) return;
 
@@ -113,7 +204,6 @@ function createMenu(card, anchor) {
   menu.style.top = `${Math.max(8, top)}px`;
 
   menu.querySelector("[data-close-video-delete]")?.addEventListener("click", closeMenu, { once: true });
-
   menu.querySelector("[data-delete-video]")?.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -125,17 +215,15 @@ function createMenu(card, anchor) {
     button.textContent = "Deleting…";
 
     try {
-      const result = await requestDelete(videoId, user);
+      await safeDelete(videoId, user);
       markDeleted(videoId);
       removeAllMatchingCards(videoId);
       closeMenu();
-      window.dispatchEvent(new CustomEvent("indo:video-deleted", {
-        detail: { videoId, result },
-      }));
+      window.dispatchEvent(new CustomEvent("indo:video-deleted", { detail: { videoId } }));
     } catch (error) {
       console.error("Indo video delete failed:", error);
       button.disabled = false;
-      button.textContent = error?.message || "Delete video";
+      button.textContent = error?.message || "Delete failed";
     } finally {
       deleting = false;
     }
@@ -146,11 +234,9 @@ function installDelegatedDelete() {
   if (installed) return;
   installed = true;
   installStyles();
-
   document.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
-    if (!target) return;
-    if (target.closest(`#${MENU_ID}`)) return;
+    if (!target || target.closest(`#${MENU_ID}`)) return;
 
     const more = target.closest(".video-post .neon-edge-more, .video-post [data-video-more], [data-video-id] .neon-edge-more");
     if (!more) {
