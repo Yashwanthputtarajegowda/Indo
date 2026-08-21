@@ -52,7 +52,36 @@ function replaceExternalPlayer(app, video) {
 async function token() { const user = auth.currentUser; if (!user) throw new Error("Please login first."); return user.getIdToken(true); }
 async function request(path, { method = "GET", body, authRequired = true } = {}) { const headers = {}; if (body !== undefined) headers["Content-Type"] = "application/json"; if (authRequired) headers.Authorization = `Bearer ${await token()}`; const r = await fetch(`${API_BASE()}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" }); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || "Request failed."); return d; }
 function showStatus(app, text) { let el = app.querySelector(".indo-watch-live-status"); if (!el) { el = document.createElement("div"); el.className = "indo-watch-live-status"; app.querySelector(".indo-watch-actions")?.after(el); } el.textContent = text || ""; clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ""; }, 2200); }
+function installReliableBack(app) {
+  const button = app.querySelector("[data-back]");
+  if (!button || button.dataset.indoReliableBack === "1") return;
+  const replacement = button.cloneNode(true);
+  replacement.dataset.indoReliableBack = "1";
+  replacement.type = "button";
+  replacement.setAttribute("aria-label", "Back to videos");
+  replacement.style.touchAction = "manipulation";
+  replacement.style.pointerEvents = "auto";
+  const goBack = (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
+    const navigate = window.__indoNavigate;
+    if (typeof navigate === "function") {
+      Promise.resolve(navigate("video")).catch(() => {
+        try { window.history.back(); } catch {}
+      });
+      return;
+    }
+    try { window.history.back(); } catch {}
+  };
+  replacement.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch" || event.pointerType === "pen") goBack(event);
+  }, { passive: false });
+  replacement.addEventListener("click", goBack);
+  button.replaceWith(replacement);
+}
 async function wireActions(app, video) {
+  installReliableBack(app);
   const original = [...app.querySelectorAll(".indo-watch-actions button[data-action]")]; const buttons = {}; for (const b of original) { const clone = cloneAndReplace(b); buttons[clone.dataset.action] = clone; }
   const likeBtn = buttons.like, commentBtn = buttons.comment, shareBtn = buttons.share, saveBtn = buttons.save, viewsBtn = buttons.views;
   try { const e = await request(`/api/media/${encodeURIComponent(video.id)}/engagement`); likeBtn?.classList.toggle("active-like", !!e.liked); saveBtn?.classList.toggle("active-save", !!e.saved); const span = likeBtn?.querySelector("span"); if (span) span.textContent = String(e.likes ?? 0); } catch {}
@@ -62,4 +91,4 @@ async function wireActions(app, video) {
   shareBtn?.addEventListener("click", async () => { try { if (navigator.share) await navigator.share({ title: video.title || "Indo video", url: location.href }); else await navigator.clipboard?.writeText(location.href); emitInterest(video, "share"); showStatus(app, "Link shared"); } catch {} });
   viewsBtn?.addEventListener("click", () => app.querySelector(".indo-watch-player")?.scrollIntoView({ behavior: "smooth", block: "center" }));
 }
-export async function renderWatchVideo(app) { installStyles(); await renderStyledWatchVideo(app); const raw = currentVideo(); if (!raw) return; replaceExternalPlayer(app, raw); await wireActions(app, raw); }
+export async function renderWatchVideo(app) { installStyles(); await renderStyledWatchVideo(app); const raw = currentVideo(); if (!raw) return; installReliableBack(app); replaceExternalPlayer(app, raw); await wireActions(app, raw); }
