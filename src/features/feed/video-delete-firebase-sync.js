@@ -29,12 +29,16 @@ async function removeFirebaseVideoRecord(videoId) {
   if (!cleanId || !user) return;
 
   const db = getDatabase(getApp());
+  const directRef = ref(db, `videos/${cleanId}`);
+  const directSnapshot = await get(directRef);
 
-  // Fast path: the API's video id is normally the Realtime Database key.
-  await remove(ref(db, `videos/${cleanId}`));
+  // Current records normally use the API video id as the RTDB key.
+  if (directSnapshot.exists()) {
+    await remove(directRef);
+    return;
+  }
 
-  // Compatibility path: older records may use an auto-generated key while
-  // storing the API id inside the record itself.
+  // Compatibility path for older records that used an auto-generated key.
   const snapshot = await get(
     query(ref(db, "videos"), orderByChild("id"), equalTo(cleanId)),
   );
@@ -57,15 +61,11 @@ function installVideoDeleteFirebaseSync() {
     const response = await originalFetch(input, init);
     const videoId = extractVideoId(input);
 
-    if (!videoId) return response;
-    if (!response.ok) return response;
+    if (!videoId || !response.ok) return response;
 
     try {
       await removeFirebaseVideoRecord(videoId);
     } catch (error) {
-      // The API delete already succeeded. Keep the normal UI behavior, but
-      // surface the Firebase sync failure for diagnostics instead of blocking
-      // the response that the delete UI is already awaiting.
       console.error("Indo Firebase video-delete sync failed:", error);
     }
 
