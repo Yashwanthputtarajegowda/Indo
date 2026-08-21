@@ -23,7 +23,7 @@ const SCREEN_MODULES = {
   "profile-relation": ["./screens/profile-relation.js", "renderProfileRelation"],
   "edit-profile": ["./screens/edit-profile.js", "renderEditProfile"],
   "watch-video": ["./screens/watch-video.js?v=20260821-watch-stable-v1", "renderWatchVideo"],
-  "upload-video": ["./screens/upload-video.js?v=20260820-drive-final-v5", "renderUploadVideo"],
+  "upload-video": ["./screens/upload-video.js?v=20260821-upload-v7", "renderUploadVideo"],
   "story-create": ["./screens/story-create.js", "renderStoryCreate"],
   wallet: ["./screens/wallet.js", "renderWallet"],
   "blocked-users": ["./screens/blocked-users.js", "renderBlockedUsers"],
@@ -124,7 +124,6 @@ export async function render(app) {
   const requestedScreen = state.screen;
   if (enforceAuthGuard()) { updatePersistentNav(state.screen); try { await renderLogin(app); } catch (error) { fail(app, error); } return; }
   updatePersistentNav(requestedScreen);
-
   const stage = document.createElement("div");
   stage.id = `${RENDER_STAGE_PREFIX}${mySequence}`;
   stage.setAttribute("data-screen", requestedScreen);
@@ -138,10 +137,8 @@ export async function render(app) {
     while (stage.firstChild) fragment.appendChild(stage.firstChild);
     stage.remove();
     app.replaceChildren(fragment);
-    updatePersistentNav(state.screen);
   } catch (error) {
     stage.remove();
-    if (mySequence !== renderSequence || state.screen !== requestedScreen) return;
-    fail(app, error);
+    if (mySequence === renderSequence) fail(app, error);
   }
 }
