@@ -5,6 +5,7 @@ import { renderHomeTopbar, installHomeTopbarStyles } from "./screens/home-topbar
 import { prefetchVideoSection } from "./features/feed/video-prefetch.js";
 import { installExternalVideoLinkCreate } from "./features/feed/external-video-link.js";
 
+const NAV_HOST_ID = "indo-persistent-nav-host";
 const moduleCache = new Map();
 let preloadStarted = false;
 
@@ -31,6 +32,7 @@ const SCREEN_MODULES = {
 const HIGH_PRIORITY = ["messages", "reels", "video", "search", "profile", "notifications"];
 const SECONDARY_PRIORITY = ["create", "reel-create", "settings", "profile-relation", "edit-profile", "watch-video", "upload-video", "story-create", "wallet", "blocked-users", "report"];
 const AUTH_SCREENS = new Set(["auth-login", "auth-signup"]);
+const HIDE_NAV_SCREENS = new Set(["auth-login", "auth-signup", "edit-profile", "watch-video", "report", "reel-create", "story-create"]);
 
 function fail(app, error) {
   console.error("Indo route error:", error);
@@ -51,26 +53,32 @@ function activeNav() {
   return "home";
 }
 
-function ensureUniversalNav(app) {
-  if (!app || ["auth-login", "auth-signup", "edit-profile", "watch-video", "report", "reel-create", "story-create"].includes(state.screen)) return;
+function ensureUniversalNav() {
+  const existingHost = document.getElementById(NAV_HOST_ID);
+  const shouldHide = HIDE_NAV_SCREENS.has(state.screen) || !state.authenticated;
 
-  // The navigation component is the single source of truth for its own design.
-  // Do not add router-level styles/classes that can override nav.js.
-  app.querySelectorAll(".bottom-nav").forEach((node) => node.remove());
+  if (shouldHide) {
+    existingHost?.remove();
+    return;
+  }
 
-  const wrapper = document.createElement("div");
-  wrapper.innerHTML = nav(activeNav());
-  const bottom = wrapper.firstElementChild;
-  if (bottom) app.appendChild(bottom);
+  const host = existingHost || document.createElement("div");
+  host.id = NAV_HOST_ID;
+  host.innerHTML = nav(activeNav());
+  host.className = "indo-persistent-nav-host";
+  document.body.appendChild(host);
+
+  const oldNested = document.getElementById("root")?.querySelectorAll(".bottom-nav, .indo-global-bottom-nav");
+  oldNested?.forEach((node) => node.remove());
 }
 
 function ensureHomeTopbar(app) {
   if (state.screen !== "home") return;
   installHomeTopbarStyles();
   app.querySelector(".topbar")?.remove();
-  const wrapper = document.createElement("div");
-  wrapper.innerHTML = renderHomeTopbar();
-  const node = wrapper.firstElementChild;
+  const w = document.createElement("div");
+  w.innerHTML = renderHomeTopbar();
+  const node = w.firstElementChild;
   if (node) app.querySelector(".app-shell")?.prepend(node);
 }
 
@@ -108,7 +116,6 @@ export function preloadAppSections() {
 
   const warmNext = async () => {
     if (!state.authenticated) return;
-
     const batch = HIGH_PRIORITY.slice(highIndex, highIndex + 2);
     if (batch.length) {
       highIndex += batch.length;
@@ -129,11 +136,11 @@ export function preloadAppSections() {
 
 async function lazy(app, screen, path, name, args = []) {
   try {
-    const module = await loadScreenModule(screen, path);
-    if (typeof module[name] !== "function") throw new Error(`Missing screen renderer: ${name}`);
-    await module[name](app, ...args);
-  } catch (error) {
-    fail(app, error);
+    const m = await loadScreenModule(screen, path);
+    if (typeof m[name] !== "function") throw new Error(`Missing screen renderer: ${name}`);
+    await m[name](app, ...args);
+  } catch (e) {
+    fail(app, e);
   }
 }
 
@@ -149,7 +156,14 @@ async function installHomeReels(app) {
 
 export async function render(app) {
   try {
-    if (enforceAuthGuard()) return renderLogin(app);
+    if (enforceAuthGuard()) {
+      ensureUniversalNav();
+      return renderLogin(app);
+    }
+
+    // Mount navigation before the screen renderer. The navigation lives on document.body,
+    // not inside #root, so an async screen renderer can never delay or erase it.
+    ensureUniversalNav();
 
     switch (state.screen) {
       case "auth-login":
@@ -216,14 +230,16 @@ export async function render(app) {
         break;
       default:
         state.screen = "home";
+        ensureUniversalNav();
         await lazy(app, "home", "./screens/home-v2.js", "renderHome");
         ensureHomeTopbar(app);
         await installHomeReels(app);
         preloadAppSections();
     }
 
-    ensureUniversalNav(app);
-  } catch (error) {
-    fail(app, error);
+    // Re-assert the current active state after the screen renderer completes.
+    ensureUniversalNav();
+  } catch (e) {
+    fail(app, e);
   }
 }
