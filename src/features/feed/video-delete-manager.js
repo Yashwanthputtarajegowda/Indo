@@ -1,8 +1,9 @@
 import { auth } from "../auth/firebase-client.js";
 
-const STYLE_ID = "indo-video-delete-manager-v7";
+const STYLE_ID = "indo-video-delete-manager-v8";
 const MENU_ID = "indo-video-delete-menu";
-const DELETE_WORKER_URL = "https://indo-backend.yashwanthputtarajegowda.workers.dev";
+const DELETE_BACKEND_PATH = "/api/media/videos/";
+const DEFAULT_DELETE_BACKEND_URL = "https://indo-backend-456919073297.asia-south1.run.app";
 let installed = false;
 let deleting = false;
 
@@ -57,19 +58,23 @@ function removeAllMatchingCards(id) {
   });
 }
 
-async function requestWorkerDelete(videoId, user) {
+async function requestBackendDelete(videoId, user) {
   const token = await user.getIdToken(true);
-  const response = await fetch(DELETE_WORKER_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-      "Content-Type": "application/json",
+  const base = String(window.INDO_API_BASE || DEFAULT_DELETE_BACKEND_URL).replace(/\/$/, "");
+  if (!base) throw new Error("Delete backend is not configured.");
+
+  const response = await fetch(
+    `${base}${DELETE_BACKEND_PATH}${encodeURIComponent(String(videoId || "").trim())}/delete`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+      credentials: "omit",
     },
-    body: JSON.stringify({ videoId: String(videoId || "").trim() }),
-    cache: "no-store",
-    credentials: "omit",
-  });
+  );
 
   const text = await response.text().catch(() => "");
   let data = {};
@@ -79,7 +84,7 @@ async function requestWorkerDelete(videoId, user) {
 
   if (!response.ok || data?.deleted !== true) {
     throw new Error(
-      String(data?.error || `Delete failed (${response.status}).`).slice(0, 300),
+      String(data?.error || data?.detail || `Delete failed (${response.status}).`).slice(0, 300),
     );
   }
 
@@ -123,7 +128,7 @@ function createMenu(card, anchor) {
       button.disabled = true;
       button.textContent = "Deleting from Drive…";
       try {
-        const result = await requestWorkerDelete(videoId, user);
+        const result = await requestBackendDelete(videoId, user);
         markDeleted(videoId);
         removeAllMatchingCards(videoId);
         closeMenu();
