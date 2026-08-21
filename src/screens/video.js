@@ -1,10 +1,10 @@
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
 import { auth } from "../features/auth/firebase-client.js";
 
-const STYLE_ID = "indo-video-community-v11";
+const STYLE_ID = "indo-video-community-v12";
 const API_BASE = () => window.INDO_API_BASE || "";
 const PAGE_SIZE = 12;
-const PRIORITY_SESSION_KEY = "indo:video-priority-shown-v2";
+const PRIORITY_SESSION_KEY = "indo:video-priority-shown-v3";
 
 function esc(value = "") {
   return String(value).replace(/[&<>\"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#039;" }[c]));
@@ -62,10 +62,7 @@ async function getCurrentFollowingIds() {
     const user = auth.currentUser;
     if (!user) return new Set();
     const token = await user.getIdToken(false);
-    const response = await fetch(`${API_BASE()}/api/account/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
+    const response = await fetch(`${API_BASE()}/api/account/me`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return new Set();
     const following = data?.social?.following || {};
@@ -87,8 +84,6 @@ async function getCurrentFollowingIds() {
   }
 }
 
-// First load: interleave follower videos with trending videos.
-// Example: followers [1,2,3] + trending [4,5,6] -> [1,4,2,5,3,6].
 function buildFirstLoadOrder(items, followingIds) {
   const followers = [];
   const others = [];
@@ -96,6 +91,10 @@ function buildFirstLoadOrder(items, followingIds) {
     if (isPriorityFollowerVideo(item, followingIds)) followers.push(item);
     else others.push(item);
   }
+
+  // No priority buckets: never leave the feed empty; mix every available video.
+  if (!followers.length && !others.length) return [];
+  if (!followers.length) return shuffle(items);
 
   followers.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
 
@@ -115,19 +114,20 @@ function buildFirstLoadOrder(items, followingIds) {
   return [...mixed, ...normal];
 }
 
-// Subsequent refreshes: show normal videos only, shuffled so the same 1,2,3,4 order does not repeat.
 function buildRefreshOrder(items, followingIds) {
+  if (!items.length) return [];
   const followerIds = new Set(items.filter((item) => isPriorityFollowerVideo(item, followingIds)).map((item) => item.id));
   const trending = [...items].sort((a, b) => trendingScore(b) - trendingScore(a));
   const trendingIds = new Set(trending.slice(0, Math.min(12, trending.length)).map((item) => item.id));
   const normal = items.filter((item) => !followerIds.has(item.id) && !trendingIds.has(item.id));
-  return shuffle(normal);
+  // If there are no normal videos, show everything mixed rather than an empty feed.
+  return shuffle(normal.length ? normal : items);
 }
 
 export async function renderVideo(app) {
   installStyles();
   const top = renderIndoBrandTopbar({ rightHtml: '<button type="button" data-screen="create" aria-label="Create">＋</button>', rightLabel: "Create" });
-  app.innerHTML = `<div class="app-shell indo-community-video-shell">${top}<main class="indo-community-video-main"><label class="indo-community-video-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="community-video-search" type="search" placeholder="Search Indo videos..." autocomplete="off"></label><div class="indo-community-video-head"><h2>Latest Community Videos</h2><small>Following + Trending interleaved · Normal videos after</small></div><div id="community-video-status" class="indo-community-video-status">Loading community videos…</div><div id="community-video-list" class="indo-community-video-list"></div><div id="community-video-more" class="indo-community-video-more"></div></main></div>`;
+  app.innerHTML = `<div class="app-shell indo-community-video-shell">${top}<main class="indo-community-video-main"><label class="indo-community-video-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="community-video-search" type="search" placeholder="Search Indo videos..." autocomplete="off"></label><div class="indo-community-video-head"><h2>Latest Community Videos</h2><small>Following + Trending interleaved · Normal videos mixed when needed</small></div><div id="community-video-status" class="indo-community-video-status">Loading community videos…</div><div id="community-video-list" class="indo-community-video-list"></div><div id="community-video-more" class="indo-community-video-more"></div></main></div>`;
   const input = app.querySelector("#community-video-search");
   const status = app.querySelector("#community-video-status");
   const list = app.querySelector("#community-video-list");
