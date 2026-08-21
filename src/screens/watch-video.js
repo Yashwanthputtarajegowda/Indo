@@ -3,7 +3,7 @@ import { emitInterest } from "../features/feed/interest-engine.js";
 import { renderWatchVideo as renderBaseWatchVideo } from "./watch-video-v225.js";
 
 const API_BASE = () => String(window.INDO_API_BASE || "").replace(/\/$/, "");
-const BUTTONS_BOUND = "data-indo-watch-buttons";
+const BOUND = "data-indo-watch-bound";
 
 function currentVideo() {
   try { return JSON.parse(sessionStorage.getItem("indo:watch-video-current") || "null"); }
@@ -21,17 +21,14 @@ async function request(path, { method = "GET", body, authRequired = true } = {})
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (authRequired) headers.Authorization = `Bearer ${await token()}`;
   const response = await fetch(`${API_BASE()}${path}`, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    cache: "no-store",
+    method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store",
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Request failed.");
   return data;
 }
 
-function status(app, text) {
+function showStatus(app, text) {
   let el = app.querySelector(".indo-watch-live-status");
   if (!el) {
     el = document.createElement("div");
@@ -43,32 +40,39 @@ function status(app, text) {
   el._timer = setTimeout(() => { el.textContent = ""; }, 2200);
 }
 
+function clearElementHandlers(node) {
+  return node?.cloneNode(true) || null;
+}
+
 function bindBack(app) {
   const button = app.querySelector("[data-back]");
-  if (!button || button.dataset[BUTTONS_BOUND] === "back") return;
-  button.dataset[BUTTONS_BOUND] = "back";
-  button.type = "button";
-  button.style.touchAction = "manipulation";
+  if (!button || button.dataset[BOUND] === "back") return;
+  const clean = clearElementHandlers(button);
+  if (!clean) return;
+  clean.dataset[BOUND] = "back";
+  clean.type = "button";
+  clean.style.touchAction = "manipulation";
   const goBack = (event) => {
     event?.preventDefault?.();
     event?.stopPropagation?.();
     const navigate = window.__indoNavigate;
-    if (typeof navigate === "function") {
-      Promise.resolve(navigate("video")).catch(() => window.history.back());
-    } else {
-      window.history.back();
-    }
+    if (typeof navigate === "function") Promise.resolve(navigate("video")).catch(() => window.history.back());
+    else window.history.back();
   };
-  button.addEventListener("pointerdown", (event) => {
-    if (event.pointerType === "touch" || event.pointerType === "pen") goBack(event);
+  clean.addEventListener("pointerdown", (event) => {
+    if (event.pointerType !== "mouse") goBack(event);
   }, { passive: false });
-  button.addEventListener("click", goBack);
+  clean.addEventListener("click", goBack);
+  button.replaceWith(clean);
 }
 
 function bindActions(app, video) {
-  const actions = app.querySelector(".indo-watch-actions");
-  if (!actions || actions.dataset[BUTTONS_BOUND] === "actions") return;
-  actions.dataset[BUTTONS_BOUND] = "actions";
+  const current = app.querySelector(".indo-watch-actions");
+  if (!current || current.dataset[BOUND] === "actions") return;
+  const actions = clearElementHandlers(current);
+  if (!actions) return;
+  actions.dataset[BOUND] = "actions";
+  current.replaceWith(actions);
 
   const like = actions.querySelector('[data-action="like"]');
   const save = actions.querySelector('[data-action="save"]');
@@ -84,13 +88,12 @@ function bindActions(app, video) {
     try {
       const result = await request(`/api/media/${encodeURIComponent(video.id)}/like`, { method: "POST", body: { like: optimistic } });
       like.classList.toggle("active-like", Boolean(result.liked));
-      const count = like.querySelector("span");
-      if (count) count.textContent = String(result.likes ?? 0);
+      like.querySelector("span")?.replaceChildren(document.createTextNode(String(result.likes ?? 0)));
       emitInterest(video, result.liked ? "like" : "skip");
-      status(app, result.liked ? "Liked" : "Unliked");
+      showStatus(app, result.liked ? "Liked" : "Unliked");
     } catch (error) {
       like.classList.toggle("active-like", !optimistic);
-      status(app, error.message || "Like failed");
+      showStatus(app, error.message || "Like failed");
     } finally { delete like.dataset.busy; }
   });
 
@@ -102,10 +105,10 @@ function bindActions(app, video) {
     try {
       const result = await request(`/api/media/${encodeURIComponent(video.id)}/save`, { method: "POST", body: { save: next } });
       save.classList.toggle("active-save", Boolean(result.saved));
-      status(app, result.saved ? "Saved" : "Removed from saved");
+      showStatus(app, result.saved ? "Saved" : "Removed from saved");
     } catch (error) {
       save.classList.toggle("active-save", !next);
-      status(app, error.message || "Save failed");
+      showStatus(app, error.message || "Save failed");
     } finally { delete save.dataset.busy; }
   });
 
@@ -115,12 +118,11 @@ function bindActions(app, video) {
       if (navigator.share) await navigator.share({ title: video.title || "Indo video", url: location.href });
       else await navigator.clipboard?.writeText(location.href);
       emitInterest(video, "share");
-      status(app, "Link shared");
+      showStatus(app, "Link shared");
     } catch {}
   });
   views?.addEventListener("click", () => app.querySelector(".indo-watch-player")?.scrollIntoView({ behavior: "smooth", block: "center" }));
 
-  // Hydrate state in the background; never block the buttons.
   void request(`/api/media/${encodeURIComponent(video.id)}/engagement`)
     .then((data) => {
       like?.classList.toggle("active-like", Boolean(data.liked));
@@ -135,18 +137,17 @@ export function renderWatchVideo(app) {
   const video = currentVideo();
   if (!video) return;
 
-  // Base renderer is allowed to paint immediately. Do not await its secondary API work.
-  void renderBaseWatchVideo(app).catch((error) => console.warn("Watch base render failed:", error));
+  const renderPromise = renderBaseWatchVideo(app);
 
-  // Base renderer writes the player synchronously before its own async hydration. Bind controls on the next microtask.
+  // The base screen paints its DOM before its own async hydration. Bind immediately so controls never wait for APIs.
   queueMicrotask(() => {
     bindBack(app);
     bindActions(app, video);
   });
 
-  // Re-check once base rendering has settled, without blocking navigation or playback.
-  setTimeout(() => {
+  // When the base renderer finishes, replace its handlers with this single canonical controller.
+  void renderPromise.then(() => {
     bindBack(app);
     bindActions(app, video);
-  }, 0);
+  }).catch((error) => console.warn("Watch base render failed:", error));
 }
