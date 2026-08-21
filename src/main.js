@@ -20,7 +20,7 @@ let busy = false;
 let started = false;
 let renderId = 0;
 
-const routerWarmup = import("./router.js?v=20260821-watch-stable-v1").catch((error) => {
+const routerWarmup = import("./router.js?v=20260821-nav-fix-v2").catch((error) => {
   console.warn("Router warmup failed; normal startup import will retry:", error);
   return null;
 });
@@ -55,7 +55,7 @@ function scheduleLiveAvatarInstaller() {
 async function render() {
   const currentRender = ++renderId;
   const warmedRouter = await routerWarmup;
-  const { render } = warmedRouter || await import("./router.js?v=20260821-watch-stable-v1");
+  const { render } = warmedRouter || await import("./router.js?v=20260821-nav-fix-v2");
   await render(app);
   applyIndoPinkThunderTheme();
   installHomeFeedDesign();
