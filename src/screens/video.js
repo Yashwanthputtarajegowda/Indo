@@ -1,8 +1,10 @@
 import { renderIndoBrandTopbar } from "../components/indo-brand-topbar.js";
+import { auth } from "../features/auth/firebase-client.js";
 
-const STYLE_ID = "indo-video-community-v9";
+const STYLE_ID = "indo-video-community-v10";
 const API_BASE = () => window.INDO_API_BASE || "";
 const PAGE_SIZE = 12;
+const PRIORITY_SESSION_KEY = "indo:video-priority-shown-v1";
 
 function esc(value = "") {
   return String(value).replace(/[&<>\"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#039;" }[c]));
@@ -36,10 +38,87 @@ function card(item) {
     : `<div class="indo-community-video-fallback">▶</div>`;
   return `<article class="indo-community-video-card" data-watch-video-id="${esc(item.id)}"><div class="indo-community-video-thumb-wrap">${img}<span class="indo-community-video-play">▶</span></div><div class="indo-community-video-body"><div style="display:flex;justify-content:space-between;gap:8px"><h3 class="indo-community-video-title">${esc(item.title || "Indo video")}</h3><span class="indo-community-video-badge">COMMUNITY</span></div><div class="indo-community-video-meta"><span>@${esc(String(item.creatorName || item.username || "user").replace(/^@/, ""))}</span><span>·</span><span>${esc(age(item.createdAt))}</span></div></div></article>`;
 }
+
+function isPriorityFollowerVideo(item, followingIds) {
+  const ownerUid = String(item.ownerUid || item.creatorUid || item.uid || "").trim();
+  return Boolean(ownerUid) && followingIds.has(ownerUid);
+}
+
+function trendingScore(item) {
+  const likes = Math.max(0, Number(item.likes || 0));
+  const views = Math.max(0, Number(item.views || 0));
+  const ageHours = Math.max(0, (Date.now() - Number(item.createdAt || Date.now())) / 3600000);
+  const recency = 1 / Math.max(1, Math.sqrt(ageHours + 1));
+  return (likes * 5 + views) * (0.7 + 0.3 * recency);
+}
+
+function shuffle(items) {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+async function getCurrentFollowingIds() {
+  try {
+    const user = auth.currentUser;
+    if (!user) return new Set();
+    const token = await user.getIdToken(false);
+    const response = await fetch(`${API_BASE()}/api/account/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return new Set();
+    const following = data?.social?.following || {};
+    const ids = new Set();
+    if (Array.isArray(following)) {
+      for (const item of following) {
+        const uid = String(item?.uid || item?.targetUid || item || "").trim();
+        if (uid) ids.add(uid);
+      }
+    } else if (following && typeof following === "object") {
+      for (const [key, value] of Object.entries(following)) {
+        const uid = String(value?.uid || value?.targetUid || key || "").trim();
+        if (uid) ids.add(uid);
+      }
+    }
+    return ids;
+  } catch {
+    return new Set();
+  }
+}
+
+function buildFirstLoadOrder(items, followingIds) {
+  const followers = [];
+  const others = [];
+  for (const item of items) {
+    if (isPriorityFollowerVideo(item, followingIds)) followers.push(item);
+    else others.push(item);
+  }
+  followers.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+  const trending = [...others]
+    .sort((a, b) => trendingScore(b) - trendingScore(a))
+    .slice(0, Math.min(12, others.length));
+  const trendingIds = new Set(trending.map((item) => item.id));
+  const normal = shuffle(others.filter((item) => !trendingIds.has(item.id)));
+  return [...followers, ...trending, ...normal];
+}
+
+function buildRefreshOrder(items, followingIds) {
+  const followerIds = new Set(items.filter((item) => isPriorityFollowerVideo(item, followingIds)).map((item) => item.id));
+  const trending = [...items].sort((a, b) => trendingScore(b) - trendingScore(a));
+  const trendingIds = new Set(trending.slice(0, Math.min(12, trending.length)).map((item) => item.id));
+  const normal = items.filter((item) => !followerIds.has(item.id) && !trendingIds.has(item.id));
+  return shuffle(normal);
+}
+
 export async function renderVideo(app) {
   installStyles();
   const top = renderIndoBrandTopbar({ rightHtml: '<button type="button" data-screen="create" aria-label="Create">＋</button>', rightLabel: "Create" });
-  app.innerHTML = `<div class="app-shell indo-community-video-shell">${top}<main class="indo-community-video-main"><label class="indo-community-video-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="community-video-search" type="search" placeholder="Search Indo videos..." autocomplete="off"></label><div class="indo-community-video-head"><h2>Latest Community Videos</h2><small>Real Indo uploads · tap a thumbnail to watch</small></div><div id="community-video-status" class="indo-community-video-status">Loading community videos…</div><div id="community-video-list" class="indo-community-video-list"></div><div id="community-video-more" class="indo-community-video-more"></div></main></div>`;
+  app.innerHTML = `<div class="app-shell indo-community-video-shell">${top}<main class="indo-community-video-main"><label class="indo-community-video-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="community-video-search" type="search" placeholder="Search Indo videos..." autocomplete="off"></label><div class="indo-community-video-head"><h2>Latest Community Videos</h2><small>Following first · Trending next · Normal videos after</small></div><div id="community-video-status" class="indo-community-video-status">Loading community videos…</div><div id="community-video-list" class="indo-community-video-list"></div><div id="community-video-more" class="indo-community-video-more"></div></main></div>`;
   const input = app.querySelector("#community-video-search");
   const status = app.querySelector("#community-video-status");
   const list = app.querySelector("#community-video-list");
@@ -63,8 +142,18 @@ export async function renderVideo(app) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Could not load community videos.");
     const seen = new Set();
-    all = (Array.isArray(data.videos) ? data.videos : []).map(normalize).filter((v) => v && !seen.has(v.id) && seen.add(v.id));
-    all.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    const source = (Array.isArray(data.videos) ? data.videos : []).map(normalize).filter((v) => v && !seen.has(v.id) && seen.add(v.id));
+    const followingIds = await getCurrentFollowingIds();
+    let ordered;
+    try {
+      ordered = sessionStorage.getItem(PRIORITY_SESSION_KEY) === "1"
+        ? buildRefreshOrder(source, followingIds)
+        : buildFirstLoadOrder(source, followingIds);
+      sessionStorage.setItem(PRIORITY_SESSION_KEY, "1");
+    } catch {
+      ordered = buildFirstLoadOrder(source, followingIds);
+    }
+    all = ordered;
     visible = PAGE_SIZE;
     render();
   } catch (error) {
