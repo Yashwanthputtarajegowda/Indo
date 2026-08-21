@@ -22,15 +22,17 @@ function isMediaVideosRequest(input) {
   }
 }
 
-function isGoogleDriveStreamUrl(url) {
-  return /\/api\/google-drive\/videos\/[^/]+\/stream(?:$|\?)/i.test(normalizeUrl(url));
-}
-
 function isGoogleDriveVideoRecord(video) {
   const provider = String(video?.storage?.provider || video?.googleDrive?.provider || "").trim().toLowerCase();
   const fileId = String(video?.googleDrive?.fileId || "").trim();
   const url = normalizeUrl(video?.streamUrl || video?.videoUrl || video?.secureUrl);
-  return provider === "google-drive" || Boolean(fileId) || isGoogleDriveStreamUrl(url);
+  return provider === "google-drive" || Boolean(fileId) || /\/api\/google-drive\/videos\/[^/]+\/stream(?:$|\?)/i.test(url);
+}
+
+function isGoogleDriveStreamUrl(raw) {
+  const value = normalizeUrl(raw);
+  const base = apiBase();
+  return Boolean(value && base && value.startsWith(`${base}/api/google-drive/videos/`) && /\/stream(?:$|\?)/i.test(value));
 }
 
 async function applyGoogleDriveOnlyFeedFilter(response) {
@@ -91,86 +93,73 @@ function getDriveSourceFromCard(video) {
   return card?.__indoVideoRecord || null;
 }
 
-function getDirectDriveRecord(video) {
-  const card = video.closest?.("[data-video-id]");
-  const videoId = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").trim();
-  const current = normalizeUrl(video.currentSrc || video.src || video.querySelector("source")?.src || "");
-  if (!videoId || !isGoogleDriveStreamUrl(current)) return null;
-  return {
-    id: videoId,
-    streamUrl: current,
-    videoUrl: current,
-    secureUrl: current,
-    storage: { provider: "google-drive" },
-    googleDrive: { provider: "google-drive" },
-  };
-}
-
 function clearVideoSource(video) {
   video.pause();
   video.removeAttribute("src");
   video.querySelectorAll("source").forEach((source) => source.remove());
-}
-
-function setDriveSourceImmediately(video, src, autoplay = false) {
-  if (!src) return false;
-  const current = normalizeUrl(video.currentSrc || video.src || video.querySelector("source")?.src || "");
-  if (current !== src || video.dataset.indoDriveSource !== src) {
-    video.pause();
-    video.removeAttribute("src");
-    video.querySelectorAll("source").forEach((source) => source.remove());
-    video.src = src;
-    video.dataset.indoDriveSource = src;
-    video.dataset.videoSrc = src;
-  }
-  video.preload = "auto";
-  video.setAttribute("playsinline", "");
-  if (autoplay) void video.play().catch(() => {});
-  return true;
-}
-
-function resetForDriveSource(video, record) {
-  const src = normalizeUrl(record?.streamUrl || record?.videoUrl || record?.secureUrl || driveStreamUrl(record));
-  return setDriveSourceImmediately(video, src, false);
-}
-
-async function resolveDriveRecord(video) {
-  const card = video.closest?.("[data-video-id]");
-  const cardRecord = getDriveSourceFromCard(video);
-  if (cardRecord && isGoogleDriveVideoRecord(cardRecord)) return cardRecord;
-
-  // Watch-page optimization: reuse the already-assigned canonical Drive URL.
-  const directRecord = getDirectDriveRecord(video);
-  if (directRecord) {
-    if (card) card.__indoVideoRecord = directRecord;
-    return directRecord;
-  }
-
-  const videoId = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").trim();
-  if (!videoId) return null;
-
-  const records = await loadDriveRecords();
-  const record = records.find((item) => String(item?.id || "") === videoId) || null;
-  if (card) card.__indoVideoRecord = record;
-  return record;
-}
-
-function warmDriveVideo(video) {
-  if (!(video instanceof HTMLVideoElement)) return;
-  const src = normalizeUrl(video.dataset.indoDriveSource || video.currentSrc || video.src || "");
-  if (!src) return;
-  // Browser will issue the appropriate byte-range request as soon as metadata is needed.
-  video.preload = "auto";
-  if (video.networkState === HTMLMediaElement.NETWORK_EMPTY) video.load();
+  video.load();
 }
 
 function installDriveWarmup(video) {
   if (!(video instanceof HTMLVideoElement) || video.dataset.indoWarmupInstalled === "1") return;
   video.dataset.indoWarmupInstalled = "1";
-  const warm = () => warmDriveVideo(video);
+  const warm = () => {
+    if (!video.dataset.indoDriveSource) return;
+    video.preload = "auto";
+  };
   video.addEventListener("pointerenter", warm, { once: true, passive: true });
   video.addEventListener("touchstart", warm, { once: true, passive: true });
-  video.addEventListener("play", warm, { once: true, passive: true });
+}
+
+function rememberDriveSource(video, src) {
+  video.dataset.indoDriveSource = src;
+  video.dataset.videoSrc = src;
+  video.setAttribute("playsinline", "");
+}
+
+function resetForDriveSource(video, record) {
+  const src = normalizeUrl(driveStreamUrl(record));
+  if (!src) return false;
+  const current = normalizeUrl(video.currentSrc || video.src || video.querySelector("source")?.src || "");
+
+  // Watch page already provides the canonical Drive src. Never tear it down and reload it.
+  if (isGoogleDriveStreamUrl(current) && current === src) {
+    rememberDriveSource(video, src);
+    return true;
+  }
+
+  if (current !== src || video.dataset.indoDriveSource !== src) {
+    clearVideoSource(video);
+    const source = document.createElement("source");
+    source.src = src;
+    source.type = "video/mp4";
+    video.appendChild(source);
+    rememberDriveSource(video, src);
+    video.preload = "auto";
+    video.load();
+  }
+  return true;
+}
+
+async function resolveDriveRecord(video) {
+  const current = normalizeUrl(video.currentSrc || video.src || video.querySelector("source")?.src || "");
+  if (isGoogleDriveStreamUrl(current)) {
+    // The watch page already has the canonical Drive URL; avoid a metadata round-trip.
+    const card = video.closest?.("[data-video-id]");
+    const videoId = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").trim();
+    return videoId ? { id: videoId, videoUrl: current, streamUrl: current, secureUrl: current, storage: { provider: "google-drive" }, googleDrive: { provider: "google-drive" } } : null;
+  }
+
+  const card = video.closest?.("[data-video-id]");
+  const cardRecord = getDriveSourceFromCard(video);
+  if (cardRecord && isGoogleDriveVideoRecord(cardRecord)) return cardRecord;
+
+  const videoId = String(video.dataset.videoId || card?.getAttribute("data-video-id") || "").trim();
+  if (!videoId) return null;
+  const records = await loadDriveRecords();
+  const record = records.find((item) => String(item?.id || "") === videoId) || null;
+  if (card) card.__indoVideoRecord = record;
+  return record;
 }
 
 async function patchVideo(video) {
@@ -178,10 +167,9 @@ async function patchVideo(video) {
   if (video.dataset.indoPlaybackFixed === "1") return;
   video.dataset.indoPlaybackFixed = "1";
 
-  // Fast path: the Watch component already provided a Drive stream URL.
-  const directRecord = getDirectDriveRecord(video);
-  if (directRecord) {
-    setDriveSourceImmediately(video, directRecord.streamUrl, false);
+  const current = normalizeUrl(video.currentSrc || video.src || video.querySelector("source")?.src || "");
+  if (isGoogleDriveStreamUrl(current)) {
+    rememberDriveSource(video, current);
     installDriveWarmup(video);
     return;
   }
@@ -189,7 +177,6 @@ async function patchVideo(video) {
   const record = await resolveDriveRecord(video);
   if (!record) {
     clearVideoSource(video);
-    video.load();
     return;
   }
   resetForDriveSource(video, record);
@@ -208,6 +195,12 @@ function attachDriveRecordLookup() {
   document.querySelectorAll?.("[data-video-id]").forEach((card) => {
     const video = card.querySelector?.("video");
     if (!video) return;
+    const current = normalizeUrl(video.currentSrc || video.src || video.querySelector("source")?.src || "");
+    if (isGoogleDriveStreamUrl(current)) {
+      rememberDriveSource(video, current);
+      installDriveWarmup(video);
+      return;
+    }
     if (card.__indoVideoRecord && isGoogleDriveVideoRecord(card.__indoVideoRecord)) {
       resetForDriveSource(video, card.__indoVideoRecord);
       installDriveWarmup(video);
