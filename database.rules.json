@@ -3,10 +3,7 @@
     ".read": "auth != null",
     ".write": "auth != null",
     "videos": {
-      ".indexOn": ["createdAt", "ownerUid", "id"],
-      "$videoId": {
-        ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('ownerUid').val() === auth.uid) || (data.exists() && data.child('ownerUid').val() === auth.uid))"
-      }
+      ".indexOn": ["createdAt"]
     }
   }
 }
