@@ -1,74 +1,78 @@
-const NAV_STYLE_ID = "indo-bottom-nav-design-v5";
+const NAV_STYLE_ID = "indo-bottom-nav-design-v6";
 
 function installNavStyles() {
   if (document.getElementById(NAV_STYLE_ID)) return;
-
   const style = document.createElement("style");
   style.id = NAV_STYLE_ID;
   style.textContent = `
-    .bottom-nav.indo-nav-v5 {
+    .bottom-nav.indo-nav-v6 {
       position: fixed !important;
       left: 50% !important;
       bottom: 0 !important;
       transform: translateX(-50%) !important;
       width: min(520px, 100%) !important;
-      height: 72px !important;
+      height: 74px !important;
       display: grid !important;
       grid-template-columns: repeat(5, 1fr) !important;
-      align-items: end !important;
-      gap: 0 !important;
-      padding: 0 8px !important;
-      background: rgba(7, 7, 11, 0.97) !important;
-      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.22) !important;
+      align-items: center !important;
+      gap: 5px !important;
+      padding: 7px 8px !important;
+      background: rgba(8, 8, 12, .98) !important;
+      border-top: 1px solid rgba(255,255,255,.08) !important;
+      box-shadow: 0 -10px 28px rgba(0,0,0,.24) !important;
       backdrop-filter: blur(18px) !important;
       -webkit-backdrop-filter: blur(18px) !important;
       z-index: 100 !important;
       isolation: isolate;
     }
 
-    .bottom-nav.indo-nav-v5::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: linear-gradient(180deg, rgba(255,255,255,.018), transparent 55%);
-      z-index: -1;
-    }
-
-    .bottom-nav.indo-nav-v5 button {
+    .bottom-nav.indo-nav-v6 button {
       position: relative !important;
-      height: 62px !important;
-      min-width: 0 !important;
       width: 100% !important;
+      height: 58px !important;
+      min-width: 0 !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
-      justify-content: flex-end !important;
-      gap: 4px !important;
-      padding: 0 4px 9px !important;
+      justify-content: center !important;
+      gap: 5px !important;
+      padding: 6px 3px !important;
       margin: 0 !important;
-      color: #777783 !important;
-      background: transparent !important;
-      border: 0 !important;
-      border-radius: 15px 15px 0 0 !important;
+      color: #8a8994 !important;
+      background: rgba(255,255,255,.018) !important;
+      border: 1px solid rgba(255,255,255,.045) !important;
+      border-radius: 15px !important;
       font-size: 22px !important;
       line-height: 1 !important;
       -webkit-tap-highlight-color: transparent !important;
       touch-action: manipulation !important;
-      transition: color 140ms ease, transform 140ms ease, background 140ms ease !important;
+      transition: color 140ms ease, transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease !important;
     }
 
-    .bottom-nav.indo-nav-v5 button span {
+    .bottom-nav.indo-nav-v6 button::after {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: 14px;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), transparent 55%);
+      opacity: .8;
+    }
+
+    .bottom-nav.indo-nav-v6 button span {
+      position: relative;
+      z-index: 1;
       display: block !important;
       font-size: 9px !important;
       line-height: 1 !important;
-      font-weight: 650 !important;
-      letter-spacing: .05px !important;
+      font-weight: 700 !important;
+      letter-spacing: .08px !important;
       color: currentColor !important;
     }
 
-    .bottom-nav.indo-nav-v5 button svg {
+    .bottom-nav.indo-nav-v6 button svg {
+      position: relative;
+      z-index: 1;
       width: 23px !important;
       height: 23px !important;
       display: block !important;
@@ -80,63 +84,51 @@ function installNavStyles() {
       stroke-linejoin: round !important;
     }
 
-    .bottom-nav.indo-nav-v5 button[data-screen="video"] svg {
+    .bottom-nav.indo-nav-v6 button[data-screen="video"] svg {
       width: 24px !important;
       height: 24px !important;
     }
 
-    .bottom-nav.indo-nav-v5 button.active {
-      height: 70px !important;
-      margin-bottom: -1px !important;
-      padding-bottom: 11px !important;
-      color: #ff4fc4 !important;
-      background: linear-gradient(180deg, rgba(255,79,196,.055), rgba(255,79,196,.015)) !important;
-      border: 1px solid rgba(255, 79, 196, .22) !important;
-      border-bottom: 0 !important;
-      border-radius: 18px 18px 0 0 !important;
-      box-shadow: 0 -6px 22px rgba(255, 79, 196, .08) !important;
-      transform: translateY(-1px) !important;
-      z-index: 2 !important;
+    .bottom-nav.indo-nav-v6 button:not(.active):hover {
+      color: #c2c0ca !important;
+      background: rgba(255,255,255,.035) !important;
+      border-color: rgba(255,255,255,.08) !important;
     }
 
-    .bottom-nav.indo-nav-v5 button.active::before {
+    .bottom-nav.indo-nav-v6 button.active {
+      color: #ff4fc4 !important;
+      background: linear-gradient(180deg, rgba(255,79,196,.14), rgba(255,79,196,.045)) !important;
+      border-color: rgba(255,79,196,.32) !important;
+      box-shadow: 0 0 18px rgba(255,79,196,.10), inset 0 0 0 1px rgba(255,79,196,.06) !important;
+    }
+
+    .bottom-nav.indo-nav-v6 button.active::before {
       content: "";
       position: absolute;
-      left: 22%;
-      right: 22%;
       top: 0;
+      left: 25%;
+      right: 25%;
       height: 2px;
       border-radius: 999px;
       background: #ff4fc4;
-      box-shadow: 0 0 12px rgba(255, 79, 196, .45);
+      box-shadow: 0 0 12px rgba(255,79,196,.48);
+      z-index: 2;
     }
 
-    .bottom-nav.indo-nav-v5 button.indo-nav-pressed {
-      transform: translateY(1px) scale(.97) !important;
+    .bottom-nav.indo-nav-v6 button.indo-nav-pressed {
+      transform: scale(.94) !important;
     }
 
-    .bottom-nav.indo-nav-v5 button.active.indo-nav-pressed {
-      transform: translateY(0) scale(.97) !important;
-    }
-
-    .bottom-nav.indo-nav-v5 button:focus-visible {
+    .bottom-nav.indo-nav-v6 button:focus-visible {
       outline: 2px solid #ff4fc4 !important;
       outline-offset: 2px !important;
     }
 
     @media (max-width: 360px) {
-      .bottom-nav.indo-nav-v5 {
-        height: 68px !important;
-        padding-left: 4px !important;
-        padding-right: 4px !important;
-      }
-      .bottom-nav.indo-nav-v5 button {
-        height: 59px !important;
-        padding-bottom: 8px !important;
-      }
-      .bottom-nav.indo-nav-v5 button.active {
-        height: 66px !important;
-      }
+      .bottom-nav.indo-nav-v6 { height: 70px !important; padding: 6px 5px !important; gap: 3px !important; }
+      .bottom-nav.indo-nav-v6 button { height: 56px !important; border-radius: 13px !important; }
+      .bottom-nav.indo-nav-v6 button span { font-size: 8px !important; }
+      .bottom-nav.indo-nav-v6 button svg { width: 22px !important; height: 22px !important; }
     }
   `;
   document.head.appendChild(style);
@@ -162,10 +154,8 @@ const icon = (type) => {
 
 export function nav(active) {
   installNavStyles();
-
   const isActive = (screen) => active === screen ? "active" : "";
-
-  return `<nav class="bottom-nav indo-nav-v5" aria-label="Primary navigation">
+  return `<nav class="bottom-nav indo-nav-v6" aria-label="Primary navigation">
     <button type="button" data-screen="home" class="${isActive("home")}" aria-label="Home">${icon("home")}<span>Home</span></button>
     <button type="button" data-screen="messages" class="${isActive("messages")}" aria-label="Messages">${icon("messages")}<span>Message</span></button>
     <button type="button" data-screen="reels" class="${isActive("reels")}" aria-label="Reels">${icon("reels")}<span>Reel</span></button>
