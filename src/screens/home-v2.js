@@ -13,9 +13,7 @@ function esc(value = "") {
 
 function normalizeStory(story) {
   if (!story || typeof story !== "object") return null;
-  const secureUrl = String(
-    story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "",
-  ).trim();
+  const secureUrl = String(story.secureUrl || story.videoUrl || story.url || story.mediaUrl || "").trim();
   if (!secureUrl) return null;
   const createdAt = Number(story.createdAt || story.timestamp || 0);
   const expiresAt = Number(story.expiresAt || 0);
@@ -24,20 +22,14 @@ function normalizeStory(story) {
   return {
     ...story,
     secureUrl,
-    ownerUid: String(
-      story.ownerUid || story.uid || story.userId || story.creatorUid || "",
-    ).trim(),
-    username: String(
-      story.username || story.userName || story.handle || story.name || "Indo User",
-    ).replace(/^@/, ""),
+    ownerUid: String(story.ownerUid || story.uid || story.userId || story.creatorUid || "").trim(),
+    username: String(story.username || story.userName || story.handle || story.name || "Indo User").replace(/^@/, ""),
   };
 }
 
 function readCachedOwnStory(uid) {
   try {
-    const story = normalizeStory(
-      JSON.parse(localStorage.getItem(LAST_STORY_KEY) || "null"),
-    );
+    const story = normalizeStory(JSON.parse(localStorage.getItem(LAST_STORY_KEY) || "null"));
     return story && String(story.ownerUid) === String(uid || "") ? story : null;
   } catch {
     return null;
@@ -205,7 +197,7 @@ async function loadFeed(app) {
   const status = app.querySelector("[data-feed-status]");
   if (!feed || !status) return;
   try {
-    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import("../features/feed/home-feed.js?v=20260822-safe-v3");
+    const { loadHomeVideos, renderVideoCard, bindVideoCards } = await import("../features/feed/home-feed.js?v=20260822-safe-v4");
     const videos = await loadHomeVideos(10);
     if (!videos.length) {
       status.textContent = "No videos yet. Upload your first video.";
