@@ -30,6 +30,24 @@ const backendWarmup = (() => {
   return fetch(`${base}/api/health`, { method: "GET", cache: "no-store", credentials: "omit", keepalive: true }).catch(() => null);
 })();
 
+function deferVideoSourceLoading(root) {
+  if (!(root instanceof Element)) return;
+  root.querySelectorAll("video").forEach((video) => {
+    const existingSource = video.querySelector("source[src]");
+    if (existingSource) {
+      const src = existingSource.getAttribute("src");
+      if (src && !video.dataset.videoSrc) video.dataset.videoSrc = src;
+      existingSource.removeAttribute("src");
+    }
+    if (video.src) {
+      const src = video.getAttribute("src");
+      if (src && !video.dataset.videoSrc) video.dataset.videoSrc = src;
+      video.removeAttribute("src");
+    }
+    video.preload = "none";
+  });
+}
+
 function scheduleProfileEnhancement(root, id) {
   const run = () => {
     if (id !== renderId) return;
@@ -52,6 +70,7 @@ async function render() {
   const router = (await routerWarmup) || await import(ROUTER_VERSION);
   await router.render(app);
   if (currentRender !== renderId) return;
+  deferVideoSourceLoading(app);
   applyIndoPinkThunderTheme();
   installHomeFeedDesign();
   installVideoPlaybackFix();
@@ -93,6 +112,7 @@ async function navigate(screen) {
       if (fastSequence !== renderId || state.screen !== "video" || requestId !== navigationId) return;
       await mod.renderVideo(app);
       if (fastSequence !== renderId || state.screen !== "video" || requestId !== navigationId) return;
+      deferVideoSourceLoading(app);
       applyIndoPinkThunderTheme();
       installHomeFeedDesign();
       installVideoPlaybackFix();
