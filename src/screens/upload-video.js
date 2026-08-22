@@ -1,6 +1,6 @@
 import { icons } from "../data.js";
 import { nav } from "../components/nav.js";
-import { uploadVideo } from "../features/feed/create-video.js?v=20260821-upload-v7";
+import { uploadVideo } from "../features/feed/create-video.js?v=20260822-title-sync-v1";
 
 const STYLE_ID = "indo-upload-video-v224";
 
@@ -49,7 +49,6 @@ function installStyles() {
 
 export function renderUploadVideo(app) {
   installStyles();
-
   app.innerHTML = `<div class="app-shell indo-upload-shell">
     <header class="indo-upload-head">
       <button type="button" data-screen="create" aria-label="Back">${icons.back}</button>
