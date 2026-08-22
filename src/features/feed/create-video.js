@@ -1,8 +1,10 @@
 import { auth } from "../auth/firebase-client.js";
 
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
-const CHUNK_SIZE = 8 * 1024 * 1024;
+const CHUNK_SIZE = 32 * 1024 * 1024;
 const LEGACY_FALLBACK_MAX_BYTES = 45 * 1024 * 1024;
+const FAST_INIT_ENDPOINT = "/api/google-drive/videos/upload-resumable-fast/init";
+const FAST_CHUNK_ENDPOINT = "/api/google-drive/videos/upload-resumable-fast";
 
 async function readVideoMetadata(file) {
   const video = document.createElement("video");
@@ -29,9 +31,7 @@ async function readApiResponse(response) {
   return data;
 }
 
-async function request(url, options = {}) {
-  return readApiResponse(await fetch(url, options));
-}
+async function request(url, options = {}) { return readApiResponse(await fetch(url, options)); }
 
 async function syncDriveTitle(base, token, video, title) {
   const videoId = String(video?.id || "").trim();
@@ -48,7 +48,7 @@ async function syncDriveTitle(base, token, video, title) {
 }
 
 async function uploadLegacy(file, mediaType, options, token, base) {
-  if (file.size > LEGACY_FALLBACK_MAX_BYTES) throw new Error("The video backend is not running the new resumable uploader. Deploy Indo-Backend first; videos over 45 MB require the resumable endpoint.");
+  if (file.size > LEGACY_FALLBACK_MAX_BYTES) throw new Error("The video backend is still updating. Please retry; large videos use the fast resumable uploader.");
   const meta = options.metadata || {};
   const params = new URLSearchParams({
     mediaType,
@@ -82,33 +82,22 @@ async function uploadVideoToGoogleDrive(file, mediaType, options = {}) {
   const meta = options.metadata || {};
   const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
   if (!base) throw new Error("Backend URL is not configured.");
-
   const title = String(options.title || "Untitled video").trim() || "Untitled video";
   const initBody = {
-    mediaType,
-    title,
-    caption: options.caption || "",
-    privacy: options.privacy || "public",
-    allowComments: options.allowComments !== false,
-    allowDuet: options.allowDuet !== false,
-    category: options.category || "",
-    tags: Array.isArray(options.tags) ? options.tags : [],
-    location: options.location || "",
-    fileName: file.name || "indo-video.mp4",
-    duration: Number(meta.duration || 0),
-    width: Number(meta.width || 0),
-    height: Number(meta.height || 0),
-    totalSize: file.size,
-    mimeType: file.type || "video/mp4",
+    mediaType, title, caption: options.caption || "", privacy: options.privacy || "public",
+    allowComments: options.allowComments !== false, allowDuet: options.allowDuet !== false,
+    category: options.category || "", tags: Array.isArray(options.tags) ? options.tags : [],
+    location: options.location || "", fileName: file.name || "indo-video.mp4",
+    duration: Number(meta.duration || 0), width: Number(meta.width || 0), height: Number(meta.height || 0),
+    totalSize: file.size, mimeType: file.type || "video/mp4",
   };
 
   let init;
   try {
-    init = await request(`${base}/api/google-drive/videos/upload-resumable/init`, {
+    init = await request(`${base}${FAST_INIT_ENDPOINT}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(initBody),
-      cache: "no-store",
+      body: JSON.stringify(initBody), cache: "no-store",
     });
   } catch (error) {
     if (file.size <= LEGACY_FALLBACK_MAX_BYTES && /not available|404|405|invalid response/i.test(String(error.message))) return uploadLegacy(file, mediaType, options, token, base);
@@ -117,9 +106,9 @@ async function uploadVideoToGoogleDrive(file, mediaType, options = {}) {
 
   const uploadId = String(init.uploadId || "");
   if (!uploadId) throw new Error("Backend did not return an upload session.");
-
+  const chunkSize = Math.max(8 * 1024 * 1024, Number(init.chunkSize || CHUNK_SIZE));
   let offset = Math.max(0, Number(init.nextOffset || 0));
-  const chunkSize = Math.max(256 * 1024, Number(init.chunkSize || CHUNK_SIZE));
+
   while (offset < file.size) {
     const endExclusive = Math.min(offset + chunkSize, file.size);
     const chunk = file.slice(offset, endExclusive);
@@ -128,16 +117,15 @@ async function uploadVideoToGoogleDrive(file, mediaType, options = {}) {
     let lastError = null;
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
-        result = await request(`${base}/api/google-drive/videos/upload-resumable/${encodeURIComponent(uploadId)}?${params.toString()}`, {
+        result = await request(`${base}${FAST_CHUNK_ENDPOINT}/${encodeURIComponent(uploadId)}?${params.toString()}`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type || "video/mp4" },
-          body: chunk,
-          cache: "no-store",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type || "video/mp4", "Content-Length": String(chunk.size) },
+          body: chunk, cache: "no-store",
         });
         break;
       } catch (error) {
         lastError = error;
-        if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 700 * attempt));
+        if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
       }
     }
     if (!result) throw lastError || new Error("Video upload failed.");
