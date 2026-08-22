@@ -93,7 +93,7 @@ async function renderScreen(app, screen) {
     case "auth-signup":
       return renderSignup(app);
     case "home": {
-      const mod = await loadScreenModule("home", "./screens/home-v2.js?v=20260822-home-premium-v4");
+      const mod = await loadScreenModule("home", "./screens/home-v2.js?v=20260822-home-premium-v5");
       if (typeof mod.renderHome !== "function") throw new Error("Home renderer is unavailable.");
       await mod.renderHome(app);
       ensureHomeTopbar(app);
