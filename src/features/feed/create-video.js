@@ -33,6 +33,20 @@ async function request(url, options = {}) {
   return readApiResponse(await fetch(url, options));
 }
 
+async function syncDriveTitle(base, token, video, title) {
+  const videoId = String(video?.id || "").trim();
+  const cleanTitle = String(title || "").trim();
+  if (!videoId || !cleanTitle) return;
+  const response = await fetch(`${base}/api/google-drive/videos/${encodeURIComponent(videoId)}/title`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ title: cleanTitle }),
+    cache: "no-store",
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data?.ok === false) throw new Error(String(data?.error || `Could not sync video title (${response.status}).`).slice(0, 300));
+}
+
 async function uploadLegacy(file, mediaType, options, token, base) {
   if (file.size > LEGACY_FALLBACK_MAX_BYTES) throw new Error("The video backend is not running the new resumable uploader. Deploy Indo-Backend first; videos over 45 MB require the resumable endpoint.");
   const meta = options.metadata || {};
@@ -56,6 +70,7 @@ async function uploadLegacy(file, mediaType, options, token, base) {
     body: file,
     cache: "no-store",
   });
+  await syncDriveTitle(base, token, result.video, options.title || "Untitled video");
   options.onProgress?.(100, "Video uploaded successfully.");
   return result.video;
 }
@@ -68,9 +83,10 @@ async function uploadVideoToGoogleDrive(file, mediaType, options = {}) {
   const base = String(window.INDO_API_BASE || "").replace(/\/$/, "");
   if (!base) throw new Error("Backend URL is not configured.");
 
+  const title = String(options.title || "Untitled video").trim() || "Untitled video";
   const initBody = {
     mediaType,
-    title: options.title || "Untitled video",
+    title,
     caption: options.caption || "",
     privacy: options.privacy || "public",
     allowComments: options.allowComments !== false,
@@ -126,6 +142,7 @@ async function uploadVideoToGoogleDrive(file, mediaType, options = {}) {
     }
     if (!result) throw lastError || new Error("Video upload failed.");
     if (result.complete && result.video) {
+      await syncDriveTitle(base, token, result.video, title);
       options.onProgress?.(100, "Video uploaded successfully.");
       return result.video;
     }
