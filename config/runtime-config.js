@@ -1,10 +1,10 @@
 window.INDO_API_BASE =
   window.INDO_API_BASE || "https://indo-backend-456919073297.asia-south1.run.app";
 (function () {
-  if (window.__indoRuntimeV142) return;
-  window.__indoRuntimeV142 = true;
+  if (window.__indoRuntimeV143) return;
+  window.__indoRuntimeV143 = true;
   const s = document.createElement("style");
-  s.id = "indo-runtime-v142";
+  s.id = "indo-runtime-v143";
   s.textContent =
     "html,body{width:100%;min-height:100%;-webkit-text-size-adjust:100%}body{overflow-x:hidden;overflow-y:auto}button,a,input,textarea,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.app-shell,.auth-shell{width:100%;max-width:520px;min-height:100dvh;min-height:100svh}#story-preview{position:relative!important;overflow:hidden!important}";
   document.head.appendChild(s);
@@ -53,7 +53,7 @@ window.INDO_API_BASE =
     if (firebaseContextPromise.value) return firebaseContextPromise.value;
     firebaseContextPromise.value = (async () => {
       const [{ auth }, dbModule] = await Promise.all([
-        import("../src/features/auth/firebase-client.js?v=20260822-delete-firebase-client-v2"),
+        import("../src/features/auth/firebase-client.js?v=20260822-auth-stable-v3"),
         import("https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js?v=20260822-delete-db-v1"),
       ]);
       return {
@@ -157,7 +157,7 @@ window.INDO_API_BASE =
     };
   }
 
-  async function deleteViaResolvedBackend(requestedId, input, init, found) {
+  async function deleteViaResolvedBackend(found, input, init) {
     if (!found) return null;
     const ctx = await getFirebaseContext();
     const user = ctx.auth.currentUser;
@@ -187,7 +187,7 @@ window.INDO_API_BASE =
       try {
         const found = await resolveVideoFromFirebase(requestedId);
         if (found) {
-          const backendResponse = await deleteViaResolvedBackend(requestedId, input, init, found);
+          const backendResponse = await deleteViaResolvedBackend(found, input, init);
           if (backendResponse) return backendResponse;
         }
       } catch (error) {
