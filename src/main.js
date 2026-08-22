@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { auth, authPersistenceReady } from "./features/auth/firebase-client.js?v=20260822-auth-stable-v3";
-import { render } from "./router-v3.js?v=20260822-router-v3";
+import { render } from "./router-v3.js?v=20260822-router-v4";
 
 const app = document.getElementById("root");
 let started = false;
