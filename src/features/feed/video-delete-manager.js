@@ -1,6 +1,7 @@
 import { auth } from "../auth/firebase-client.js";
+import { removeFirebaseVideoRecord } from "./video-delete-firebase-sync.js";
 
-const STYLE_ID = "indo-video-delete-manager-v9";
+const STYLE_ID = "indo-video-delete-manager-v10";
 const MENU_ID = "indo-video-delete-menu";
 const DELETE_BACKEND_PATH = "/api/media/videos/";
 const DEFAULT_DELETE_BACKEND_URL = "https://indo-backend-456919073297.asia-south1.run.app";
@@ -80,18 +81,28 @@ async function requestBackendDelete(videoId, user) {
 
   if (!response.ok) {
     const detail = data?.error || data?.detail || data?.message || `HTTP ${response.status}`;
-    throw new Error(String(detail).slice(0, 300));
+    const error = new Error(String(detail).slice(0, 300));
+    error.status = response.status;
+    error.code = String(data?.code || "");
+    throw error;
   }
 
-  // Accept the backend's successful response even if it uses a slightly
-  // different success flag. This prevents a real Drive deletion from being
-  // reported as a client-side failure.
   const success = data?.deleted === true || data?.success === true || data?.ok === true;
   if (!success) {
     throw new Error(String(data?.error || data?.detail || "Delete was not confirmed by the server.").slice(0, 300));
   }
 
   return data;
+}
+
+async function cleanupFirebaseRecordAfterMissingVideo(videoId) {
+  try {
+    const result = await removeFirebaseVideoRecord(videoId);
+    return Boolean(result?.removed);
+  } catch (error) {
+    console.warn("Indo Firebase stale-video cleanup failed:", error);
+    return false;
+  }
 }
 
 function createMenu(card, anchor) {
@@ -136,8 +147,27 @@ function createMenu(card, anchor) {
       window.dispatchEvent(new CustomEvent("indo:video-deleted", { detail: { videoId, result } }));
     } catch (error) {
       console.error("Indo video delete failed:", error);
+
+      // A 404/"Video not found" means the Drive object is already gone or the
+      // backend no longer has that media record. Clean the stale RTDB record
+      // so the dead post does not remain visible forever.
+      const message = String(error?.message || "");
+      const isMissing = Number(error?.status) === 404 || /video\s+not\s+found/i.test(message);
+      if (isMissing) {
+        const cleaned = await cleanupFirebaseRecordAfterMissingVideo(videoId);
+        if (cleaned) {
+          markDeleted(videoId);
+          removeAllMatchingCards(videoId);
+          closeMenu();
+          window.dispatchEvent(new CustomEvent("indo:video-deleted", {
+            detail: { videoId, result: { deleted: true, mode: "stale-backend-record-cleanup" } },
+          }));
+          return;
+        }
+      }
+
       button.disabled = false;
-      button.textContent = String(error?.message || "Delete failed").slice(0, 120);
+      button.textContent = message.slice(0, 120) || "Delete failed";
     } finally {
       deleting = false;
     }
