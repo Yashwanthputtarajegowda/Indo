@@ -1,6 +1,6 @@
 import { icons } from "../data.js";
 import { nav } from "../components/nav.js";
-import { uploadVideo } from "../features/feed/create-video.js?v=20260822-title-sync-v1";
+import { uploadVideo } from "../features/feed/create-video.js?v=20260822-fast-upload-v2";
 
 const STYLE_ID = "indo-upload-video-v224";
 
@@ -92,128 +92,47 @@ export function renderUploadVideo(app) {
   const submit = app.querySelector("#create-video-submit");
   const titleInput = app.querySelector("#upload-title");
   const moreInput = app.querySelector("#upload-more");
-
   let selectedObjectUrl = "";
   let submitting = false;
   const values = { privacy: "public", allowComments: true, allowDuet: true, category: "" };
-
-  const setMessage = (text, type = "") => {
-    message.textContent = String(text || "");
-    message.className = `indo-upload-message${type ? ` ${type}` : ""}`;
-  };
-
-  const chooseFile = () => {
-    if (submitting) return;
-    file?.click();
-  };
-
+  const setMessage = (text, type = "") => { message.textContent = String(text || ""); message.className = `indo-upload-message${type ? ` ${type}` : ""}`; };
+  const chooseFile = () => { if (!submitting) file?.click(); };
   const renderSelectedFile = () => {
     const f = file.files?.[0];
     if (!f) return;
-    if (!f.type.startsWith("video/")) {
-      file.value = "";
-      setMessage("Please select a video file.", "error");
-      return;
-    }
+    if (!f.type.startsWith("video/")) { file.value = ""; setMessage("Please select a video file.", "error"); return; }
     if (selectedObjectUrl) URL.revokeObjectURL(selectedObjectUrl);
     selectedObjectUrl = URL.createObjectURL(f);
     preview.innerHTML = `<video src="${selectedObjectUrl}" controls playsinline preload="metadata"></video>`;
     setMessage(`${f.name} • ${(f.size / (1024 * 1024)).toFixed(1)} MB`);
   };
-
-  app.querySelectorAll("[data-screen]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      window.__indoNavigate?.(button.dataset.screen);
-    });
-  });
-
+  app.querySelectorAll("[data-screen]").forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); window.__indoNavigate?.(button.dataset.screen); }));
   choose?.addEventListener("click", chooseFile);
-  preview?.addEventListener("click", (event) => {
-    if (event.target instanceof HTMLVideoElement) return;
-    chooseFile();
-  });
+  preview?.addEventListener("click", (event) => { if (!(event.target instanceof HTMLVideoElement)) chooseFile(); });
   file?.addEventListener("change", renderSelectedFile);
-
-  app.querySelectorAll("[data-option]").forEach((row) => {
-    row.addEventListener("click", () => {
-      const option = row.dataset.option;
-      if (option === "privacy") {
-        const answer = window.prompt("Privacy: enter public, followers, or private.", values.privacy) || values.privacy;
-        const normalized = answer.trim().toLowerCase();
-        if (["public", "followers", "private"].includes(normalized)) values.privacy = normalized;
-      } else if (option === "comments") {
-        values.allowComments = !values.allowComments;
-        app.querySelector("#comments-toggle")?.classList.toggle("on", values.allowComments);
-      } else if (option === "duet") {
-        values.allowDuet = !values.allowDuet;
-        app.querySelector("#duet-toggle")?.classList.toggle("on", values.allowDuet);
-      } else if (option === "category") {
-        values.category = (window.prompt("Category", values.category) || "").trim().slice(0, 60);
-      }
-      const privacy = app.querySelector("#privacy-value");
-      const category = app.querySelector("#category-value");
-      if (privacy) { privacy.dataset.value = values.privacy; privacy.textContent = values.privacy === "followers" ? "Followers" : values.privacy === "private" ? "Private" : "Public"; }
-      if (category) { category.dataset.value = values.category; category.textContent = values.category || "Select Category"; }
-    });
-  });
+  app.querySelectorAll("[data-option]").forEach((row) => row.addEventListener("click", () => {
+    const option = row.dataset.option;
+    if (option === "privacy") { const answer = window.prompt("Privacy: enter public, followers, or private.", values.privacy) || values.privacy; const normalized = answer.trim().toLowerCase(); if (["public", "followers", "private"].includes(normalized)) values.privacy = normalized; }
+    else if (option === "comments") { values.allowComments = !values.allowComments; app.querySelector("#comments-toggle")?.classList.toggle("on", values.allowComments); }
+    else if (option === "duet") { values.allowDuet = !values.allowDuet; app.querySelector("#duet-toggle")?.classList.toggle("on", values.allowDuet); }
+    else if (option === "category") values.category = (window.prompt("Category", values.category) || "").trim().slice(0, 60);
+    const privacy = app.querySelector("#privacy-value"); const category = app.querySelector("#category-value");
+    if (privacy) { privacy.dataset.value = values.privacy; privacy.textContent = values.privacy === "followers" ? "Followers" : values.privacy === "private" ? "Private" : "Public"; }
+    if (category) { category.dataset.value = values.category; category.textContent = values.category || "Select Category"; }
+  }));
 
   const submitUpload = async (event) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-    if (submitting) return;
-
+    event?.preventDefault?.(); event?.stopPropagation?.(); if (submitting) return;
     const f = file.files?.[0];
-    if (!f) {
-      setMessage("Select a video first.", "error");
-      chooseFile();
-      return;
-    }
-
-    const title = titleInput.value.trim();
-    const more = moreInput.value.trim();
-    if (!title) {
-      setMessage("Add a title first.", "error");
-      titleInput.focus();
-      return;
-    }
-
-    submitting = true;
-    submit.disabled = true;
-    submit.textContent = "Uploading…";
-    bar.style.width = "2%";
-    setMessage("Preparing your video…");
-
+    if (!f) { setMessage("Select a video first.", "error"); chooseFile(); return; }
+    const title = titleInput.value.trim(); const more = moreInput.value.trim();
+    if (!title) { setMessage("Add a title first.", "error"); titleInput.focus(); return; }
+    submitting = true; submit.disabled = true; submit.textContent = "Uploading…"; bar.style.width = "2%"; setMessage("Preparing your video…");
     try {
-      await uploadVideo(f, {
-        title,
-        caption: more,
-        description: more,
-        privacy: values.privacy,
-        allowComments: values.allowComments,
-        allowDuet: values.allowDuet,
-        category: values.category,
-        onProgress: (percent, text) => {
-          bar.style.width = `${Math.max(2, Math.min(100, Number(percent) || 0))}%`;
-          setMessage(text || "Uploading…");
-        },
-      });
-      bar.style.width = "100%";
-      setMessage("Your video is published!", "success");
-      window.setTimeout(() => window.__indoNavigate?.("video"), 500);
-    } catch (error) {
-      console.error("Indo video upload failed:", error);
-      submit.disabled = false;
-      submit.textContent = "Create Video";
-      submitting = false;
-      bar.style.width = "0%";
-      setMessage(error?.message || "Upload failed. Please try again.", "error");
-    }
+      await uploadVideo(f, { title, caption: more, description: more, privacy: values.privacy, allowComments: values.allowComments, allowDuet: values.allowDuet, category: values.category, onProgress: (percent, text) => { bar.style.width = `${Math.max(2, Math.min(100, Number(percent) || 0))}%`; setMessage(text || "Uploading…"); } });
+      bar.style.width = "100%"; setMessage("Your video is published!", "success"); window.setTimeout(() => window.__indoNavigate?.("video"), 500);
+    } catch (error) { console.error("Indo video upload failed:", error); submit.disabled = false; submit.textContent = "Create Video"; submitting = false; bar.style.width = "0%"; setMessage(error?.message || "Upload failed. Please try again.", "error"); }
   };
-
   submit.addEventListener("click", submitUpload);
-  submit.addEventListener("pointerup", (event) => {
-    if (event.pointerType !== "mouse") submitUpload(event);
-  }, { passive: false });
+  submit.addEventListener("pointerup", (event) => { if (event.pointerType !== "mouse") submitUpload(event); }, { passive: false });
 }
