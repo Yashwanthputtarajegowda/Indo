@@ -1,6 +1,6 @@
 import { auth } from "../auth/firebase-client.js";
 
-const STYLE_ID = "indo-video-delete-manager-v8";
+const STYLE_ID = "indo-video-delete-manager-v9";
 const MENU_ID = "indo-video-delete-menu";
 const DELETE_BACKEND_PATH = "/api/media/videos/";
 const DEFAULT_DELETE_BACKEND_URL = "https://indo-backend-456919073297.asia-south1.run.app";
@@ -21,9 +21,7 @@ function installStyles() {
   document.head.appendChild(style);
 }
 
-function closeMenu() {
-  document.getElementById(MENU_ID)?.remove();
-}
+function closeMenu() { document.getElementById(MENU_ID)?.remove(); }
 
 function getCardValue(card, names = []) {
   for (const name of names) {
@@ -34,20 +32,13 @@ function getCardValue(card, names = []) {
   return "";
 }
 
-function cardVideoId(card) {
-  return getCardValue(card, ["video-id", "videoid"]);
-}
-
-function cardOwnerUid(card) {
-  return getCardValue(card, ["owner-uid"]);
-}
+function cardVideoId(card) { return getCardValue(card, ["video-id", "videoid"]); }
+function cardOwnerUid(card) { return getCardValue(card, ["owner-uid"]); }
 
 function markDeleted(id) {
   id = String(id || "").trim();
   if (!id) return;
-  try {
-    localStorage.setItem(`indo:deleted-video:${id}`, String(Date.now()));
-  } catch {}
+  try { localStorage.setItem(`indo:deleted-video:${id}`, String(Date.now())); } catch {}
 }
 
 function removeAllMatchingCards(id) {
@@ -59,33 +50,45 @@ function removeAllMatchingCards(id) {
 }
 
 async function requestBackendDelete(videoId, user) {
+  const cleanId = String(videoId || "").trim();
+  if (!cleanId) throw new Error("Video ID is missing.");
+
   const token = await user.getIdToken(true);
   const base = String(window.INDO_API_BASE || DEFAULT_DELETE_BACKEND_URL).replace(/\/$/, "");
   if (!base) throw new Error("Delete backend is not configured.");
 
-  const response = await fetch(
-    `${base}${DELETE_BACKEND_PATH}${encodeURIComponent(String(videoId || "").trim())}/delete`,
-    {
+  const url = `${base}${DELETE_BACKEND_PATH}${encodeURIComponent(cleanId)}/delete`;
+  let response;
+  try {
+    response = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
+        "Content-Type": "application/json",
       },
       cache: "no-store",
       credentials: "omit",
-    },
-  );
+    });
+  } catch (error) {
+    throw new Error(`Delete server unavailable: ${error?.message || "network error"}`);
+  }
 
   const text = await response.text().catch(() => "");
   let data = {};
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {}
+  try { data = text ? JSON.parse(text) : {}; } catch {}
 
-  if (!response.ok || data?.deleted !== true) {
-    throw new Error(
-      String(data?.error || data?.detail || `Delete failed (${response.status}).`).slice(0, 300),
-    );
+  if (!response.ok) {
+    const detail = data?.error || data?.detail || data?.message || `HTTP ${response.status}`;
+    throw new Error(String(detail).slice(0, 300));
+  }
+
+  // Accept the backend's successful response even if it uses a slightly
+  // different success flag. This prevents a real Drive deletion from being
+  // reported as a client-side failure.
+  const success = data?.deleted === true || data?.success === true || data?.ok === true;
+  if (!success) {
+    throw new Error(String(data?.error || data?.detail || "Delete was not confirmed by the server.").slice(0, 300));
   }
 
   return data;
@@ -117,32 +120,28 @@ function createMenu(card, anchor) {
   menu.style.top = `${Math.max(8, top)}px`;
 
   menu.querySelector("[data-close-video-delete]")?.addEventListener("click", closeMenu, { once: true });
-  menu.querySelector("[data-delete-video]")?.addEventListener(
-    "click",
-    async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (deleting) return;
-      deleting = true;
-      const button = event.currentTarget;
-      button.disabled = true;
-      button.textContent = "Deleting from Drive…";
-      try {
-        const result = await requestBackendDelete(videoId, user);
-        markDeleted(videoId);
-        removeAllMatchingCards(videoId);
-        closeMenu();
-        window.dispatchEvent(new CustomEvent("indo:video-deleted", { detail: { videoId, result } }));
-      } catch (error) {
-        console.error("Indo video delete failed:", error);
-        button.disabled = false;
-        button.textContent = String(error?.message || "Delete failed").slice(0, 120);
-      } finally {
-        deleting = false;
-      }
-    },
-    { once: true },
-  );
+  menu.querySelector("[data-delete-video]")?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (deleting) return;
+    deleting = true;
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.textContent = "Deleting from Drive…";
+    try {
+      const result = await requestBackendDelete(videoId, user);
+      markDeleted(videoId);
+      removeAllMatchingCards(videoId);
+      closeMenu();
+      window.dispatchEvent(new CustomEvent("indo:video-deleted", { detail: { videoId, result } }));
+    } catch (error) {
+      console.error("Indo video delete failed:", error);
+      button.disabled = false;
+      button.textContent = String(error?.message || "Delete failed").slice(0, 120);
+    } finally {
+      deleting = false;
+    }
+  }, { once: true });
 }
 
 function installDelegatedDelete() {
@@ -150,29 +149,20 @@ function installDelegatedDelete() {
   installed = true;
   installStyles();
 
-  document.addEventListener(
-    "click",
-    (event) => {
-      const target = event.target instanceof Element ? event.target : null;
-      if (!target || target.closest(`#${MENU_ID}`)) return;
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target || target.closest(`#${MENU_ID}`)) return;
 
-      const more = target.closest(
-        ".video-post .neon-edge-more, .video-post [data-video-more], [data-video-id] .neon-edge-more",
-      );
-      if (!more) {
-        closeMenu();
-        return;
-      }
+    const more = target.closest(".video-post .neon-edge-more, .video-post [data-video-more], [data-video-id] .neon-edge-more");
+    if (!more) { closeMenu(); return; }
 
-      const card = more.closest("[data-video-id]");
-      if (!card) return;
+    const card = more.closest("[data-video-id]");
+    if (!card) return;
 
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      createMenu(card, more);
-    },
-    true,
-  );
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    createMenu(card, more);
+  }, true);
 
   document.addEventListener("scroll", closeMenu, true);
   window.addEventListener("resize", closeMenu, { passive: true });
