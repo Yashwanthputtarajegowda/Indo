@@ -4,10 +4,10 @@ import { recordWatchProgress } from "../earning/earning.js";
 const LIMIT = 10;
 const SEEN_PREFIX = "indo:feed-seen:";
 const VIEW_COOLDOWN_MS = 30 * 60 * 1000;
-const STYLE_ID = "indo-feed-safe-v2";
+const STYLE_ID = "indo-feed-safe-v3";
 
 const esc = (v = "") => String(v).replace(/[&<>\"']/g, (c) => ({
-  "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#039;",
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 }[c]));
 const apiBase = () => String(window.INDO_API_BASE || "").replace(/\/$/, "");
 
@@ -22,6 +22,10 @@ function installStyles() {
     .indo-safe-video-overlay{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.18))}
     .indo-safe-video-play{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.58);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:25px}
     .indo-safe-video-stage.is-playing .indo-safe-video-overlay{display:none}
+    .indo-safe-menu{position:absolute;right:8px;top:44px;z-index:999;min-width:150px;padding:6px;background:#15151d;border:1px solid #2b2b35;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+    .indo-safe-menu button{display:block;width:100%;padding:9px 10px;border:0;border-radius:7px;background:transparent;color:#e8e8ee;text-align:left;font:700 12px/1.2 system-ui,sans-serif;cursor:pointer}
+    .indo-safe-menu button:hover{background:rgba(255,255,255,.06)}
+    .indo-safe-menu [data-safe-delete]{color:#ff6b73}
   `;
   document.head.appendChild(style);
 }
@@ -143,7 +147,7 @@ async function recordView(videoId) {
   localStorage.setItem(key, String(now));
   try {
     const token = await user.getIdToken();
-    const response = await fetch(`${apiBase()}/api/media/${encodeURIComponent(videoId)}/view`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    const response = await fetch(`${apiBase()}/api/media/videos/${encodeURIComponent(videoId)}/view`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
     if (!response.ok) localStorage.removeItem(key);
   } catch { localStorage.removeItem(key); }
 }
@@ -194,6 +198,24 @@ async function share(card) {
   } catch (e) { if (e?.name !== "AbortError") console.warn("Share failed:", e); }
 }
 
+async function deleteVideoById(videoId) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please login first.");
+  const cleanId = String(videoId || "").trim();
+  if (!cleanId) throw new Error("Video ID is missing.");
+  const token = await user.getIdToken(true);
+  const response = await fetch(`${apiBase()}/api/media/videos/${encodeURIComponent(cleanId)}/delete`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error || data?.detail || `Delete failed (${response.status}).`);
+  }
+  return data;
+}
+
 function bindMore(card) {
   const button = card.querySelector("[data-feed-more]"); if (!button || button.dataset.bound === "1") return;
   button.dataset.bound = "1";
@@ -201,21 +223,25 @@ function bindMore(card) {
     event.preventDefault(); event.stopPropagation();
     card.querySelector(".indo-safe-menu")?.remove();
     const menu = document.createElement("div"); menu.className = "indo-safe-menu";
-    menu.style.cssText = "position:absolute;right:8px;top:44px;z-index:999;min-width:150px;padding:6px;background:#15151d;border:1px solid #2b2b35;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.5)";
     const isOwner = Boolean(auth.currentUser?.uid && String(auth.currentUser.uid) === String(card.dataset.ownerUid || ""));
     menu.innerHTML = `${isOwner ? '<button type="button" data-safe-delete>Delete video</button>' : ""}<button type="button" data-safe-share>Share</button><button type="button" data-safe-cancel>Cancel</button>`;
-    const head = card.querySelector(".post-head"); if (!head) return; head.style.position = "relative"; head.appendChild(menu);
+    const head = card.querySelector(".post-head"); if (!head) return;
+    head.style.position = "relative";
+    head.appendChild(menu);
     menu.querySelector("[data-safe-cancel]")?.addEventListener("click", () => menu.remove());
     menu.querySelector("[data-safe-share]")?.addEventListener("click", async () => { await share(card); menu.remove(); });
     menu.querySelector("[data-safe-delete]")?.addEventListener("click", async () => {
       if (!confirm("Delete this video permanently?")) return;
-      const user = auth.currentUser; if (!user) return;
+      const deleteButton = menu.querySelector("[data-safe-delete]");
+      if (deleteButton) { deleteButton.disabled = true; deleteButton.textContent = "Deleting..."; }
       try {
-        const token = await user.getIdToken(true);
-        const response = await fetch(`${apiBase()}/api/media/${encodeURIComponent(card.dataset.videoId)}/delete`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-        if (!response.ok) throw new Error("Delete failed.");
-        card.remove(); menu.remove();
-      } catch (e) { alert(e.message || "Delete failed."); }
+        await deleteVideoById(card.dataset.videoId || "");
+        card.remove();
+        menu.remove();
+      } catch (error) {
+        if (deleteButton) { deleteButton.disabled = false; deleteButton.textContent = "Delete video"; }
+        alert(error?.message || "Could not delete video.");
+      }
     });
   });
 }
@@ -252,17 +278,14 @@ export function bindVideoCards(root) {
 }
 
 export function recordVideoView(videoId) { return recordView(String(videoId || "")); }
-export async function deleteVideo(videoId) {
-  const user = auth.currentUser; if (!user) throw new Error("Please login first.");
-  const token = await user.getIdToken(true);
-  const response = await fetch(`${apiBase()}/api/media/${encodeURIComponent(videoId)}/delete`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || data.detail || `Delete failed (${response.status}).`);
-  return data;
-}
+export async function deleteVideo(videoId) { return deleteVideoById(videoId); }
 export function bindWatchProgress(videoElement, mediaId) {
   let last = 0;
-  const report = () => { const now = Number(videoElement?.currentTime || 0); const delta = now - last; if (delta >= 10) { last = now; void recordWatchProgress(mediaId, Math.min(15, delta)); } };
+  const report = () => {
+    const now = Number(videoElement?.currentTime || 0);
+    const delta = now - last;
+    if (delta >= 10) { last = now; void recordWatchProgress(mediaId, Math.min(15, delta)); }
+  };
   videoElement?.addEventListener("timeupdate", report);
   videoElement?.addEventListener("pause", report);
   videoElement?.addEventListener("ended", report);
