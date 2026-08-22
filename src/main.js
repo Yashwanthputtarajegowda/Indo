@@ -1,6 +1,6 @@
 import { state } from "./state.js";
-import { auth, authPersistenceReady } from "./features/auth/firebase-client.js?v=20260822-auth-stable-v2";
-import { render } from "./router.js?v=20260822-freeze-router-v2";
+import { auth, authPersistenceReady } from "./features/auth/firebase-client.js?v=20260822-auth-stable-v3";
+import { render } from "./router-v3.js?v=20260822-router-v3";
 
 const app = document.getElementById("root");
 let started = false;
@@ -17,12 +17,12 @@ function showBootFailure(message = "Could not start Indo. Please reload the app.
 function startEnhancements() {
   if (enhancementsStarted) return;
   enhancementsStarted = true;
-  // Only lightweight, non-media enhancements start after the first paint.
   const run = () => {
-    void import("./features/ui/button-touch-hardener.js?v=20260822-touch-v4").catch(() => {});
-    void import("./features/profile/profile-relation-navigation.js?v=20260822-profile-v2").catch(() => {});
-    void import("./features/profile/profile-id-navigation.js?v=20260822-profile-id-v11").catch(() => {});
-    void import("./features/auth/auth-controller.js?v=20260822-auth-controller-v2")
+    void import("./features/ui/button-touch-hardener.js?v=20260822-touch-v5").catch(() => {});
+    void import("./features/ui/home-feed-design-v2.js?v=20260822-feed-design-v4").then((mod) => mod.installHomeFeedDesign?.()).catch(() => {});
+    void import("./features/profile/profile-relation-navigation.js?v=20260822-profile-v3").catch(() => {});
+    void import("./features/profile/profile-id-navigation.js?v=20260822-profile-id-v12").catch(() => {});
+    void import("./features/auth/auth-controller.js?v=20260822-auth-controller-v3")
       .then((mod) => {
         mod.bindAuthSwitches?.();
         mod.bindLoginForm?.();
