@@ -15,7 +15,7 @@ import "./features/ui/button-touch-hardener.js?v=20260821-touch-v3";
 import "./features/feed/report-handler.js";
 import "./features/profile/profile-relation-navigation.js";
 import "./features/profile/profile-id-navigation.js?v=20260815-profile-id-v10";
-import "./features/feed/video-delete-manager.js?v=20260821-video-delete-v3";
+import "./features/feed/video-delete-manager.js?v=20260822-video-delete-v10";
 
 const app = document.getElementById("root");
 let started = false;
