@@ -1,7 +1,7 @@
 import { auth } from "../auth/firebase-client.js";
 
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
-const CHUNK_SIZE = 32 * 1024 * 1024;
+const CHUNK_SIZE = 10 * 1024 * 1024;
 const LEGACY_FALLBACK_MAX_BYTES = 45 * 1024 * 1024;
 const FAST_INIT_ENDPOINT = "/api/google-drive/videos/upload-resumable-fast/init";
 const FAST_CHUNK_ENDPOINT = "/api/google-drive/videos/upload-resumable-fast";
@@ -106,7 +106,7 @@ async function uploadVideoToGoogleDrive(file, mediaType, options = {}) {
 
   const uploadId = String(init.uploadId || "");
   if (!uploadId) throw new Error("Backend did not return an upload session.");
-  const chunkSize = Math.max(8 * 1024 * 1024, Number(init.chunkSize || CHUNK_SIZE));
+  const chunkSize = Math.max(10 * 1024 * 1024, Number(init.chunkSize || CHUNK_SIZE));
   let offset = Math.max(0, Number(init.nextOffset || 0));
 
   while (offset < file.size) {
